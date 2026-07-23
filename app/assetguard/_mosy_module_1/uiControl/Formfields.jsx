@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { MosyFileUploadButton, MosyImageViewer } from '../../UiControl/componentControl';
 
 // FormFields — one small component per field.type. Every input carries the
 // "dyn-input" class, which FormLayout.jsx styles to match the target look
@@ -192,7 +193,7 @@ export function RichTextInput({ field, value, setValue }) {
 export function ImageInput({ field, value, setValue, readOnly, schema }) {
   return (
     <div className="dyn-image-field text-center">
-      <Mosy
+      <MosyImageViewer
         media={`/api/mediaroom?media=${btoa(value || '')}`}
         mediaRoot=""
         defaultLogo={logo.src}
