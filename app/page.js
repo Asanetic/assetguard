@@ -1,7 +1,6 @@
-import AuthPage from "./auth/login/page";
-
 import mosyThemeConfigs from './appConfigs/mosyTheme';
 import { hiveRoutes } from "./appConfigs/hiveRoutes";
+import LoginPage from './auth/userlogin/page';
 
 export async function generateMetadata() {
   const appName = mosyThemeConfigs.mosyAppName || 'Mosy';
@@ -22,7 +21,7 @@ export async function generateMetadata() {
   export default function Home() {
    return(
     <>
-    <AuthPage baseRoot="auth/"/>
+    <LoginPage baseRoot="auth/"/>
     </>
    )
   }
