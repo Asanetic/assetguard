@@ -18,6 +18,8 @@ import {
   ShieldCog,
 } from "lucide-react";
 import { Brand } from "./AssetGuard/Brand";
+import { hiveRoutes } from "../appConfigs/hiveRoutes";
+import { destroyAppSession } from "../auth/AuthUtils";
 
 const NAVY = "#14315D";
 const BLUE = "#2E6CF5";
@@ -25,6 +27,8 @@ const RAIL_WIDTH = 80;
 const DRAWER_WIDTH = 280;
 // Height of the top bar shown in place of the rail on mobile (< md breakpoint).
 const MOBILE_BAR_HEIGHT = 56;
+
+const mainroute = hiveRoutes.assettracker
 
 /**
  * Full labeled menu shown in the drawer. Matches the prototype's
@@ -34,16 +38,22 @@ const MOBILE_BAR_HEIGHT = 56;
  * render separately in the drawer footer.
  */
 const menu = [
-  { key: "dashboard", label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, color: BLUE },
   {
-    key: "sites",
+    key: "dashboard",
+    label: "Dashboard",
+    href: `${mainroute}/dashboard`,
+    icon: LayoutDashboard,
+    color: BLUE,
+  },
+  {
+    key: "sites0",
     label: "Sites",
     icon: MapPin,
     color: "#10B981",
     children: [
-      { label: "All sites", href: "/sites" },
-      { label: "Group sites", href: "/sites/groups" },
-      { label: "Add site", href: "/sites/new" },
+      { label: "All sites", href: `${mainroute}/sites/list` },
+      { label: "Group sites", href: `${mainroute}/sites/#` },
+      { label: "Add site", href: `${mainroute}/sites/profile` },
     ],
   },
   {
@@ -52,9 +62,8 @@ const menu = [
     icon: Cpu,
     color: "#F59E0B",
     children: [
-      { label: "All devices", href: "/devices" },
-      { label: "Add device", href: "/devices/new" },
-      { label: "Device types", href: "/devices/types" },
+      { label: "All devices", href: `${mainroute}/devices/list` },
+      { label: "Add device", href: `${mainroute}/devices/profile` },
     ],
   },
   {
@@ -63,9 +72,8 @@ const menu = [
     icon: BellRing,
     color: "#EF4444",
     children: [
-      { label: "Active alarms", href: "/alarms" },
-      { label: "Alarm history", href: "/alarms/history" },
-      { label: "Alarm rules", href: "/alarms/rules" },
+      { label: "Active alarms", href: `${mainroute}/alarms/active` },
+      { label: "Alarm history", href: `${mainroute}/alarms/list` },
     ],
   },
   {
@@ -74,35 +82,69 @@ const menu = [
     icon: PlayCircle,
     color: "#8B5CF6",
     children: [
-      { label: "Recordings", href: "/playback/recordings" },
-      { label: "Live view", href: "/playback/live" },
-      { label: "Exports", href: "/playback/exports" },
+      { label: "Recordings", href: `${mainroute}/playback/recordings` },
+      { label: "Live view", href: `${mainroute}/playback/live` },
+      { label: "Exports", href: `${mainroute}/playback/exports` },
     ],
   },
-  { key: "notifications", label: "Notifications", href: "/notifications", icon: Bell, color: "#0EA5E9" },
-  { key: "device-logs", label: "Device logs", href: "/device-logs", icon: FileText, color: "#64748B" },
+  {
+    key: "notifications",
+    label: "Notifications",
+    href: `${mainroute}/notifications`,
+    icon: Bell,
+    color: "#0EA5E9",
+  },
+  {
+    key: "device-logs",
+    label: "Device logs",
+    href: `${mainroute}/device-logs`,
+    icon: FileText,
+    color: "#64748B",
+  },
   {
     key: "admin",
     label: "Admin",
     icon: ShieldCog,
     color: NAVY,
     children: [
-      { label: "Pending approvals", href: "/admin/pending-approvals" },
-      { label: "Users and roles", href: "/admin/users-roles" },
-      { label: "Companies", href: "/admin/companies" },
-      { label: "System settings", href: "/admin/settings" },
-      { label: "Audit logs", href: "/admin/audit-logs" },
+      { label: "Pending approvals", href: `${mainroute}/systemusers/list` },
+      { label: "Users and roles", href: `${mainroute}/admin/users-roles` },
+      { label: "Companies", href: `${mainroute}/companies/list` },
+      { label: "System settings", href: `${mainroute}/#` },
+      { label: "Audit logs", href: `${mainroute}/##` },
     ],
   },
 ];
 
-/** Quick-access icons on the mini rail — mirrors the prototype's rail buttons. */
 const railItems = [
-  { key: "sites", href: "/sites", icon: MapPin, label: "Sites" },
-  { key: "devices", href: "/devices", icon: Cpu, label: "Devices" },
-  { key: "alarms", href: "/alarms", icon: BellRing, label: "Alarms", showBadge: true },
-  { key: "playback", href: "/playback", icon: PlayCircle, label: "Playback" },
+  {
+    key: "sites",
+    href: `${mainroute}/sites`,
+    icon: MapPin,
+    label: "Sites",
+  },
+  {
+    key: "devices",
+    href: `${mainroute}/devices`,
+    icon: Cpu,
+    label: "Devices",
+  },
+  {
+    key: "alarms",
+    href: `${mainroute}/alarms`,
+    icon: BellRing,
+    label: "Alarms",
+    showBadge: true,
+  },
+  {
+    key: "playback",
+    href: `${mainroute}/playback`,
+    icon: PlayCircle,
+    label: "Playback",
+  },
 ];
+
+
 
 // Fixed-width box every drawer row's icon sits in, so labels line up
 // regardless of each lucide icon's actual glyph width — this, plus the
@@ -379,7 +421,7 @@ export function AssetGuardSidebar({
           </Link>
           <button
             type="button"
-            onClick={onLogout}
+            onClick={() => destroyAppSession()}
             className="btn d-flex w-100 align-items-center gap-2 rounded fw-semibold px-3 py-2 border-0 text-danger"
           >
             <LogOut size={17} className="flex-shrink-0" />

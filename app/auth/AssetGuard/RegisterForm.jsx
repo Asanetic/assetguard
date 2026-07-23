@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check } from "lucide-react";
+import { hiveRoutes } from "../../appConfigs/hiveRoutes";
 
 const BLUE = "#2E6CF5";
 
@@ -108,11 +109,11 @@ export default function RegisterForm({ companies = DEFAULT_COMPANIES, onRegister
             disabled={verified.email}
             autoComplete="email"
           />
-          {verified.email ? (
+          {/* {verified.email ? (
             <VerifiedChip />
           ) : (
             <VerifyButton onClick={() => sendCode("email")} />
-          )}
+          )} */}
         </div>
         {otp.email.sent && !verified.email && (
           <OtpRow
@@ -139,11 +140,11 @@ export default function RegisterForm({ companies = DEFAULT_COMPANIES, onRegister
             disabled={verified.phone}
             autoComplete="tel"
           />
-          {verified.phone ? (
+          {/* {verified.phone ? (
             <VerifiedChip />
           ) : (
             <VerifyButton onClick={() => sendCode("phone")} />
-          )}
+          )} */}
         </div>
         {otp.phone.sent && !verified.phone && (
           <OtpRow
@@ -196,7 +197,7 @@ export default function RegisterForm({ companies = DEFAULT_COMPANIES, onRegister
 
       <div className="text-center mt-4" style={{ fontSize: 14, color: "#64748B" }}>
         Already have an account?{" "}
-        <Link href="/login" className="fw-semibold text-decoration-none" style={{ color: BLUE }}>
+        <Link href={`${hiveRoutes.auth}/login`} className="fw-semibold text-decoration-none" style={{ color: BLUE }}>
           Log in
         </Link>
       </div>

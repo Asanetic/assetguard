@@ -4,6 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mail, Phone, Eye, EyeOff, ChevronDown } from "lucide-react";
+import { hiveRoutes } from "../../appConfigs/hiveRoutes";
+import { ProcessUserLogin } from "../AuthUtils";
+import { closeMosyModal, MosyNotify } from "../../MosyUtils/ActionModals";
+import DynamicModalProvider from "../../components/DynamicModalProvider";
 
 const BLUE = "#2E6CF5";
 const BORDER = "#E2E8F0";
@@ -18,6 +22,9 @@ export default function LoginForm({ onLogin, redirectTo = "/dashboard" }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const afterLogin =`${hiveRoutes.main}/systemusers/list`
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!identifier || !password) {
@@ -31,9 +38,24 @@ export default function LoginForm({ onLogin, redirectTo = "/dashboard" }) {
         await onLogin({ method, identifier, password, remember });
       } else {
         // Placeholder delay — wire this up to your real auth call.
-        await new Promise((resolve) => setTimeout(resolve, 1100));
+        //await new Promise((resolve) => setTimeout(resolve, 1100));
+      MosyNotify({message : "Sending request...", addTimer:false})
+      e.preventDefault();
+      const loginResult = await ProcessUserLogin(e);
+
+      if (loginResult.success) {
+        console.log('Yay, logged in!', loginResult.user);
+        closeMosyModal()
+        
+        // Maybe show a toast or do something UI-wise
+      } else {
+        console.log('Login failed:', loginResult.message);
+        MosyNotify({message : "Invalid username or password. \nPlease try again",icon : "times-circle text-danger", duration:20000})
+        // Maybe show custom message
       }
-      router.push(redirectTo);
+
+      }
+      //router.push(afterLogin);
     } catch (err) {
       setError(err?.message || "We couldn't log you in. Check your details and try again.");
     } finally {
@@ -42,7 +64,7 @@ export default function LoginForm({ onLogin, redirectTo = "/dashboard" }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} noValidate>
+    <form onSubmit={handleSubmit} noValidate id="mosy_form">
       <div className="ag-seg mb-4" role="tablist">
         <button
           type="button"
@@ -70,11 +92,12 @@ export default function LoginForm({ onLogin, redirectTo = "/dashboard" }) {
 
       {method === "email" ? (
         <div className="mb-3">
-          <label className="ag-label" htmlFor="login-email">
+          <label className="ag-label" htmlFor="txt_username">
             Email address
           </label>
           <input
-            id="login-email"
+            id="txt_username"
+            name="txt_username"
             type="email"
             className="ag-input"
             placeholder="admin@symphony.com"
@@ -85,7 +108,7 @@ export default function LoginForm({ onLogin, redirectTo = "/dashboard" }) {
         </div>
       ) : (
         <div className="mb-3">
-          <label className="ag-label" htmlFor="login-phone">
+          <label className="ag-label" htmlFor="txt_username">
             Phone number
           </label>
           <div className="d-flex" style={{ gap: 9 }}>
@@ -105,7 +128,8 @@ export default function LoginForm({ onLogin, redirectTo = "/dashboard" }) {
               +254 <ChevronDown size={14} />
             </span>
             <input
-              id="login-phone"
+              id="txt_username"
+              name="txt_username"
               type="tel"
               inputMode="tel"
               className="ag-input"
@@ -120,12 +144,13 @@ export default function LoginForm({ onLogin, redirectTo = "/dashboard" }) {
       )}
 
       <div className="mb-2">
-        <label className="ag-label" htmlFor="login-password">
+        <label className="ag-label" htmlFor="txt_password">
           Password
         </label>
         <div className="position-relative">
           <input
-            id="login-password"
+            id="txt_password"
+            name="txt_password"
             type={showPassword ? "text" : "password"}
             className="ag-input"
             style={{ paddingRight: 44 }}
@@ -168,11 +193,13 @@ export default function LoginForm({ onLogin, redirectTo = "/dashboard" }) {
       <button type="submit" disabled={loading} className="ag-cta">
         {loading ? "Verifying…" : "Log in"}
       </button>
-
+      <input type="hidden" id="auth_mosy_action" name="auth_mosy_action" value="auth_login" />
+      <input type="hidden" id="login_method" name="login_method" value={method} />
+      <DynamicModalProvider/>
       <div className="text-center mt-4" style={{ fontSize: 14, color: "#64748B" }}>
         New to AssetGuard?{" "}
-        <Link href="/request-access" className="fw-semibold text-decoration-none" style={{ color: "#334155" }}>
-          Contact your administrator
+        <Link href={`${hiveRoutes.auth}/registration`} className="fw-semibold text-decoration-none" style={{ color: "#334155" }}>
+          Request access
         </Link>
       </div>
     </form>

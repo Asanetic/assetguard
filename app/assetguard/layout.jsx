@@ -13,6 +13,7 @@ import '../assets/css/feathericon.min.css';
 import '../assets/plugins/morris/morris.css';
 import '../assets/css/style.css';
 import { AssetGuardSidebar } from '../components/AssetGuardNav.jsx';
+import { hiveRoutes } from '../appConfigs/hiveRoutes.jsx';
 
 export default function DashboardLayout({ children }) {
 
