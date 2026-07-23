@@ -1,8 +1,6 @@
 // app/api/smartapi/route.js
 
 import { processAuthToken } from "../../auth/authManager";
-import { sendUtilMessage } from "../messages/logicControl/send-util-message";
-import { createPayrequest } from "../smartpaymentrequests/logicControl/generate-request";
 
 // ================================
 // ACTION HANDLERS (REGISTER HERE)
@@ -10,8 +8,6 @@ import { createPayrequest } from "../smartpaymentrequests/logicControl/generate-
 
 // One map. One truth.
 const ACTIONS = {
-  sendUtilMessage,
-  createPayrequest
 };
 // ================================
 // UTILS
