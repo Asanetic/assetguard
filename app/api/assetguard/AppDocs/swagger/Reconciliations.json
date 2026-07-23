@@ -1,0 +1,537 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Reconciliations API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/reconciliations/reconciliations": {
+            "get": {
+                "summary": "Get Reconciliations",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Reconciliations",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "trx_id": {
+                                        "type": "string",
+                                        "description": "Trx id"
+                                    },
+                                    "trx_date": {
+                                        "type": "string",
+                                        "description": "Trx date"
+                                    },
+                                    "trx_month_year": {
+                                        "type": "string",
+                                        "description": "Trx month year"
+                                    },
+                                    "trx_remark": {
+                                        "type": "string",
+                                        "description": "Trx remark"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "trx_type": {
+                                        "type": "string",
+                                        "description": "Trx type"
+                                    },
+                                    "business_id": {
+                                        "type": "string",
+                                        "description": "Business id"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "admin_id": {
+                                        "type": "string",
+                                        "description": "Admin id"
+                                    },
+                                    "TransactionType": {
+                                        "type": "string",
+                                        "description": "TransactionType"
+                                    },
+                                    "BusinessShortCode": {
+                                        "type": "string",
+                                        "description": "BusinessShortCode"
+                                    },
+                                    "BillRefNumber": {
+                                        "type": "string",
+                                        "description": "BillRefNumber"
+                                    },
+                                    "InvoiceNumber": {
+                                        "type": "string",
+                                        "description": "InvoiceNumber"
+                                    },
+                                    "OrgAccountBalance": {
+                                        "type": "string",
+                                        "description": "OrgAccountBalance"
+                                    },
+                                    "ThirdPartyTransID": {
+                                        "type": "string",
+                                        "description": "ThirdPartyTransID"
+                                    },
+                                    "MSISDN": {
+                                        "type": "string",
+                                        "description": "MSISDN"
+                                    },
+                                    "FirstName": {
+                                        "type": "string",
+                                        "description": "FirstName"
+                                    },
+                                    "MiddleName": {
+                                        "type": "string",
+                                        "description": "MiddleName"
+                                    },
+                                    "LastName": {
+                                        "type": "string",
+                                        "description": "LastName"
+                                    },
+                                    "trx_msg": {
+                                        "type": "string",
+                                        "description": "Trx msg"
+                                    },
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "used_status": {
+                                        "type": "string",
+                                        "description": "Used status"
+                                    },
+                                    "filter_date": {
+                                        "type": "string",
+                                        "description": "Filter date"
+                                    },
+                                    "flag_state": {
+                                        "type": "string",
+                                        "description": "Flag state"
+                                    },
+                                    "reconciled": {
+                                        "type": "string",
+                                        "description": "Reconciled"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Reconciliations",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "trx_id": {
+                                        "type": "string",
+                                        "description": "Trx id"
+                                    },
+                                    "trx_date": {
+                                        "type": "string",
+                                        "description": "Trx date"
+                                    },
+                                    "trx_month_year": {
+                                        "type": "string",
+                                        "description": "Trx month year"
+                                    },
+                                    "trx_remark": {
+                                        "type": "string",
+                                        "description": "Trx remark"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "trx_type": {
+                                        "type": "string",
+                                        "description": "Trx type"
+                                    },
+                                    "business_id": {
+                                        "type": "string",
+                                        "description": "Business id"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "admin_id": {
+                                        "type": "string",
+                                        "description": "Admin id"
+                                    },
+                                    "TransactionType": {
+                                        "type": "string",
+                                        "description": "TransactionType"
+                                    },
+                                    "BusinessShortCode": {
+                                        "type": "string",
+                                        "description": "BusinessShortCode"
+                                    },
+                                    "BillRefNumber": {
+                                        "type": "string",
+                                        "description": "BillRefNumber"
+                                    },
+                                    "InvoiceNumber": {
+                                        "type": "string",
+                                        "description": "InvoiceNumber"
+                                    },
+                                    "OrgAccountBalance": {
+                                        "type": "string",
+                                        "description": "OrgAccountBalance"
+                                    },
+                                    "ThirdPartyTransID": {
+                                        "type": "string",
+                                        "description": "ThirdPartyTransID"
+                                    },
+                                    "MSISDN": {
+                                        "type": "string",
+                                        "description": "MSISDN"
+                                    },
+                                    "FirstName": {
+                                        "type": "string",
+                                        "description": "FirstName"
+                                    },
+                                    "MiddleName": {
+                                        "type": "string",
+                                        "description": "MiddleName"
+                                    },
+                                    "LastName": {
+                                        "type": "string",
+                                        "description": "LastName"
+                                    },
+                                    "trx_msg": {
+                                        "type": "string",
+                                        "description": "Trx msg"
+                                    },
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "used_status": {
+                                        "type": "string",
+                                        "description": "Used status"
+                                    },
+                                    "filter_date": {
+                                        "type": "string",
+                                        "description": "Filter date"
+                                    },
+                                    "flag_state": {
+                                        "type": "string",
+                                        "description": "Flag state"
+                                    },
+                                    "reconciled": {
+                                        "type": "string",
+                                        "description": "Reconciled"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Reconciliations id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/reconciliations/reconciliations": {
+            "get": {
+                "summary": "Get Reconciliations",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Reconciliations",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "trx_id": {
+                                        "type": "string",
+                                        "description": "Trx id"
+                                    },
+                                    "trx_date": {
+                                        "type": "string",
+                                        "description": "Trx date"
+                                    },
+                                    "trx_month_year": {
+                                        "type": "string",
+                                        "description": "Trx month year"
+                                    },
+                                    "trx_remark": {
+                                        "type": "string",
+                                        "description": "Trx remark"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "trx_type": {
+                                        "type": "string",
+                                        "description": "Trx type"
+                                    },
+                                    "business_id": {
+                                        "type": "string",
+                                        "description": "Business id"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "admin_id": {
+                                        "type": "string",
+                                        "description": "Admin id"
+                                    },
+                                    "TransactionType": {
+                                        "type": "string",
+                                        "description": "TransactionType"
+                                    },
+                                    "BusinessShortCode": {
+                                        "type": "string",
+                                        "description": "BusinessShortCode"
+                                    },
+                                    "BillRefNumber": {
+                                        "type": "string",
+                                        "description": "BillRefNumber"
+                                    },
+                                    "InvoiceNumber": {
+                                        "type": "string",
+                                        "description": "InvoiceNumber"
+                                    },
+                                    "OrgAccountBalance": {
+                                        "type": "string",
+                                        "description": "OrgAccountBalance"
+                                    },
+                                    "ThirdPartyTransID": {
+                                        "type": "string",
+                                        "description": "ThirdPartyTransID"
+                                    },
+                                    "MSISDN": {
+                                        "type": "string",
+                                        "description": "MSISDN"
+                                    },
+                                    "FirstName": {
+                                        "type": "string",
+                                        "description": "FirstName"
+                                    },
+                                    "MiddleName": {
+                                        "type": "string",
+                                        "description": "MiddleName"
+                                    },
+                                    "LastName": {
+                                        "type": "string",
+                                        "description": "LastName"
+                                    },
+                                    "trx_msg": {
+                                        "type": "string",
+                                        "description": "Trx msg"
+                                    },
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "used_status": {
+                                        "type": "string",
+                                        "description": "Used status"
+                                    },
+                                    "filter_date": {
+                                        "type": "string",
+                                        "description": "Filter date"
+                                    },
+                                    "flag_state": {
+                                        "type": "string",
+                                        "description": "Flag state"
+                                    },
+                                    "reconciled": {
+                                        "type": "string",
+                                        "description": "Reconciled"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Reconciliations",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "trx_id": {
+                                        "type": "string",
+                                        "description": "Trx id"
+                                    },
+                                    "trx_date": {
+                                        "type": "string",
+                                        "description": "Trx date"
+                                    },
+                                    "trx_month_year": {
+                                        "type": "string",
+                                        "description": "Trx month year"
+                                    },
+                                    "trx_remark": {
+                                        "type": "string",
+                                        "description": "Trx remark"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "trx_type": {
+                                        "type": "string",
+                                        "description": "Trx type"
+                                    },
+                                    "business_id": {
+                                        "type": "string",
+                                        "description": "Business id"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "admin_id": {
+                                        "type": "string",
+                                        "description": "Admin id"
+                                    },
+                                    "TransactionType": {
+                                        "type": "string",
+                                        "description": "TransactionType"
+                                    },
+                                    "BusinessShortCode": {
+                                        "type": "string",
+                                        "description": "BusinessShortCode"
+                                    },
+                                    "BillRefNumber": {
+                                        "type": "string",
+                                        "description": "BillRefNumber"
+                                    },
+                                    "InvoiceNumber": {
+                                        "type": "string",
+                                        "description": "InvoiceNumber"
+                                    },
+                                    "OrgAccountBalance": {
+                                        "type": "string",
+                                        "description": "OrgAccountBalance"
+                                    },
+                                    "ThirdPartyTransID": {
+                                        "type": "string",
+                                        "description": "ThirdPartyTransID"
+                                    },
+                                    "MSISDN": {
+                                        "type": "string",
+                                        "description": "MSISDN"
+                                    },
+                                    "FirstName": {
+                                        "type": "string",
+                                        "description": "FirstName"
+                                    },
+                                    "MiddleName": {
+                                        "type": "string",
+                                        "description": "MiddleName"
+                                    },
+                                    "LastName": {
+                                        "type": "string",
+                                        "description": "LastName"
+                                    },
+                                    "trx_msg": {
+                                        "type": "string",
+                                        "description": "Trx msg"
+                                    },
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "used_status": {
+                                        "type": "string",
+                                        "description": "Used status"
+                                    },
+                                    "filter_date": {
+                                        "type": "string",
+                                        "description": "Filter date"
+                                    },
+                                    "flag_state": {
+                                        "type": "string",
+                                        "description": "Flag state"
+                                    },
+                                    "reconciled": {
+                                        "type": "string",
+                                        "description": "Reconciled"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Reconciliations id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

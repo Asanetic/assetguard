@@ -1,0 +1,361 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Inventory List API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/inventorylist/inventorylist": {
+            "get": {
+                "summary": "Get Inventory List",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Inventory List",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "item_no": {
+                                        "type": "string",
+                                        "description": "Item no"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "buying_price": {
+                                        "type": "string",
+                                        "description": "Buying price"
+                                    },
+                                    "selling_price": {
+                                        "type": "string",
+                                        "description": "Selling price"
+                                    },
+                                    "stock_date": {
+                                        "type": "string",
+                                        "description": "Stock date"
+                                    },
+                                    "supplier": {
+                                        "type": "string",
+                                        "description": "Supplier"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "recorded_by": {
+                                        "type": "string",
+                                        "description": "Recorded by"
+                                    },
+                                    "stock_type": {
+                                        "type": "string",
+                                        "description": "Stock type"
+                                    },
+                                    "invoice_edit_key": {
+                                        "type": "string",
+                                        "description": "Invoice edit key"
+                                    },
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "stock_level_alert": {
+                                        "type": "string",
+                                        "description": "Stock level alert"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Inventory List",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "item_no": {
+                                        "type": "string",
+                                        "description": "Item no"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "buying_price": {
+                                        "type": "string",
+                                        "description": "Buying price"
+                                    },
+                                    "selling_price": {
+                                        "type": "string",
+                                        "description": "Selling price"
+                                    },
+                                    "stock_date": {
+                                        "type": "string",
+                                        "description": "Stock date"
+                                    },
+                                    "supplier": {
+                                        "type": "string",
+                                        "description": "Supplier"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "recorded_by": {
+                                        "type": "string",
+                                        "description": "Recorded by"
+                                    },
+                                    "stock_type": {
+                                        "type": "string",
+                                        "description": "Stock type"
+                                    },
+                                    "invoice_edit_key": {
+                                        "type": "string",
+                                        "description": "Invoice edit key"
+                                    },
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "stock_level_alert": {
+                                        "type": "string",
+                                        "description": "Stock level alert"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Inventory List id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/inventorylist/inventorylist": {
+            "get": {
+                "summary": "Get Inventory List",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Inventory List",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "item_no": {
+                                        "type": "string",
+                                        "description": "Item no"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "buying_price": {
+                                        "type": "string",
+                                        "description": "Buying price"
+                                    },
+                                    "selling_price": {
+                                        "type": "string",
+                                        "description": "Selling price"
+                                    },
+                                    "stock_date": {
+                                        "type": "string",
+                                        "description": "Stock date"
+                                    },
+                                    "supplier": {
+                                        "type": "string",
+                                        "description": "Supplier"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "recorded_by": {
+                                        "type": "string",
+                                        "description": "Recorded by"
+                                    },
+                                    "stock_type": {
+                                        "type": "string",
+                                        "description": "Stock type"
+                                    },
+                                    "invoice_edit_key": {
+                                        "type": "string",
+                                        "description": "Invoice edit key"
+                                    },
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "stock_level_alert": {
+                                        "type": "string",
+                                        "description": "Stock level alert"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Inventory List",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "item_no": {
+                                        "type": "string",
+                                        "description": "Item no"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "buying_price": {
+                                        "type": "string",
+                                        "description": "Buying price"
+                                    },
+                                    "selling_price": {
+                                        "type": "string",
+                                        "description": "Selling price"
+                                    },
+                                    "stock_date": {
+                                        "type": "string",
+                                        "description": "Stock date"
+                                    },
+                                    "supplier": {
+                                        "type": "string",
+                                        "description": "Supplier"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "recorded_by": {
+                                        "type": "string",
+                                        "description": "Recorded by"
+                                    },
+                                    "stock_type": {
+                                        "type": "string",
+                                        "description": "Stock type"
+                                    },
+                                    "invoice_edit_key": {
+                                        "type": "string",
+                                        "description": "Invoice edit key"
+                                    },
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "stock_level_alert": {
+                                        "type": "string",
+                                        "description": "Stock level alert"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Inventory List id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

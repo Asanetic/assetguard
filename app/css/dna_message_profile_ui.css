@@ -1,0 +1,147 @@
+.elforge_message_profile_v1_workspace{
+    background:#FBFBFB;
+    padding:30px;
+    min-height:100vh;
+    font-family:system-ui;
+    }
+    
+    
+    /* HEADER */
+    
+    .elforge_message_profile_v1_header{
+    display:flex;
+    align-items:center;
+    gap:20px;
+    background:white;
+    border-radius:14px;
+    padding:20px;
+    border:1px solid #e8ecf2;
+    box-shadow:0 4px 12px rgba(0,0,0,.04);
+    margin-bottom:20px;
+    }
+    
+    .elforge_message_profile_v1_avatar{
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    background:#28C4FB;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:24px;
+    font-weight:600;
+    color:#222;
+    }
+    
+    .elforge_message_profile_v1_name{
+    font-size:20px;
+    font-weight:600;
+    color:#1f2937;
+    }
+    
+    .elforge_message_profile_v1_meta{
+
+    margin-top:3px;
+    }
+    
+    
+    /* CONTENT LAYOUT */
+    
+    .elforge_message_profile_v1_body{
+    display:grid;
+    grid-template-columns: 2fr 1fr;
+    gap:20px;
+    }
+    
+    
+    /* tablet */
+    
+    @media (max-width: 992px){
+    
+    .elforge_message_profile_v1_body{
+    grid-template-columns:1fr;
+    }
+    
+    }
+    
+    
+    /* mobile */
+    
+    @media (max-width:576px){
+    
+    .elforge_message_profile_v1_workspace{
+    padding:15px;
+    }
+    
+    .elforge_message_profile_v1_header{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
+    }
+    
+    .elforge_message_profile_v1_avatar{
+    width:55px;
+    height:55px;
+    font-size:20px;
+    }
+    
+    }
+    
+    
+    /* MAIN PANEL */
+    
+    .elforge_message_profile_v1_main_panel{
+    background:white;
+    border-radius:14px;
+    padding:20px;
+    border:1px solid #e8ecf2;
+    box-shadow:0 6px 16px rgba(0,0,0,.04);
+    min-width:0;
+    }
+    
+    .elforge_message_profile_v1_subject{
+    font-size:16px;
+    font-weight:600;
+    margin-bottom:10px;
+    }
+    
+    .elforge_message_profile_v1_recipient{
+    font-size:13px;
+    color:#6b7280;
+    margin-bottom:20px;
+    }
+    
+    .elforge_message_profile_v1_message{
+    font-size:14px;
+    line-height:1.6;
+    color:#374151;
+    }
+    
+    
+    /* SIDEBAR */
+    
+    .elforge_message_profile_v1_sidebar{
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+    }
+    
+    .elforge_message_profile_v1_info_card{
+    background:white;
+    border-radius:12px;
+    border:1px solid #e8ecf2;
+    padding:16px;
+    box-shadow:0 4px 10px rgba(0,0,0,.03);
+    }
+    
+    .elforge_message_profile_v1_info_title{
+    font-size:13px;
+    color:#6b7280;
+    margin-bottom:4px;
+    }
+    
+    .elforge_message_profile_v1_info_value{
+    font-size:14px;
+    font-weight:500;
+    color:#1f2937;
+    }

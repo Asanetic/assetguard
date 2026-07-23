@@ -1,0 +1,201 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Deals API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/deals/deals": {
+            "get": {
+                "summary": "Get Deals",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Deals",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "deal_title": {
+                                        "type": "string",
+                                        "description": "Deal title"
+                                    },
+                                    "deal_description": {
+                                        "type": "string",
+                                        "description": "Deal description"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "deal_source": {
+                                        "type": "string",
+                                        "description": "Deal source"
+                                    },
+                                    "deal_value": {
+                                        "type": "string",
+                                        "description": "Deal value"
+                                    },
+                                    "expected_close_date": {
+                                        "type": "string",
+                                        "description": "Expected close date"
+                                    },
+                                    "pipeline_stage": {
+                                        "type": "string",
+                                        "description": "Pipeline stage"
+                                    },
+                                    "deal_stage": {
+                                        "type": "string",
+                                        "description": "Deal stage"
+                                    },
+                                    "deal_status": {
+                                        "type": "string",
+                                        "description": "Deal status"
+                                    },
+                                    "assigned_sales_rep": {
+                                        "type": "string",
+                                        "description": "Assigned sales rep"
+                                    },
+                                    "priority_level": {
+                                        "type": "string",
+                                        "description": "Priority level"
+                                    },
+                                    "deal_probability": {
+                                        "type": "string",
+                                        "description": "Deal probability"
+                                    },
+                                    "next_follow_up_date": {
+                                        "type": "string",
+                                        "description": "Next follow up date"
+                                    },
+                                    "deal_notes": {
+                                        "type": "string",
+                                        "description": "Deal notes"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Deals",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "deal_title": {
+                                        "type": "string",
+                                        "description": "Deal title"
+                                    },
+                                    "deal_description": {
+                                        "type": "string",
+                                        "description": "Deal description"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "deal_source": {
+                                        "type": "string",
+                                        "description": "Deal source"
+                                    },
+                                    "deal_value": {
+                                        "type": "string",
+                                        "description": "Deal value"
+                                    },
+                                    "expected_close_date": {
+                                        "type": "string",
+                                        "description": "Expected close date"
+                                    },
+                                    "pipeline_stage": {
+                                        "type": "string",
+                                        "description": "Pipeline stage"
+                                    },
+                                    "deal_stage": {
+                                        "type": "string",
+                                        "description": "Deal stage"
+                                    },
+                                    "deal_status": {
+                                        "type": "string",
+                                        "description": "Deal status"
+                                    },
+                                    "assigned_sales_rep": {
+                                        "type": "string",
+                                        "description": "Assigned sales rep"
+                                    },
+                                    "priority_level": {
+                                        "type": "string",
+                                        "description": "Priority level"
+                                    },
+                                    "deal_probability": {
+                                        "type": "string",
+                                        "description": "Deal probability"
+                                    },
+                                    "next_follow_up_date": {
+                                        "type": "string",
+                                        "description": "Next follow up date"
+                                    },
+                                    "deal_notes": {
+                                        "type": "string",
+                                        "description": "Deal notes"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Deals id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

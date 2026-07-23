@@ -1,0 +1,297 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Payroll List API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/payrolllist/payrolllist": {
+            "get": {
+                "summary": "Get Payroll List",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Payroll List",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "payroll_month_year": {
+                                        "type": "string",
+                                        "description": "Payroll month year"
+                                    },
+                                    "payroll_date": {
+                                        "type": "string",
+                                        "description": "Payroll date"
+                                    },
+                                    "staff_id": {
+                                        "type": "string",
+                                        "description": "Staff id"
+                                    },
+                                    "job_group": {
+                                        "type": "string",
+                                        "description": "Job group"
+                                    },
+                                    "basicsalary": {
+                                        "type": "string",
+                                        "description": "Basicsalary"
+                                    },
+                                    "bonus_and_commissions": {
+                                        "type": "string",
+                                        "description": "Bonus and commissions"
+                                    },
+                                    "deductions": {
+                                        "type": "string",
+                                        "description": "Deductions"
+                                    },
+                                    "net_salary": {
+                                        "type": "string",
+                                        "description": "Net salary"
+                                    },
+                                    "payroll_number": {
+                                        "type": "string",
+                                        "description": "Payroll number"
+                                    },
+                                    "payroll_notes": {
+                                        "type": "string",
+                                        "description": "Payroll notes"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Payroll List",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "payroll_month_year": {
+                                        "type": "string",
+                                        "description": "Payroll month year"
+                                    },
+                                    "payroll_date": {
+                                        "type": "string",
+                                        "description": "Payroll date"
+                                    },
+                                    "staff_id": {
+                                        "type": "string",
+                                        "description": "Staff id"
+                                    },
+                                    "job_group": {
+                                        "type": "string",
+                                        "description": "Job group"
+                                    },
+                                    "basicsalary": {
+                                        "type": "string",
+                                        "description": "Basicsalary"
+                                    },
+                                    "bonus_and_commissions": {
+                                        "type": "string",
+                                        "description": "Bonus and commissions"
+                                    },
+                                    "deductions": {
+                                        "type": "string",
+                                        "description": "Deductions"
+                                    },
+                                    "net_salary": {
+                                        "type": "string",
+                                        "description": "Net salary"
+                                    },
+                                    "payroll_number": {
+                                        "type": "string",
+                                        "description": "Payroll number"
+                                    },
+                                    "payroll_notes": {
+                                        "type": "string",
+                                        "description": "Payroll notes"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Payroll List id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/payrolllist/payrolllist": {
+            "get": {
+                "summary": "Get Payroll List",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Payroll List",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "payroll_month_year": {
+                                        "type": "string",
+                                        "description": "Payroll month year"
+                                    },
+                                    "payroll_date": {
+                                        "type": "string",
+                                        "description": "Payroll date"
+                                    },
+                                    "staff_id": {
+                                        "type": "string",
+                                        "description": "Staff id"
+                                    },
+                                    "job_group": {
+                                        "type": "string",
+                                        "description": "Job group"
+                                    },
+                                    "basicsalary": {
+                                        "type": "string",
+                                        "description": "Basicsalary"
+                                    },
+                                    "bonus_and_commissions": {
+                                        "type": "string",
+                                        "description": "Bonus and commissions"
+                                    },
+                                    "deductions": {
+                                        "type": "string",
+                                        "description": "Deductions"
+                                    },
+                                    "net_salary": {
+                                        "type": "string",
+                                        "description": "Net salary"
+                                    },
+                                    "payroll_number": {
+                                        "type": "string",
+                                        "description": "Payroll number"
+                                    },
+                                    "payroll_notes": {
+                                        "type": "string",
+                                        "description": "Payroll notes"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Payroll List",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "payroll_month_year": {
+                                        "type": "string",
+                                        "description": "Payroll month year"
+                                    },
+                                    "payroll_date": {
+                                        "type": "string",
+                                        "description": "Payroll date"
+                                    },
+                                    "staff_id": {
+                                        "type": "string",
+                                        "description": "Staff id"
+                                    },
+                                    "job_group": {
+                                        "type": "string",
+                                        "description": "Job group"
+                                    },
+                                    "basicsalary": {
+                                        "type": "string",
+                                        "description": "Basicsalary"
+                                    },
+                                    "bonus_and_commissions": {
+                                        "type": "string",
+                                        "description": "Bonus and commissions"
+                                    },
+                                    "deductions": {
+                                        "type": "string",
+                                        "description": "Deductions"
+                                    },
+                                    "net_salary": {
+                                        "type": "string",
+                                        "description": "Net salary"
+                                    },
+                                    "payroll_number": {
+                                        "type": "string",
+                                        "description": "Payroll number"
+                                    },
+                                    "payroll_notes": {
+                                        "type": "string",
+                                        "description": "Payroll notes"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Payroll List id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

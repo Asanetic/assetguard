@@ -1,0 +1,145 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Device Pings API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/assetguard/devicepings/devicepings": {
+            "get": {
+                "summary": "Get Device Pings",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Device Pings",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "device_id": {
+                                        "type": "string",
+                                        "description": "Device id"
+                                    },
+                                    "ping_time": {
+                                        "type": "string",
+                                        "description": "Ping time"
+                                    },
+                                    "signal_strength": {
+                                        "type": "string",
+                                        "description": "Signal strength"
+                                    },
+                                    "battery_level": {
+                                        "type": "string",
+                                        "description": "Battery level"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Device Pings",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "device_id": {
+                                        "type": "string",
+                                        "description": "Device id"
+                                    },
+                                    "ping_time": {
+                                        "type": "string",
+                                        "description": "Ping time"
+                                    },
+                                    "signal_strength": {
+                                        "type": "string",
+                                        "description": "Signal strength"
+                                    },
+                                    "battery_level": {
+                                        "type": "string",
+                                        "description": "Battery level"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Device Pings id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

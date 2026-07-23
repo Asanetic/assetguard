@@ -1,0 +1,153 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Services API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/services/services": {
+            "get": {
+                "summary": "Get Services",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Services",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "service_code": {
+                                        "type": "string",
+                                        "description": "Service code"
+                                    },
+                                    "service_name": {
+                                        "type": "string",
+                                        "description": "Service name"
+                                    },
+                                    "category": {
+                                        "type": "string",
+                                        "description": "Category"
+                                    },
+                                    "price_range": {
+                                        "type": "string",
+                                        "description": "Price range"
+                                    },
+                                    "service_price": {
+                                        "type": "string",
+                                        "description": "Service price"
+                                    },
+                                    "service_description": {
+                                        "type": "string",
+                                        "description": "Service description"
+                                    },
+                                    "billing_type": {
+                                        "type": "string",
+                                        "description": "Billing type"
+                                    },
+                                    "service_status": {
+                                        "type": "string",
+                                        "description": "Service status"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Services",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "service_code": {
+                                        "type": "string",
+                                        "description": "Service code"
+                                    },
+                                    "service_name": {
+                                        "type": "string",
+                                        "description": "Service name"
+                                    },
+                                    "category": {
+                                        "type": "string",
+                                        "description": "Category"
+                                    },
+                                    "price_range": {
+                                        "type": "string",
+                                        "description": "Price range"
+                                    },
+                                    "service_price": {
+                                        "type": "string",
+                                        "description": "Service price"
+                                    },
+                                    "service_description": {
+                                        "type": "string",
+                                        "description": "Service description"
+                                    },
+                                    "billing_type": {
+                                        "type": "string",
+                                        "description": "Billing type"
+                                    },
+                                    "service_status": {
+                                        "type": "string",
+                                        "description": "Service status"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Services id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

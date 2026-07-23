@@ -1,0 +1,161 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Activities API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/activities/activities": {
+            "get": {
+                "summary": "Get Activities",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Activities",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "deal_id": {
+                                        "type": "string",
+                                        "description": "Deal id"
+                                    },
+                                    "activity_type": {
+                                        "type": "string",
+                                        "description": "Activity type"
+                                    },
+                                    "activity_title": {
+                                        "type": "string",
+                                        "description": "Activity title"
+                                    },
+                                    "activity_description": {
+                                        "type": "string",
+                                        "description": "Activity description"
+                                    },
+                                    "activity_status": {
+                                        "type": "string",
+                                        "description": "Activity status"
+                                    },
+                                    "performed_by": {
+                                        "type": "string",
+                                        "description": "Performed by"
+                                    },
+                                    "activity_date": {
+                                        "type": "string",
+                                        "description": "Activity date"
+                                    },
+                                    "next_action_date": {
+                                        "type": "string",
+                                        "description": "Next action date"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Activities",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "deal_id": {
+                                        "type": "string",
+                                        "description": "Deal id"
+                                    },
+                                    "activity_type": {
+                                        "type": "string",
+                                        "description": "Activity type"
+                                    },
+                                    "activity_title": {
+                                        "type": "string",
+                                        "description": "Activity title"
+                                    },
+                                    "activity_description": {
+                                        "type": "string",
+                                        "description": "Activity description"
+                                    },
+                                    "activity_status": {
+                                        "type": "string",
+                                        "description": "Activity status"
+                                    },
+                                    "performed_by": {
+                                        "type": "string",
+                                        "description": "Performed by"
+                                    },
+                                    "activity_date": {
+                                        "type": "string",
+                                        "description": "Activity date"
+                                    },
+                                    "next_action_date": {
+                                        "type": "string",
+                                        "description": "Next action date"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Activities id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

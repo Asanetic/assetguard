@@ -1,0 +1,233 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Entitlements API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/grupet/entitlements/entitlements": {
+            "get": {
+                "summary": "Get Entitlements",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Entitlements",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "order_id": {
+                                        "type": "string",
+                                        "description": "Order id"
+                                    },
+                                    "access_status": {
+                                        "type": "string",
+                                        "description": "Access status"
+                                    },
+                                    "granted_at": {
+                                        "type": "string",
+                                        "description": "Granted at"
+                                    },
+                                    "expires_at": {
+                                        "type": "string",
+                                        "description": "Expires at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Entitlements",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "order_id": {
+                                        "type": "string",
+                                        "description": "Order id"
+                                    },
+                                    "access_status": {
+                                        "type": "string",
+                                        "description": "Access status"
+                                    },
+                                    "granted_at": {
+                                        "type": "string",
+                                        "description": "Granted at"
+                                    },
+                                    "expires_at": {
+                                        "type": "string",
+                                        "description": "Expires at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Entitlements id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomnovabill/entitlements/entitlements": {
+            "get": {
+                "summary": "Get Entitlements",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Entitlements",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "order_id": {
+                                        "type": "string",
+                                        "description": "Order id"
+                                    },
+                                    "access_status": {
+                                        "type": "string",
+                                        "description": "Access status"
+                                    },
+                                    "granted_at": {
+                                        "type": "string",
+                                        "description": "Granted at"
+                                    },
+                                    "expires_at": {
+                                        "type": "string",
+                                        "description": "Expires at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Entitlements",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "order_id": {
+                                        "type": "string",
+                                        "description": "Order id"
+                                    },
+                                    "access_status": {
+                                        "type": "string",
+                                        "description": "Access status"
+                                    },
+                                    "granted_at": {
+                                        "type": "string",
+                                        "description": "Granted at"
+                                    },
+                                    "expires_at": {
+                                        "type": "string",
+                                        "description": "Expires at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Entitlements id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

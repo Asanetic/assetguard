@@ -1,0 +1,58 @@
+{
+    "smartapi": {
+        "base": "/api/supercrm/smartapi"
+    },
+    "dashboard": {
+        "admin": "/api/supercrm/dashboard/admin"
+    },
+    "assetalarms": {
+        "base": "/api/assetguard/assetalarms/assetalarms",
+        "delete": "/api/assetguard/assetalarms/delete",
+        "import": "/api/assetguard/assetalarms/assetalarms/import"
+    },
+    "devicelist": {
+        "base": "/api/assetguard/devicelist/devicelist",
+        "delete": "/api/assetguard/devicelist/delete",
+        "import": "/api/assetguard/devicelist/devicelist/import"
+    },
+    "devicepings": {
+        "base": "/api/assetguard/devicepings/devicepings",
+        "delete": "/api/assetguard/devicepings/delete",
+        "import": "/api/assetguard/devicepings/devicepings/import"
+    },
+    "gpslogs": {
+        "base": "/api/assetguard/gpslogs/gpslogs",
+        "delete": "/api/assetguard/gpslogs/delete",
+        "import": "/api/assetguard/gpslogs/gpslogs/import"
+    },
+    "pagemanifest": {
+        "base": "/api/assetguard/pagemanifest/pagemanifest",
+        "delete": "/api/assetguard/pagemanifest/delete",
+        "import": "/api/assetguard/pagemanifest/pagemanifest/import"
+    },
+    "sites": {
+        "base": "/api/assetguard/sites/sites",
+        "delete": "/api/assetguard/sites/delete",
+        "import": "/api/assetguard/sites/sites/import"
+    },
+    "systemrolebundles": {
+        "base": "/api/assetguard/systemrolebundles/systemrolebundles",
+        "delete": "/api/assetguard/systemrolebundles/delete",
+        "import": "/api/assetguard/systemrolebundles/systemrolebundles/import"
+    },
+    "systemusers": {
+        "base": "/api/assetguard/systemusers/systemusers",
+        "delete": "/api/assetguard/systemusers/delete",
+        "import": "/api/assetguard/systemusers/systemusers/import"
+    },
+    "userbundlerolefunctions": {
+        "base": "/api/assetguard/userbundlerolefunctions/userbundlerolefunctions",
+        "delete": "/api/assetguard/userbundlerolefunctions/delete",
+        "import": "/api/assetguard/userbundlerolefunctions/userbundlerolefunctions/import"
+    },
+    "usermanifest": {
+        "base": "/api/assetguard/usermanifest/usermanifest",
+        "delete": "/api/assetguard/usermanifest/delete",
+        "import": "/api/assetguard/usermanifest/usermanifest/import"
+    }
+}

@@ -1,0 +1,233 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Order Items API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/grupet/orderitems/orderitems": {
+            "get": {
+                "summary": "Get Order Items",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Order Items",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "order_id": {
+                                        "type": "string",
+                                        "description": "Order id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "pricing_id": {
+                                        "type": "string",
+                                        "description": "Pricing id"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "unit_price": {
+                                        "type": "string",
+                                        "description": "Unit price"
+                                    },
+                                    "total_price": {
+                                        "type": "string",
+                                        "description": "Total price"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Order Items",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "order_id": {
+                                        "type": "string",
+                                        "description": "Order id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "pricing_id": {
+                                        "type": "string",
+                                        "description": "Pricing id"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "unit_price": {
+                                        "type": "string",
+                                        "description": "Unit price"
+                                    },
+                                    "total_price": {
+                                        "type": "string",
+                                        "description": "Total price"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Order Items id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomnovabill/orderitems/orderitems": {
+            "get": {
+                "summary": "Get Order Items",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Order Items",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "order_id": {
+                                        "type": "string",
+                                        "description": "Order id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "pricing_id": {
+                                        "type": "string",
+                                        "description": "Pricing id"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "unit_price": {
+                                        "type": "string",
+                                        "description": "Unit price"
+                                    },
+                                    "total_price": {
+                                        "type": "string",
+                                        "description": "Total price"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Order Items",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "order_id": {
+                                        "type": "string",
+                                        "description": "Order id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "pricing_id": {
+                                        "type": "string",
+                                        "description": "Pricing id"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "unit_price": {
+                                        "type": "string",
+                                        "description": "Unit price"
+                                    },
+                                    "total_price": {
+                                        "type": "string",
+                                        "description": "Total price"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Order Items id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

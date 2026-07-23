@@ -1,0 +1,281 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Usage Events API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/grupet/usageevents/usageevents": {
+            "get": {
+                "summary": "Get Usage Events",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Usage Events",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "meter_id": {
+                                        "type": "string",
+                                        "description": "Meter id"
+                                    },
+                                    "units_used": {
+                                        "type": "string",
+                                        "description": "Units used"
+                                    },
+                                    "unit_price_snapshot": {
+                                        "type": "string",
+                                        "description": "Unit price snapshot"
+                                    },
+                                    "total_cost": {
+                                        "type": "string",
+                                        "description": "Total cost"
+                                    },
+                                    "billing_status": {
+                                        "type": "string",
+                                        "description": "Billing status"
+                                    },
+                                    "reference_id": {
+                                        "type": "string",
+                                        "description": "Reference id"
+                                    },
+                                    "occurred_at": {
+                                        "type": "string",
+                                        "description": "Occurred at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Usage Events",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "meter_id": {
+                                        "type": "string",
+                                        "description": "Meter id"
+                                    },
+                                    "units_used": {
+                                        "type": "string",
+                                        "description": "Units used"
+                                    },
+                                    "unit_price_snapshot": {
+                                        "type": "string",
+                                        "description": "Unit price snapshot"
+                                    },
+                                    "total_cost": {
+                                        "type": "string",
+                                        "description": "Total cost"
+                                    },
+                                    "billing_status": {
+                                        "type": "string",
+                                        "description": "Billing status"
+                                    },
+                                    "reference_id": {
+                                        "type": "string",
+                                        "description": "Reference id"
+                                    },
+                                    "occurred_at": {
+                                        "type": "string",
+                                        "description": "Occurred at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Usage Events id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomnovabill/usageevents/usageevents": {
+            "get": {
+                "summary": "Get Usage Events",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Usage Events",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "meter_id": {
+                                        "type": "string",
+                                        "description": "Meter id"
+                                    },
+                                    "units_used": {
+                                        "type": "string",
+                                        "description": "Units used"
+                                    },
+                                    "unit_price_snapshot": {
+                                        "type": "string",
+                                        "description": "Unit price snapshot"
+                                    },
+                                    "total_cost": {
+                                        "type": "string",
+                                        "description": "Total cost"
+                                    },
+                                    "billing_status": {
+                                        "type": "string",
+                                        "description": "Billing status"
+                                    },
+                                    "reference_id": {
+                                        "type": "string",
+                                        "description": "Reference id"
+                                    },
+                                    "occurred_at": {
+                                        "type": "string",
+                                        "description": "Occurred at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Usage Events",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "meter_id": {
+                                        "type": "string",
+                                        "description": "Meter id"
+                                    },
+                                    "units_used": {
+                                        "type": "string",
+                                        "description": "Units used"
+                                    },
+                                    "unit_price_snapshot": {
+                                        "type": "string",
+                                        "description": "Unit price snapshot"
+                                    },
+                                    "total_cost": {
+                                        "type": "string",
+                                        "description": "Total cost"
+                                    },
+                                    "billing_status": {
+                                        "type": "string",
+                                        "description": "Billing status"
+                                    },
+                                    "reference_id": {
+                                        "type": "string",
+                                        "description": "Reference id"
+                                    },
+                                    "occurred_at": {
+                                        "type": "string",
+                                        "description": "Occurred at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Usage Events id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

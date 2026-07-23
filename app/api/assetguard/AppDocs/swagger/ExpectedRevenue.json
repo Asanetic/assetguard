@@ -1,0 +1,217 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Expected Revenue API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/expectedrevenue/expectedrevenue": {
+            "get": {
+                "summary": "Get Expected Revenue",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Expected Revenue",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "revenue_month": {
+                                        "type": "string",
+                                        "description": "Revenue month"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "deal_id": {
+                                        "type": "string",
+                                        "description": "Deal id"
+                                    },
+                                    "expected_amount": {
+                                        "type": "string",
+                                        "description": "Expected amount"
+                                    },
+                                    "currency_code": {
+                                        "type": "string",
+                                        "description": "Currency code"
+                                    },
+                                    "payment_status": {
+                                        "type": "string",
+                                        "description": "Payment status"
+                                    },
+                                    "payment_ref_no": {
+                                        "type": "string",
+                                        "description": "Payment ref no"
+                                    },
+                                    "expected_close_date": {
+                                        "type": "string",
+                                        "description": "Expected close date"
+                                    },
+                                    "probability_percent": {
+                                        "type": "string",
+                                        "description": "Probability percent"
+                                    },
+                                    "revenue_source_type": {
+                                        "type": "string",
+                                        "description": "Revenue source type"
+                                    },
+                                    "revenue_title": {
+                                        "type": "string",
+                                        "description": "Revenue title"
+                                    },
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "lead_id": {
+                                        "type": "string",
+                                        "description": "Lead id"
+                                    },
+                                    "revenue_status": {
+                                        "type": "string",
+                                        "description": "Revenue status"
+                                    },
+                                    "revenue_description": {
+                                        "type": "string",
+                                        "description": "Revenue description"
+                                    },
+                                    "assigned_to": {
+                                        "type": "string",
+                                        "description": "Assigned to"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Expected Revenue",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "revenue_month": {
+                                        "type": "string",
+                                        "description": "Revenue month"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "deal_id": {
+                                        "type": "string",
+                                        "description": "Deal id"
+                                    },
+                                    "expected_amount": {
+                                        "type": "string",
+                                        "description": "Expected amount"
+                                    },
+                                    "currency_code": {
+                                        "type": "string",
+                                        "description": "Currency code"
+                                    },
+                                    "payment_status": {
+                                        "type": "string",
+                                        "description": "Payment status"
+                                    },
+                                    "payment_ref_no": {
+                                        "type": "string",
+                                        "description": "Payment ref no"
+                                    },
+                                    "expected_close_date": {
+                                        "type": "string",
+                                        "description": "Expected close date"
+                                    },
+                                    "probability_percent": {
+                                        "type": "string",
+                                        "description": "Probability percent"
+                                    },
+                                    "revenue_source_type": {
+                                        "type": "string",
+                                        "description": "Revenue source type"
+                                    },
+                                    "revenue_title": {
+                                        "type": "string",
+                                        "description": "Revenue title"
+                                    },
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "lead_id": {
+                                        "type": "string",
+                                        "description": "Lead id"
+                                    },
+                                    "revenue_status": {
+                                        "type": "string",
+                                        "description": "Revenue status"
+                                    },
+                                    "revenue_description": {
+                                        "type": "string",
+                                        "description": "Revenue description"
+                                    },
+                                    "assigned_to": {
+                                        "type": "string",
+                                        "description": "Assigned to"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Expected Revenue id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

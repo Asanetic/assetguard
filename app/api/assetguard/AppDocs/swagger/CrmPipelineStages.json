@@ -1,0 +1,129 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Crm Pipeline Stages API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/bloomcrm/crmpipelinestages/crmpipelinestages": {
+            "get": {
+                "summary": "Get Crm Pipeline Stages",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Crm Pipeline Stages",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "stage_name": {
+                                        "type": "string",
+                                        "description": "Stage name"
+                                    },
+                                    "stage_order": {
+                                        "type": "string",
+                                        "description": "Stage order"
+                                    },
+                                    "stage_color": {
+                                        "type": "string",
+                                        "description": "Stage color"
+                                    },
+                                    "pipeline_type": {
+                                        "type": "string",
+                                        "description": "Pipeline type"
+                                    },
+                                    "is_closed_stage": {
+                                        "type": "string",
+                                        "description": "Is closed stage"
+                                    },
+                                    "is_won_stage": {
+                                        "type": "string",
+                                        "description": "Is won stage"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Crm Pipeline Stages",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "stage_name": {
+                                        "type": "string",
+                                        "description": "Stage name"
+                                    },
+                                    "stage_order": {
+                                        "type": "string",
+                                        "description": "Stage order"
+                                    },
+                                    "stage_color": {
+                                        "type": "string",
+                                        "description": "Stage color"
+                                    },
+                                    "pipeline_type": {
+                                        "type": "string",
+                                        "description": "Pipeline type"
+                                    },
+                                    "is_closed_stage": {
+                                        "type": "string",
+                                        "description": "Is closed stage"
+                                    },
+                                    "is_won_stage": {
+                                        "type": "string",
+                                        "description": "Is won stage"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Crm Pipeline Stages id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

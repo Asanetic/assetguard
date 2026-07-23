@@ -1,0 +1,329 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Tickets API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/tickets/tickets": {
+            "get": {
+                "summary": "Get Tickets",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Tickets",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "ticket_date": {
+                                        "type": "string",
+                                        "description": "Ticket date"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "ticket_id": {
+                                        "type": "string",
+                                        "description": "Ticket id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "tickect_details": {
+                                        "type": "string",
+                                        "description": "Tickect details"
+                                    },
+                                    "agent_id": {
+                                        "type": "string",
+                                        "description": "Agent id"
+                                    },
+                                    "ticket_state": {
+                                        "type": "string",
+                                        "description": "Ticket state"
+                                    },
+                                    "thread_id": {
+                                        "type": "string",
+                                        "description": "Thread id"
+                                    },
+                                    "last_seen": {
+                                        "type": "string",
+                                        "description": "Last seen"
+                                    },
+                                    "sender": {
+                                        "type": "string",
+                                        "description": "Sender"
+                                    },
+                                    "receiver": {
+                                        "type": "string",
+                                        "description": "Receiver"
+                                    },
+                                    "transffered": {
+                                        "type": "string",
+                                        "description": "Transffered"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Tickets",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "ticket_date": {
+                                        "type": "string",
+                                        "description": "Ticket date"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "ticket_id": {
+                                        "type": "string",
+                                        "description": "Ticket id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "tickect_details": {
+                                        "type": "string",
+                                        "description": "Tickect details"
+                                    },
+                                    "agent_id": {
+                                        "type": "string",
+                                        "description": "Agent id"
+                                    },
+                                    "ticket_state": {
+                                        "type": "string",
+                                        "description": "Ticket state"
+                                    },
+                                    "thread_id": {
+                                        "type": "string",
+                                        "description": "Thread id"
+                                    },
+                                    "last_seen": {
+                                        "type": "string",
+                                        "description": "Last seen"
+                                    },
+                                    "sender": {
+                                        "type": "string",
+                                        "description": "Sender"
+                                    },
+                                    "receiver": {
+                                        "type": "string",
+                                        "description": "Receiver"
+                                    },
+                                    "transffered": {
+                                        "type": "string",
+                                        "description": "Transffered"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Tickets id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/tickets/tickets": {
+            "get": {
+                "summary": "Get Tickets",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Tickets",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "ticket_date": {
+                                        "type": "string",
+                                        "description": "Ticket date"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "ticket_id": {
+                                        "type": "string",
+                                        "description": "Ticket id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "tickect_details": {
+                                        "type": "string",
+                                        "description": "Tickect details"
+                                    },
+                                    "agent_id": {
+                                        "type": "string",
+                                        "description": "Agent id"
+                                    },
+                                    "ticket_state": {
+                                        "type": "string",
+                                        "description": "Ticket state"
+                                    },
+                                    "thread_id": {
+                                        "type": "string",
+                                        "description": "Thread id"
+                                    },
+                                    "last_seen": {
+                                        "type": "string",
+                                        "description": "Last seen"
+                                    },
+                                    "sender": {
+                                        "type": "string",
+                                        "description": "Sender"
+                                    },
+                                    "receiver": {
+                                        "type": "string",
+                                        "description": "Receiver"
+                                    },
+                                    "transffered": {
+                                        "type": "string",
+                                        "description": "Transffered"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Tickets",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "ticket_date": {
+                                        "type": "string",
+                                        "description": "Ticket date"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "ticket_id": {
+                                        "type": "string",
+                                        "description": "Ticket id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "tickect_details": {
+                                        "type": "string",
+                                        "description": "Tickect details"
+                                    },
+                                    "agent_id": {
+                                        "type": "string",
+                                        "description": "Agent id"
+                                    },
+                                    "ticket_state": {
+                                        "type": "string",
+                                        "description": "Ticket state"
+                                    },
+                                    "thread_id": {
+                                        "type": "string",
+                                        "description": "Thread id"
+                                    },
+                                    "last_seen": {
+                                        "type": "string",
+                                        "description": "Last seen"
+                                    },
+                                    "sender": {
+                                        "type": "string",
+                                        "description": "Sender"
+                                    },
+                                    "receiver": {
+                                        "type": "string",
+                                        "description": "Receiver"
+                                    },
+                                    "transffered": {
+                                        "type": "string",
+                                        "description": "Transffered"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Tickets id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

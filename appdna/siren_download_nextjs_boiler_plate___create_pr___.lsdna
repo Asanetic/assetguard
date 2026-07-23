@@ -1,0 +1,111 @@
+eval(find_snippet("1185"));
+include('../appdna/blueprint.php');
+
+// dna options==
+$dna_file_name="download_nextjs_boiler_plate___create_pr___"; 
+$create_dna="yes"; 
+$overwrite_dna_file="yes"; 
+// dna options==
+
+$project_folder="../app";
+$zip_name="mosy_nextjs_boiler.zip";
+$zip_path=$project_folder."/".$zip_name;
+
+// 🧹 delete old zip
+Recycle($zip_path);
+
+// ⬇️ download zip
+ui_write_to_file(
+    $zip_path,
+    file_get_contents("https://github.com/Asanetic/nextjs_lightpeed/blob/main/mosy_nextjs_boiler.zip?raw=true")
+);
+
+// 📦 unzip
+$zip = new ZipArchive;
+$res = $zip->open($zip_path);
+
+if ($res === TRUE) 
+{
+    $zip->extractTo($project_folder);
+    $zip->close();
+    echo "ZIP extracted<br>";
+}
+else
+{
+    echo "❌ Failed to open ZIP<br>";
+    return;
+}
+
+$source = $project_folder.'/mosy_nextjs_boiler';
+$destination = $project_folder;
+
+// 📂 move files out of mosy_nextjs_boiler → project root
+if (is_dir($source))
+{
+    $dir = opendir($source);
+
+    while (($file = readdir($dir)) !== false)
+    {
+        if ($file === '.' || $file === '..') continue;
+
+        $srcPath = $source . '/' . $file;
+        $destPath = $destination . '/' . $file;
+
+        // overwrite mode
+        if (file_exists($destPath))
+        {
+            Recycle($destPath);
+        }
+
+        rename($srcPath, $destPath);
+    }
+
+    closedir($dir);
+    rmdir($source);
+
+    echo "Files moved to project root<br>";
+}
+else
+{
+    echo "❌ Source folder not found<br>";
+}
+
+// 🔁 rename frontend demo → appname
+$frontend_demo = $project_folder."/demo";
+$frontend_target = $project_folder."/".$appname;
+
+if (is_dir($frontend_demo))
+{
+    if (is_dir($frontend_target))
+    {
+        Recycle($frontend_target);
+    }
+
+    rename($frontend_demo, $frontend_target);
+    echo "Frontend route renamed<br>";
+}
+else
+{
+    echo "⚠️ Frontend demo folder missing<br>";
+}
+
+// 🔁 rename api/demo → api/appname
+$api_demo = $project_folder."/api/demo";
+$api_target = $project_folder."/api/".$appname;
+
+if (is_dir($api_demo))
+{
+    if (is_dir($api_target))
+    {
+        Recycle($api_target);
+    }
+
+    rename($api_demo, $api_target);
+    echo "API route renamed<br>";
+}
+else
+{
+    echo "⚠️ API demo folder missing<br>";
+}
+
+echo "✅ Next.js boilerplate installed for: ".$appname;

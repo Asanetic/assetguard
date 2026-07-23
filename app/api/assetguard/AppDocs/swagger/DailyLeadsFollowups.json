@@ -1,0 +1,345 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Daily Leads Followups API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/dailyleadsfollowups/dailyleadsfollowups": {
+            "get": {
+                "summary": "Get Daily Leads Followups",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Daily Leads Followups",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "followup_date": {
+                                        "type": "string",
+                                        "description": "Followup date"
+                                    },
+                                    "followup_type": {
+                                        "type": "string",
+                                        "description": "Followup type"
+                                    },
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "client_tel": {
+                                        "type": "string",
+                                        "description": "Client tel"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "lead_location": {
+                                        "type": "string",
+                                        "description": "Lead location"
+                                    },
+                                    "apartment_name": {
+                                        "type": "string",
+                                        "description": "Apartment name"
+                                    },
+                                    "lead_potential": {
+                                        "type": "string",
+                                        "description": "Lead potential"
+                                    },
+                                    "lead_state": {
+                                        "type": "string",
+                                        "description": "Lead state"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "lead_ref": {
+                                        "type": "string",
+                                        "description": "Lead ref"
+                                    },
+                                    "lead_date": {
+                                        "type": "string",
+                                        "description": "Lead date"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Daily Leads Followups",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "followup_date": {
+                                        "type": "string",
+                                        "description": "Followup date"
+                                    },
+                                    "followup_type": {
+                                        "type": "string",
+                                        "description": "Followup type"
+                                    },
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "client_tel": {
+                                        "type": "string",
+                                        "description": "Client tel"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "lead_location": {
+                                        "type": "string",
+                                        "description": "Lead location"
+                                    },
+                                    "apartment_name": {
+                                        "type": "string",
+                                        "description": "Apartment name"
+                                    },
+                                    "lead_potential": {
+                                        "type": "string",
+                                        "description": "Lead potential"
+                                    },
+                                    "lead_state": {
+                                        "type": "string",
+                                        "description": "Lead state"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "lead_ref": {
+                                        "type": "string",
+                                        "description": "Lead ref"
+                                    },
+                                    "lead_date": {
+                                        "type": "string",
+                                        "description": "Lead date"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Daily Leads Followups id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/dailyleadsfollowups/dailyleadsfollowups": {
+            "get": {
+                "summary": "Get Daily Leads Followups",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Daily Leads Followups",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "followup_date": {
+                                        "type": "string",
+                                        "description": "Followup date"
+                                    },
+                                    "followup_type": {
+                                        "type": "string",
+                                        "description": "Followup type"
+                                    },
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "client_tel": {
+                                        "type": "string",
+                                        "description": "Client tel"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "lead_location": {
+                                        "type": "string",
+                                        "description": "Lead location"
+                                    },
+                                    "apartment_name": {
+                                        "type": "string",
+                                        "description": "Apartment name"
+                                    },
+                                    "lead_potential": {
+                                        "type": "string",
+                                        "description": "Lead potential"
+                                    },
+                                    "lead_state": {
+                                        "type": "string",
+                                        "description": "Lead state"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "lead_ref": {
+                                        "type": "string",
+                                        "description": "Lead ref"
+                                    },
+                                    "lead_date": {
+                                        "type": "string",
+                                        "description": "Lead date"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Daily Leads Followups",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "followup_date": {
+                                        "type": "string",
+                                        "description": "Followup date"
+                                    },
+                                    "followup_type": {
+                                        "type": "string",
+                                        "description": "Followup type"
+                                    },
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "client_tel": {
+                                        "type": "string",
+                                        "description": "Client tel"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "lead_location": {
+                                        "type": "string",
+                                        "description": "Lead location"
+                                    },
+                                    "apartment_name": {
+                                        "type": "string",
+                                        "description": "Apartment name"
+                                    },
+                                    "lead_potential": {
+                                        "type": "string",
+                                        "description": "Lead potential"
+                                    },
+                                    "lead_state": {
+                                        "type": "string",
+                                        "description": "Lead state"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "lead_ref": {
+                                        "type": "string",
+                                        "description": "Lead ref"
+                                    },
+                                    "lead_date": {
+                                        "type": "string",
+                                        "description": "Lead date"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Daily Leads Followups id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

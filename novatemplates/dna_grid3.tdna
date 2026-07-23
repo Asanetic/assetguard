@@ -1,0 +1,39 @@
+
+    <div className={`col-md-12 p-0 m-0 ${styles.wrapper}`}>
+
+      {/* HEADER */}
+      <div className="row justify-content-center my-3">
+       {showDataControlSections && (<> <h3 className="fw-semibold mb-0 col-md-3 py-4 mt-1">{'pagetitle'}</h3></>)}
+
+        <div className="row justify-content-center col-md-9">
+      {showDataControlSections && (<>
+      <div className="col-md-12 row mx-0 px-0 justify-content-start py-4 ">
+        
+        <div className="col-md-4 text-right mx-0 px-0"> {'actionbuttons'} </div>
+               <div className="col-md-4 pl-2 text-right mx-0 px-0"> {'searchisle'} </div>
+        <div className="col-md-1  text-left mx-0 px-0 "> {'refreshisle'} </div>        
+        <div className="col-md-2  text-right mx-0 px-0 "> {'addnewbtn'} </div>
+      </div></>
+      )}
+    
+        </div>
+      </div>
+
+      {/* TABLE */}
+      <div className={styles.tableWrap}>
+        {'printisle'}
+        <table className={`table table-borderless align-middle mb-0 ${styles.table}`}>
+          <thead>
+            {'grid:headers'}
+          </thead>
+
+          <tbody>
+          {'grid:rows'}
+          </tbody>
+
+        </table>
+        {'printbottom'}
+        {'pagination'}
+      </div>
+
+    </div>

@@ -1,0 +1,27 @@
+# Build output
+.next/
+
+# Dependencies
+node_modules/
+
+# Custom folders
+terminal/
+
+openai.php
+
+.env.production.local
+
+.env.local
+
+phpmagicbits.php
+
+.history
+.git
+snippets_db.sql
+
+jsondb.php
+hotspot.php
+hotspots.php
+openaiimg_gen.php
+openaitts.php
+video.php

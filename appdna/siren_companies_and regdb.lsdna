@@ -1,0 +1,40 @@
+//dna options== Digital Nexus Architecture (DNA)
+
+$dna_file_name="companies_and regdb"; 
+$create_dna="yes"; //yes | no; 
+$overwrite_dna_file="yes"; //yes | no 
+//dna options==
+
+//=========== COMPANIES TABLE
+$company_table_script = "
+`primkey` int(11) PRIMARY KEY AUTO_INCREMENT,
+`company_id` varchar(100) NOT NULL,
+`company_name` varchar(255) NOT NULL,
+`company_code` varchar(100),
+`phone_number` varchar(50),
+`email` varchar(255),
+`address` text,
+`status` varchar(20) DEFAULT 'ACTIVE',
+`reg_date` datetime DEFAULT CURRENT_TIMESTAMP
+";
+
+$company_table = 'companies';
+create_table($mysqliconn, $dbname, $company_table, $company_table_script);
+
+
+//=========== REGIONS TABLE
+$region_table_script = "
+`primkey` int(11) PRIMARY KEY AUTO_INCREMENT,
+`region_id` varchar(100) NOT NULL,
+`company_id` varchar(100) NOT NULL,
+`region_name` varchar(255) NOT NULL,
+`region_code` varchar(100),
+`phone_number` varchar(50),
+`email` varchar(255),
+`address` text,
+`status` varchar(20) DEFAULT 'ACTIVE',
+`reg_date` datetime DEFAULT CURRENT_TIMESTAMP
+";
+
+$region_table = 'regions';
+create_table($mysqliconn, $dbname, $region_table, $region_table_script);

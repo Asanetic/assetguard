@@ -1,0 +1,161 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Smart Payment Settings API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/smartpaymentsettings/smartpaymentsettings": {
+            "get": {
+                "summary": "Get Smart Payment Settings",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Smart Payment Settings",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "setting_name": {
+                                        "type": "string",
+                                        "description": "Setting name"
+                                    },
+                                    "setting_code": {
+                                        "type": "string",
+                                        "description": "Setting code"
+                                    },
+                                    "setting_value": {
+                                        "type": "string",
+                                        "description": "Setting value"
+                                    },
+                                    "setting_category": {
+                                        "type": "string",
+                                        "description": "Setting category"
+                                    },
+                                    "setting_status": {
+                                        "type": "string",
+                                        "description": "Setting status"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "last_updated_by": {
+                                        "type": "string",
+                                        "description": "Last updated by"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "updated_on": {
+                                        "type": "string",
+                                        "description": "Updated on"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Smart Payment Settings",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "setting_name": {
+                                        "type": "string",
+                                        "description": "Setting name"
+                                    },
+                                    "setting_code": {
+                                        "type": "string",
+                                        "description": "Setting code"
+                                    },
+                                    "setting_value": {
+                                        "type": "string",
+                                        "description": "Setting value"
+                                    },
+                                    "setting_category": {
+                                        "type": "string",
+                                        "description": "Setting category"
+                                    },
+                                    "setting_status": {
+                                        "type": "string",
+                                        "description": "Setting status"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "last_updated_by": {
+                                        "type": "string",
+                                        "description": "Last updated by"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "updated_on": {
+                                        "type": "string",
+                                        "description": "Updated on"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Smart Payment Settings id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

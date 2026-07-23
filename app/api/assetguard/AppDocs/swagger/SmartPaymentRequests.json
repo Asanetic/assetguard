@@ -1,0 +1,233 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Smart Payment Requests API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/smartpaymentrequests/smartpaymentrequests": {
+            "get": {
+                "summary": "Get Smart Payment Requests",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Smart Payment Requests",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "request_reference": {
+                                        "type": "string",
+                                        "description": "Request reference"
+                                    },
+                                    "request_title": {
+                                        "type": "string",
+                                        "description": "Request title"
+                                    },
+                                    "related_module": {
+                                        "type": "string",
+                                        "description": "Related module"
+                                    },
+                                    "related_record_id": {
+                                        "type": "string",
+                                        "description": "Related record id"
+                                    },
+                                    "payer_name": {
+                                        "type": "string",
+                                        "description": "Payer name"
+                                    },
+                                    "payer_phone": {
+                                        "type": "string",
+                                        "description": "Payer phone"
+                                    },
+                                    "payer_email": {
+                                        "type": "string",
+                                        "description": "Payer email"
+                                    },
+                                    "amount_requested": {
+                                        "type": "string",
+                                        "description": "Amount requested"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "balance_amount": {
+                                        "type": "string",
+                                        "description": "Balance amount"
+                                    },
+                                    "payment_shortcode": {
+                                        "type": "string",
+                                        "description": "Payment shortcode"
+                                    },
+                                    "payment_link": {
+                                        "type": "string",
+                                        "description": "Payment link"
+                                    },
+                                    "request_notes": {
+                                        "type": "string",
+                                        "description": "Request notes"
+                                    },
+                                    "expiry_date": {
+                                        "type": "string",
+                                        "description": "Expiry date"
+                                    },
+                                    "request_status": {
+                                        "type": "string",
+                                        "description": "Request status"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "updated_on": {
+                                        "type": "string",
+                                        "description": "Updated on"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Smart Payment Requests",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "request_reference": {
+                                        "type": "string",
+                                        "description": "Request reference"
+                                    },
+                                    "request_title": {
+                                        "type": "string",
+                                        "description": "Request title"
+                                    },
+                                    "related_module": {
+                                        "type": "string",
+                                        "description": "Related module"
+                                    },
+                                    "related_record_id": {
+                                        "type": "string",
+                                        "description": "Related record id"
+                                    },
+                                    "payer_name": {
+                                        "type": "string",
+                                        "description": "Payer name"
+                                    },
+                                    "payer_phone": {
+                                        "type": "string",
+                                        "description": "Payer phone"
+                                    },
+                                    "payer_email": {
+                                        "type": "string",
+                                        "description": "Payer email"
+                                    },
+                                    "amount_requested": {
+                                        "type": "string",
+                                        "description": "Amount requested"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "balance_amount": {
+                                        "type": "string",
+                                        "description": "Balance amount"
+                                    },
+                                    "payment_shortcode": {
+                                        "type": "string",
+                                        "description": "Payment shortcode"
+                                    },
+                                    "payment_link": {
+                                        "type": "string",
+                                        "description": "Payment link"
+                                    },
+                                    "request_notes": {
+                                        "type": "string",
+                                        "description": "Request notes"
+                                    },
+                                    "expiry_date": {
+                                        "type": "string",
+                                        "description": "Expiry date"
+                                    },
+                                    "request_status": {
+                                        "type": "string",
+                                        "description": "Request status"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "updated_on": {
+                                        "type": "string",
+                                        "description": "Updated on"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Smart Payment Requests id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

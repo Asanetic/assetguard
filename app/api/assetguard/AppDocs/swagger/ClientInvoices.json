@@ -1,0 +1,361 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Client Invoices API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/clientinvoices/clientinvoices": {
+            "get": {
+                "summary": "Get Client Invoices",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Client Invoices",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "invoice_no": {
+                                        "type": "string",
+                                        "description": "Invoice no"
+                                    },
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "tel_no": {
+                                        "type": "string",
+                                        "description": "Tel no"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "client_names": {
+                                        "type": "string",
+                                        "description": "Client names"
+                                    },
+                                    "invoice_date": {
+                                        "type": "string",
+                                        "description": "Invoice date"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "tax_rate": {
+                                        "type": "string",
+                                        "description": "Tax rate"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "payment_mode": {
+                                        "type": "string",
+                                        "description": "Payment mode"
+                                    },
+                                    "payment_ref": {
+                                        "type": "string",
+                                        "description": "Payment ref"
+                                    },
+                                    "invoice_remark": {
+                                        "type": "string",
+                                        "description": "Invoice remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Client Invoices",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "invoice_no": {
+                                        "type": "string",
+                                        "description": "Invoice no"
+                                    },
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "tel_no": {
+                                        "type": "string",
+                                        "description": "Tel no"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "client_names": {
+                                        "type": "string",
+                                        "description": "Client names"
+                                    },
+                                    "invoice_date": {
+                                        "type": "string",
+                                        "description": "Invoice date"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "tax_rate": {
+                                        "type": "string",
+                                        "description": "Tax rate"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "payment_mode": {
+                                        "type": "string",
+                                        "description": "Payment mode"
+                                    },
+                                    "payment_ref": {
+                                        "type": "string",
+                                        "description": "Payment ref"
+                                    },
+                                    "invoice_remark": {
+                                        "type": "string",
+                                        "description": "Invoice remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Client Invoices id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/clientinvoices/clientinvoices": {
+            "get": {
+                "summary": "Get Client Invoices",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Client Invoices",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "invoice_no": {
+                                        "type": "string",
+                                        "description": "Invoice no"
+                                    },
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "tel_no": {
+                                        "type": "string",
+                                        "description": "Tel no"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "client_names": {
+                                        "type": "string",
+                                        "description": "Client names"
+                                    },
+                                    "invoice_date": {
+                                        "type": "string",
+                                        "description": "Invoice date"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "tax_rate": {
+                                        "type": "string",
+                                        "description": "Tax rate"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "payment_mode": {
+                                        "type": "string",
+                                        "description": "Payment mode"
+                                    },
+                                    "payment_ref": {
+                                        "type": "string",
+                                        "description": "Payment ref"
+                                    },
+                                    "invoice_remark": {
+                                        "type": "string",
+                                        "description": "Invoice remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Client Invoices",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "invoice_no": {
+                                        "type": "string",
+                                        "description": "Invoice no"
+                                    },
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "tel_no": {
+                                        "type": "string",
+                                        "description": "Tel no"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "client_names": {
+                                        "type": "string",
+                                        "description": "Client names"
+                                    },
+                                    "invoice_date": {
+                                        "type": "string",
+                                        "description": "Invoice date"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "tax_rate": {
+                                        "type": "string",
+                                        "description": "Tax rate"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "payment_mode": {
+                                        "type": "string",
+                                        "description": "Payment mode"
+                                    },
+                                    "payment_ref": {
+                                        "type": "string",
+                                        "description": "Payment ref"
+                                    },
+                                    "invoice_remark": {
+                                        "type": "string",
+                                        "description": "Invoice remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Client Invoices id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

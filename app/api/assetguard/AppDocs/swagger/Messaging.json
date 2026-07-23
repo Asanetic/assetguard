@@ -1,0 +1,585 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Messaging API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/messaging/messaging": {
+            "get": {
+                "summary": "Get Messaging",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Messaging",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "receiver_contacts": {
+                                        "type": "string",
+                                        "description": "Receiver contacts"
+                                    },
+                                    "reciver_names": {
+                                        "type": "string",
+                                        "description": "Reciver names"
+                                    },
+                                    "message_type": {
+                                        "type": "string",
+                                        "description": "Message type"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "message_date": {
+                                        "type": "string",
+                                        "description": "Message date"
+                                    },
+                                    "sent_state": {
+                                        "type": "string",
+                                        "description": "Sent state"
+                                    },
+                                    "msg_read_state": {
+                                        "type": "string",
+                                        "description": "Msg read state"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "message_label": {
+                                        "type": "string",
+                                        "description": "Message label"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    },
+                                    "sms_cost": {
+                                        "type": "string",
+                                        "description": "Sms cost"
+                                    },
+                                    "page_count": {
+                                        "type": "string",
+                                        "description": "Page count"
+                                    },
+                                    "custom_dictionary": {
+                                        "type": "string",
+                                        "description": "Custom dictionary"
+                                    },
+                                    "message_signature": {
+                                        "type": "string",
+                                        "description": "Message signature"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Messaging",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "receiver_contacts": {
+                                        "type": "string",
+                                        "description": "Receiver contacts"
+                                    },
+                                    "reciver_names": {
+                                        "type": "string",
+                                        "description": "Reciver names"
+                                    },
+                                    "message_type": {
+                                        "type": "string",
+                                        "description": "Message type"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "message_date": {
+                                        "type": "string",
+                                        "description": "Message date"
+                                    },
+                                    "sent_state": {
+                                        "type": "string",
+                                        "description": "Sent state"
+                                    },
+                                    "msg_read_state": {
+                                        "type": "string",
+                                        "description": "Msg read state"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "message_label": {
+                                        "type": "string",
+                                        "description": "Message label"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    },
+                                    "sms_cost": {
+                                        "type": "string",
+                                        "description": "Sms cost"
+                                    },
+                                    "page_count": {
+                                        "type": "string",
+                                        "description": "Page count"
+                                    },
+                                    "custom_dictionary": {
+                                        "type": "string",
+                                        "description": "Custom dictionary"
+                                    },
+                                    "message_signature": {
+                                        "type": "string",
+                                        "description": "Message signature"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Messaging id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/messaging/messaging": {
+            "get": {
+                "summary": "Get Messaging",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Messaging",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "receiver_contacts": {
+                                        "type": "string",
+                                        "description": "Receiver contacts"
+                                    },
+                                    "reciver_names": {
+                                        "type": "string",
+                                        "description": "Reciver names"
+                                    },
+                                    "message_type": {
+                                        "type": "string",
+                                        "description": "Message type"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "message_date": {
+                                        "type": "string",
+                                        "description": "Message date"
+                                    },
+                                    "sent_state": {
+                                        "type": "string",
+                                        "description": "Sent state"
+                                    },
+                                    "msg_read_state": {
+                                        "type": "string",
+                                        "description": "Msg read state"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "message_label": {
+                                        "type": "string",
+                                        "description": "Message label"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    },
+                                    "sms_cost": {
+                                        "type": "string",
+                                        "description": "Sms cost"
+                                    },
+                                    "page_count": {
+                                        "type": "string",
+                                        "description": "Page count"
+                                    },
+                                    "custom_dictionary": {
+                                        "type": "string",
+                                        "description": "Custom dictionary"
+                                    },
+                                    "message_signature": {
+                                        "type": "string",
+                                        "description": "Message signature"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Messaging",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "receiver_contacts": {
+                                        "type": "string",
+                                        "description": "Receiver contacts"
+                                    },
+                                    "reciver_names": {
+                                        "type": "string",
+                                        "description": "Reciver names"
+                                    },
+                                    "message_type": {
+                                        "type": "string",
+                                        "description": "Message type"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "message_date": {
+                                        "type": "string",
+                                        "description": "Message date"
+                                    },
+                                    "sent_state": {
+                                        "type": "string",
+                                        "description": "Sent state"
+                                    },
+                                    "msg_read_state": {
+                                        "type": "string",
+                                        "description": "Msg read state"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "message_label": {
+                                        "type": "string",
+                                        "description": "Message label"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    },
+                                    "sms_cost": {
+                                        "type": "string",
+                                        "description": "Sms cost"
+                                    },
+                                    "page_count": {
+                                        "type": "string",
+                                        "description": "Page count"
+                                    },
+                                    "custom_dictionary": {
+                                        "type": "string",
+                                        "description": "Custom dictionary"
+                                    },
+                                    "message_signature": {
+                                        "type": "string",
+                                        "description": "Message signature"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Messaging id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomcrm/messaging/messaging": {
+            "get": {
+                "summary": "Get Messaging",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Messaging",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "receiver_contacts": {
+                                        "type": "string",
+                                        "description": "Receiver contacts"
+                                    },
+                                    "receiver_tel": {
+                                        "type": "string",
+                                        "description": "Receiver tel"
+                                    },
+                                    "receiver_email": {
+                                        "type": "string",
+                                        "description": "Receiver email"
+                                    },
+                                    "reciver_names": {
+                                        "type": "string",
+                                        "description": "Reciver names"
+                                    },
+                                    "message_type": {
+                                        "type": "string",
+                                        "description": "Message type"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "message_date": {
+                                        "type": "string",
+                                        "description": "Message date"
+                                    },
+                                    "sent_state": {
+                                        "type": "string",
+                                        "description": "Sent state"
+                                    },
+                                    "msg_read_state": {
+                                        "type": "string",
+                                        "description": "Msg read state"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "message_label": {
+                                        "type": "string",
+                                        "description": "Message label"
+                                    },
+                                    "message_details": {
+                                        "type": "string",
+                                        "description": "Message details"
+                                    },
+                                    "sms_cost": {
+                                        "type": "string",
+                                        "description": "Sms cost"
+                                    },
+                                    "page_count": {
+                                        "type": "string",
+                                        "description": "Page count"
+                                    },
+                                    "custom_dictionary": {
+                                        "type": "string",
+                                        "description": "Custom dictionary"
+                                    },
+                                    "message_signature": {
+                                        "type": "string",
+                                        "description": "Message signature"
+                                    },
+                                    "ref_number": {
+                                        "type": "string",
+                                        "description": "Ref number"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Messaging",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "receiver_contacts": {
+                                        "type": "string",
+                                        "description": "Receiver contacts"
+                                    },
+                                    "receiver_tel": {
+                                        "type": "string",
+                                        "description": "Receiver tel"
+                                    },
+                                    "receiver_email": {
+                                        "type": "string",
+                                        "description": "Receiver email"
+                                    },
+                                    "reciver_names": {
+                                        "type": "string",
+                                        "description": "Reciver names"
+                                    },
+                                    "message_type": {
+                                        "type": "string",
+                                        "description": "Message type"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "message_date": {
+                                        "type": "string",
+                                        "description": "Message date"
+                                    },
+                                    "sent_state": {
+                                        "type": "string",
+                                        "description": "Sent state"
+                                    },
+                                    "msg_read_state": {
+                                        "type": "string",
+                                        "description": "Msg read state"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "message_label": {
+                                        "type": "string",
+                                        "description": "Message label"
+                                    },
+                                    "message_details": {
+                                        "type": "string",
+                                        "description": "Message details"
+                                    },
+                                    "sms_cost": {
+                                        "type": "string",
+                                        "description": "Sms cost"
+                                    },
+                                    "page_count": {
+                                        "type": "string",
+                                        "description": "Page count"
+                                    },
+                                    "custom_dictionary": {
+                                        "type": "string",
+                                        "description": "Custom dictionary"
+                                    },
+                                    "message_signature": {
+                                        "type": "string",
+                                        "description": "Message signature"
+                                    },
+                                    "ref_number": {
+                                        "type": "string",
+                                        "description": "Ref number"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Messaging id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

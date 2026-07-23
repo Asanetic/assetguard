@@ -1,0 +1,249 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Expenses API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/expenses/expenses": {
+            "get": {
+                "summary": "Get Expenses",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Expenses",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "receipt_id": {
+                                        "type": "string",
+                                        "description": "Receipt id"
+                                    },
+                                    "debit_account": {
+                                        "type": "string",
+                                        "description": "Debit account"
+                                    },
+                                    "credit_account": {
+                                        "type": "string",
+                                        "description": "Credit account"
+                                    },
+                                    "expense_date": {
+                                        "type": "string",
+                                        "description": "Expense date"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "expense_notes": {
+                                        "type": "string",
+                                        "description": "Expense notes"
+                                    },
+                                    "account_subcategory": {
+                                        "type": "string",
+                                        "description": "Account subcategory"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Expenses",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "receipt_id": {
+                                        "type": "string",
+                                        "description": "Receipt id"
+                                    },
+                                    "debit_account": {
+                                        "type": "string",
+                                        "description": "Debit account"
+                                    },
+                                    "credit_account": {
+                                        "type": "string",
+                                        "description": "Credit account"
+                                    },
+                                    "expense_date": {
+                                        "type": "string",
+                                        "description": "Expense date"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "expense_notes": {
+                                        "type": "string",
+                                        "description": "Expense notes"
+                                    },
+                                    "account_subcategory": {
+                                        "type": "string",
+                                        "description": "Account subcategory"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Expenses id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/expenses/expenses": {
+            "get": {
+                "summary": "Get Expenses",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Expenses",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "receipt_id": {
+                                        "type": "string",
+                                        "description": "Receipt id"
+                                    },
+                                    "debit_account": {
+                                        "type": "string",
+                                        "description": "Debit account"
+                                    },
+                                    "credit_account": {
+                                        "type": "string",
+                                        "description": "Credit account"
+                                    },
+                                    "expense_date": {
+                                        "type": "string",
+                                        "description": "Expense date"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "expense_notes": {
+                                        "type": "string",
+                                        "description": "Expense notes"
+                                    },
+                                    "account_subcategory": {
+                                        "type": "string",
+                                        "description": "Account subcategory"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Expenses",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "receipt_id": {
+                                        "type": "string",
+                                        "description": "Receipt id"
+                                    },
+                                    "debit_account": {
+                                        "type": "string",
+                                        "description": "Debit account"
+                                    },
+                                    "credit_account": {
+                                        "type": "string",
+                                        "description": "Credit account"
+                                    },
+                                    "expense_date": {
+                                        "type": "string",
+                                        "description": "Expense date"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "expense_notes": {
+                                        "type": "string",
+                                        "description": "Expense notes"
+                                    },
+                                    "account_subcategory": {
+                                        "type": "string",
+                                        "description": "Account subcategory"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Expenses id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

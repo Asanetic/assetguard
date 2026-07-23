@@ -1,0 +1,185 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Data Sequence Monitor API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/datasequencemonitor/datasequencemonitor": {
+            "get": {
+                "summary": "Get Data Sequence Monitor",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Data Sequence Monitor",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "parent_event": {
+                                        "type": "string",
+                                        "description": "Parent event"
+                                    },
+                                    "sequence_name": {
+                                        "type": "string",
+                                        "description": "Sequence name"
+                                    },
+                                    "sequence_number": {
+                                        "type": "string",
+                                        "description": "Sequence number"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Data Sequence Monitor",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "parent_event": {
+                                        "type": "string",
+                                        "description": "Parent event"
+                                    },
+                                    "sequence_name": {
+                                        "type": "string",
+                                        "description": "Sequence name"
+                                    },
+                                    "sequence_number": {
+                                        "type": "string",
+                                        "description": "Sequence number"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Data Sequence Monitor id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/datasequencemonitor/datasequencemonitor": {
+            "get": {
+                "summary": "Get Data Sequence Monitor",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Data Sequence Monitor",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "parent_event": {
+                                        "type": "string",
+                                        "description": "Parent event"
+                                    },
+                                    "sequence_name": {
+                                        "type": "string",
+                                        "description": "Sequence name"
+                                    },
+                                    "sequence_number": {
+                                        "type": "string",
+                                        "description": "Sequence number"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Data Sequence Monitor",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "parent_event": {
+                                        "type": "string",
+                                        "description": "Parent event"
+                                    },
+                                    "sequence_name": {
+                                        "type": "string",
+                                        "description": "Sequence name"
+                                    },
+                                    "sequence_number": {
+                                        "type": "string",
+                                        "description": "Sequence number"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Data Sequence Monitor id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

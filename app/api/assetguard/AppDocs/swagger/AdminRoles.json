@@ -1,0 +1,233 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Admin Roles API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/adminroles/adminroles": {
+            "get": {
+                "summary": "Get Admin Roles",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Admin Roles",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "admin_id": {
+                                        "type": "string",
+                                        "description": "Admin id"
+                                    },
+                                    "role_key": {
+                                        "type": "string",
+                                        "description": "Role key"
+                                    },
+                                    "role_value": {
+                                        "type": "string",
+                                        "description": "Role value"
+                                    },
+                                    "assigned_by": {
+                                        "type": "string",
+                                        "description": "Assigned by"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "assigned_on": {
+                                        "type": "string",
+                                        "description": "Assigned on"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Admin Roles",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "admin_id": {
+                                        "type": "string",
+                                        "description": "Admin id"
+                                    },
+                                    "role_key": {
+                                        "type": "string",
+                                        "description": "Role key"
+                                    },
+                                    "role_value": {
+                                        "type": "string",
+                                        "description": "Role value"
+                                    },
+                                    "assigned_by": {
+                                        "type": "string",
+                                        "description": "Assigned by"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "assigned_on": {
+                                        "type": "string",
+                                        "description": "Assigned on"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Admin Roles id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/adminroles/adminroles": {
+            "get": {
+                "summary": "Get Admin Roles",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Admin Roles",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "admin_id": {
+                                        "type": "string",
+                                        "description": "Admin id"
+                                    },
+                                    "role_key": {
+                                        "type": "string",
+                                        "description": "Role key"
+                                    },
+                                    "role_value": {
+                                        "type": "string",
+                                        "description": "Role value"
+                                    },
+                                    "assigned_by": {
+                                        "type": "string",
+                                        "description": "Assigned by"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "assigned_on": {
+                                        "type": "string",
+                                        "description": "Assigned on"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Admin Roles",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "admin_id": {
+                                        "type": "string",
+                                        "description": "Admin id"
+                                    },
+                                    "role_key": {
+                                        "type": "string",
+                                        "description": "Role key"
+                                    },
+                                    "role_value": {
+                                        "type": "string",
+                                        "description": "Role value"
+                                    },
+                                    "assigned_by": {
+                                        "type": "string",
+                                        "description": "Assigned by"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "assigned_on": {
+                                        "type": "string",
+                                        "description": "Assigned on"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Admin Roles id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

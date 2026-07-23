@@ -1,0 +1,129 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Nudge Cards API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/bloomcrm/nudgecards/nudgecards": {
+            "get": {
+                "summary": "Get Nudge Cards",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Nudge Cards",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "template_id": {
+                                        "type": "string",
+                                        "description": "Template id"
+                                    },
+                                    "card_title": {
+                                        "type": "string",
+                                        "description": "Card title"
+                                    },
+                                    "card_data": {
+                                        "type": "string",
+                                        "description": "Card data"
+                                    },
+                                    "generated_image_path": {
+                                        "type": "string",
+                                        "description": "Generated image path"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Nudge Cards",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "template_id": {
+                                        "type": "string",
+                                        "description": "Template id"
+                                    },
+                                    "card_title": {
+                                        "type": "string",
+                                        "description": "Card title"
+                                    },
+                                    "card_data": {
+                                        "type": "string",
+                                        "description": "Card data"
+                                    },
+                                    "generated_image_path": {
+                                        "type": "string",
+                                        "description": "Generated image path"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Nudge Cards id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

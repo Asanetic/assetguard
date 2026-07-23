@@ -1,0 +1,185 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Job Groups API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/jobgroups/jobgroups": {
+            "get": {
+                "summary": "Get Job Groups",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Job Groups",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "group_salary": {
+                                        "type": "string",
+                                        "description": "Group salary"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Job Groups",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "group_salary": {
+                                        "type": "string",
+                                        "description": "Group salary"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Job Groups id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/jobgroups/jobgroups": {
+            "get": {
+                "summary": "Get Job Groups",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Job Groups",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "group_salary": {
+                                        "type": "string",
+                                        "description": "Group salary"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Job Groups",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "group_salary": {
+                                        "type": "string",
+                                        "description": "Group salary"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Job Groups id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

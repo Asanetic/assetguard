@@ -1,0 +1,217 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "System Files API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/systemfiles/systemfiles": {
+            "get": {
+                "summary": "Get System Files",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create System Files",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "file_url": {
+                                        "type": "string",
+                                        "description": "File url"
+                                    },
+                                    "file_type": {
+                                        "type": "string",
+                                        "description": "File type"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "upload_date": {
+                                        "type": "string",
+                                        "description": "Upload date"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update System Files",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "file_url": {
+                                        "type": "string",
+                                        "description": "File url"
+                                    },
+                                    "file_type": {
+                                        "type": "string",
+                                        "description": "File type"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "upload_date": {
+                                        "type": "string",
+                                        "description": "Upload date"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " System Files id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/systemfiles/systemfiles": {
+            "get": {
+                "summary": "Get System Files",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create System Files",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "file_url": {
+                                        "type": "string",
+                                        "description": "File url"
+                                    },
+                                    "file_type": {
+                                        "type": "string",
+                                        "description": "File type"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "upload_date": {
+                                        "type": "string",
+                                        "description": "Upload date"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update System Files",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "file_url": {
+                                        "type": "string",
+                                        "description": "File url"
+                                    },
+                                    "file_type": {
+                                        "type": "string",
+                                        "description": "File type"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "upload_date": {
+                                        "type": "string",
+                                        "description": "Upload date"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " System Files id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

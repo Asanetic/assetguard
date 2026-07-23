@@ -1,0 +1,153 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Quotation Items API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/quotationitems/quotationitems": {
+            "get": {
+                "summary": "Get Quotation Items",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Quotation Items",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "quotation_id": {
+                                        "type": "string",
+                                        "description": "Quotation id"
+                                    },
+                                    "item_type": {
+                                        "type": "string",
+                                        "description": "Item type"
+                                    },
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "item_description": {
+                                        "type": "string",
+                                        "description": "Item description"
+                                    },
+                                    "item_quantity": {
+                                        "type": "string",
+                                        "description": "Item quantity"
+                                    },
+                                    "item_unit_price": {
+                                        "type": "string",
+                                        "description": "Item unit price"
+                                    },
+                                    "item_total_amount": {
+                                        "type": "string",
+                                        "description": "Item total amount"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Quotation Items",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "quotation_id": {
+                                        "type": "string",
+                                        "description": "Quotation id"
+                                    },
+                                    "item_type": {
+                                        "type": "string",
+                                        "description": "Item type"
+                                    },
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "item_description": {
+                                        "type": "string",
+                                        "description": "Item description"
+                                    },
+                                    "item_quantity": {
+                                        "type": "string",
+                                        "description": "Item quantity"
+                                    },
+                                    "item_unit_price": {
+                                        "type": "string",
+                                        "description": "Item unit price"
+                                    },
+                                    "item_total_amount": {
+                                        "type": "string",
+                                        "description": "Item total amount"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Quotation Items id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

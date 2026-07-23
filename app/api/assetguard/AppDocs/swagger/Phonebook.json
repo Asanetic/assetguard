@@ -1,0 +1,233 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Phonebook API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/phonebook/phonebook": {
+            "get": {
+                "summary": "Get Phonebook",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Phonebook",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "profile_photo": {
+                                        "type": "string",
+                                        "description": "Profile photo"
+                                    },
+                                    "username": {
+                                        "type": "string",
+                                        "description": "Username"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Phonebook",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "profile_photo": {
+                                        "type": "string",
+                                        "description": "Profile photo"
+                                    },
+                                    "username": {
+                                        "type": "string",
+                                        "description": "Username"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Phonebook id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/phonebook/phonebook": {
+            "get": {
+                "summary": "Get Phonebook",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Phonebook",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "profile_photo": {
+                                        "type": "string",
+                                        "description": "Profile photo"
+                                    },
+                                    "username": {
+                                        "type": "string",
+                                        "description": "Username"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Phonebook",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "profile_photo": {
+                                        "type": "string",
+                                        "description": "Profile photo"
+                                    },
+                                    "username": {
+                                        "type": "string",
+                                        "description": "Username"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Phonebook id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

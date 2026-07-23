@@ -1,0 +1,249 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Letterhead Settings API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/letterheadsettings/letterheadsettings": {
+            "get": {
+                "summary": "Get Letterhead Settings",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Letterhead Settings",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "company_name": {
+                                        "type": "string",
+                                        "description": "Company name"
+                                    },
+                                    "company_logo": {
+                                        "type": "string",
+                                        "description": "Company logo"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "website": {
+                                        "type": "string",
+                                        "description": "Website"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "location": {
+                                        "type": "string",
+                                        "description": "Location"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Letterhead Settings",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "company_name": {
+                                        "type": "string",
+                                        "description": "Company name"
+                                    },
+                                    "company_logo": {
+                                        "type": "string",
+                                        "description": "Company logo"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "website": {
+                                        "type": "string",
+                                        "description": "Website"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "location": {
+                                        "type": "string",
+                                        "description": "Location"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Letterhead Settings id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/letterheadsettings/letterheadsettings": {
+            "get": {
+                "summary": "Get Letterhead Settings",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Letterhead Settings",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "company_name": {
+                                        "type": "string",
+                                        "description": "Company name"
+                                    },
+                                    "company_logo": {
+                                        "type": "string",
+                                        "description": "Company logo"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "website": {
+                                        "type": "string",
+                                        "description": "Website"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "location": {
+                                        "type": "string",
+                                        "description": "Location"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Letterhead Settings",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "company_name": {
+                                        "type": "string",
+                                        "description": "Company name"
+                                    },
+                                    "company_logo": {
+                                        "type": "string",
+                                        "description": "Company logo"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "website": {
+                                        "type": "string",
+                                        "description": "Website"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "location": {
+                                        "type": "string",
+                                        "description": "Location"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Letterhead Settings id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

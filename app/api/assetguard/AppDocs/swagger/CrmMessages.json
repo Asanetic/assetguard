@@ -1,0 +1,193 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Crm Messages API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/bloomcrm/crmmessages/crmmessages": {
+            "get": {
+                "summary": "Get Crm Messages",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Crm Messages",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "message_channel": {
+                                        "type": "string",
+                                        "description": "Message channel"
+                                    },
+                                    "sender_name": {
+                                        "type": "string",
+                                        "description": "Sender name"
+                                    },
+                                    "sender_contact": {
+                                        "type": "string",
+                                        "description": "Sender contact"
+                                    },
+                                    "recipient_name": {
+                                        "type": "string",
+                                        "description": "Recipient name"
+                                    },
+                                    "recipient_contact": {
+                                        "type": "string",
+                                        "description": "Recipient contact"
+                                    },
+                                    "message_subject": {
+                                        "type": "string",
+                                        "description": "Message subject"
+                                    },
+                                    "message_body": {
+                                        "type": "string",
+                                        "description": "Message body"
+                                    },
+                                    "message_status": {
+                                        "type": "string",
+                                        "description": "Message status"
+                                    },
+                                    "related_contact_id": {
+                                        "type": "string",
+                                        "description": "Related contact id"
+                                    },
+                                    "related_company_id": {
+                                        "type": "string",
+                                        "description": "Related company id"
+                                    },
+                                    "related_deal_id": {
+                                        "type": "string",
+                                        "description": "Related deal id"
+                                    },
+                                    "sent_by_user_id": {
+                                        "type": "string",
+                                        "description": "Sent by user id"
+                                    },
+                                    "external_message_id": {
+                                        "type": "string",
+                                        "description": "External message id"
+                                    },
+                                    "date_sent": {
+                                        "type": "string",
+                                        "description": "Date sent"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Crm Messages",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "message_channel": {
+                                        "type": "string",
+                                        "description": "Message channel"
+                                    },
+                                    "sender_name": {
+                                        "type": "string",
+                                        "description": "Sender name"
+                                    },
+                                    "sender_contact": {
+                                        "type": "string",
+                                        "description": "Sender contact"
+                                    },
+                                    "recipient_name": {
+                                        "type": "string",
+                                        "description": "Recipient name"
+                                    },
+                                    "recipient_contact": {
+                                        "type": "string",
+                                        "description": "Recipient contact"
+                                    },
+                                    "message_subject": {
+                                        "type": "string",
+                                        "description": "Message subject"
+                                    },
+                                    "message_body": {
+                                        "type": "string",
+                                        "description": "Message body"
+                                    },
+                                    "message_status": {
+                                        "type": "string",
+                                        "description": "Message status"
+                                    },
+                                    "related_contact_id": {
+                                        "type": "string",
+                                        "description": "Related contact id"
+                                    },
+                                    "related_company_id": {
+                                        "type": "string",
+                                        "description": "Related company id"
+                                    },
+                                    "related_deal_id": {
+                                        "type": "string",
+                                        "description": "Related deal id"
+                                    },
+                                    "sent_by_user_id": {
+                                        "type": "string",
+                                        "description": "Sent by user id"
+                                    },
+                                    "external_message_id": {
+                                        "type": "string",
+                                        "description": "External message id"
+                                    },
+                                    "date_sent": {
+                                        "type": "string",
+                                        "description": "Date sent"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Crm Messages id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

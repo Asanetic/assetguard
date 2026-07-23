@@ -1,0 +1,201 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Crm Leads API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/bloomcrm/crmleads/crmleads": {
+            "get": {
+                "summary": "Get Crm Leads",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Crm Leads",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "lead_name": {
+                                        "type": "string",
+                                        "description": "Lead name"
+                                    },
+                                    "contact_id": {
+                                        "type": "string",
+                                        "description": "Contact id"
+                                    },
+                                    "company_id": {
+                                        "type": "string",
+                                        "description": "Company id"
+                                    },
+                                    "lead_source": {
+                                        "type": "string",
+                                        "description": "Lead source"
+                                    },
+                                    "lead_status": {
+                                        "type": "string",
+                                        "description": "Lead status"
+                                    },
+                                    "interest_level": {
+                                        "type": "string",
+                                        "description": "Interest level"
+                                    },
+                                    "estimated_value": {
+                                        "type": "string",
+                                        "description": "Estimated value"
+                                    },
+                                    "assigned_user_id": {
+                                        "type": "string",
+                                        "description": "Assigned user id"
+                                    },
+                                    "next_followup_date": {
+                                        "type": "string",
+                                        "description": "Next followup date"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "description": "Notes"
+                                    },
+                                    "converted_status": {
+                                        "type": "string",
+                                        "description": "Converted status"
+                                    },
+                                    "converted_contact_id": {
+                                        "type": "string",
+                                        "description": "Converted contact id"
+                                    },
+                                    "converted_deal_id": {
+                                        "type": "string",
+                                        "description": "Converted deal id"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_updated": {
+                                        "type": "string",
+                                        "description": "Date updated"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Crm Leads",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "lead_name": {
+                                        "type": "string",
+                                        "description": "Lead name"
+                                    },
+                                    "contact_id": {
+                                        "type": "string",
+                                        "description": "Contact id"
+                                    },
+                                    "company_id": {
+                                        "type": "string",
+                                        "description": "Company id"
+                                    },
+                                    "lead_source": {
+                                        "type": "string",
+                                        "description": "Lead source"
+                                    },
+                                    "lead_status": {
+                                        "type": "string",
+                                        "description": "Lead status"
+                                    },
+                                    "interest_level": {
+                                        "type": "string",
+                                        "description": "Interest level"
+                                    },
+                                    "estimated_value": {
+                                        "type": "string",
+                                        "description": "Estimated value"
+                                    },
+                                    "assigned_user_id": {
+                                        "type": "string",
+                                        "description": "Assigned user id"
+                                    },
+                                    "next_followup_date": {
+                                        "type": "string",
+                                        "description": "Next followup date"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "description": "Notes"
+                                    },
+                                    "converted_status": {
+                                        "type": "string",
+                                        "description": "Converted status"
+                                    },
+                                    "converted_contact_id": {
+                                        "type": "string",
+                                        "description": "Converted contact id"
+                                    },
+                                    "converted_deal_id": {
+                                        "type": "string",
+                                        "description": "Converted deal id"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_updated": {
+                                        "type": "string",
+                                        "description": "Date updated"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Crm Leads id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

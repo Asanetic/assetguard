@@ -1,0 +1,56 @@
+    {/*uses css none*/}
+    <div className="col-md-12 p-0 m-0 ">
+      {'navigationisle'}
+      {/* BACKGROUND IMAGE */}
+      <div
+        className="col-md-12 p-0 m-0 "
+        style={{
+          backgroundImage:
+            "url('/img/loginbg.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >          
+
+      {/* OVERLAY */}
+      <div
+        className="col-md-12 p-0 m-0  "
+        style={{
+          background: "rgba(255, 255, 255, 0.4)",
+        }}
+      >
+
+      {/* CONTENT */}
+      <div className="position-relative min-vh-100 d-flex align-items-center justify-content-center p-0">
+        <div className="row  col-md-12 justify-content-center p-0 m-0 ">
+          <div className="col-md-12 m-0 p-0">
+            <div
+              className="p-0 col-md-12 m-0 rounded-4"
+              style={{               
+                background: "rgba(255, 255, 255, 0.5)",
+                 backdropFilter: "blur(10px)",
+              }}>
+
+              {/* HEADER */}
+              <div className="mb-4">
+                <h3 className="fw-bold mb-2">{'profiletitle'}</h3>
+
+              </div>
+
+              {/* FORM */}
+              <form {'formisle'}>
+                <div className="row col-md-12 justify-content-center p-0 m-0 ">
+                <div className="row justify-content-center col-md-12">
+                 {'imageisle'}
+                </div>
+                 {'inputssection'}
+                </div>
+              </form>
+              {'minilistisle'}
+            </div>
+          </div>
+        </div>
+      </div>
+        </div>
+      </div>
+    </div>

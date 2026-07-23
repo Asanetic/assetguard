@@ -1,0 +1,193 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Asset Alarms API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/assetguard/assetalarms/assetalarms": {
+            "get": {
+                "summary": "Get Asset Alarms",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Asset Alarms",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "alarm_type": {
+                                        "type": "string",
+                                        "description": "Alarm type"
+                                    },
+                                    "alarm_time": {
+                                        "type": "string",
+                                        "description": "Alarm time"
+                                    },
+                                    "device_serial": {
+                                        "type": "string",
+                                        "description": "Device serial"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "ack_status": {
+                                        "type": "string",
+                                        "description": "Ack status"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "ack_by": {
+                                        "type": "string",
+                                        "description": "Ack by"
+                                    },
+                                    "close_status": {
+                                        "type": "string",
+                                        "description": "Close status"
+                                    },
+                                    "registered_on": {
+                                        "type": "string",
+                                        "description": "Registered on"
+                                    },
+                                    "closed_by": {
+                                        "type": "string",
+                                        "description": "Closed by"
+                                    },
+                                    "ack_time": {
+                                        "type": "string",
+                                        "description": "Ack time"
+                                    },
+                                    "close_time": {
+                                        "type": "string",
+                                        "description": "Close time"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Asset Alarms",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "alarm_type": {
+                                        "type": "string",
+                                        "description": "Alarm type"
+                                    },
+                                    "alarm_time": {
+                                        "type": "string",
+                                        "description": "Alarm time"
+                                    },
+                                    "device_serial": {
+                                        "type": "string",
+                                        "description": "Device serial"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "ack_status": {
+                                        "type": "string",
+                                        "description": "Ack status"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "ack_by": {
+                                        "type": "string",
+                                        "description": "Ack by"
+                                    },
+                                    "close_status": {
+                                        "type": "string",
+                                        "description": "Close status"
+                                    },
+                                    "registered_on": {
+                                        "type": "string",
+                                        "description": "Registered on"
+                                    },
+                                    "closed_by": {
+                                        "type": "string",
+                                        "description": "Closed by"
+                                    },
+                                    "ack_time": {
+                                        "type": "string",
+                                        "description": "Ack time"
+                                    },
+                                    "close_time": {
+                                        "type": "string",
+                                        "description": "Close time"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Asset Alarms id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

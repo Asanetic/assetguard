@@ -1,0 +1,329 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Internet Packages API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/internetpackages/internetpackages": {
+            "get": {
+                "summary": "Get Internet Packages",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Internet Packages",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "plan_name": {
+                                        "type": "string",
+                                        "description": "Plan name"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "package_data_rate": {
+                                        "type": "string",
+                                        "description": "Package data rate"
+                                    },
+                                    "onexpiry_service": {
+                                        "type": "string",
+                                        "description": "Onexpiry service"
+                                    },
+                                    "package_amount": {
+                                        "type": "string",
+                                        "description": "Package amount"
+                                    },
+                                    "package_duration": {
+                                        "type": "string",
+                                        "description": "Package duration"
+                                    },
+                                    "package_type": {
+                                        "type": "string",
+                                        "description": "Package type"
+                                    },
+                                    "download_rate": {
+                                        "type": "string",
+                                        "description": "Download rate"
+                                    },
+                                    "upload_rate": {
+                                        "type": "string",
+                                        "description": "Upload rate"
+                                    },
+                                    "package_code": {
+                                        "type": "string",
+                                        "description": "Package code"
+                                    },
+                                    "local_address": {
+                                        "type": "string",
+                                        "description": "Local address"
+                                    },
+                                    "remote_address": {
+                                        "type": "string",
+                                        "description": "Remote address"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Internet Packages",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "plan_name": {
+                                        "type": "string",
+                                        "description": "Plan name"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "package_data_rate": {
+                                        "type": "string",
+                                        "description": "Package data rate"
+                                    },
+                                    "onexpiry_service": {
+                                        "type": "string",
+                                        "description": "Onexpiry service"
+                                    },
+                                    "package_amount": {
+                                        "type": "string",
+                                        "description": "Package amount"
+                                    },
+                                    "package_duration": {
+                                        "type": "string",
+                                        "description": "Package duration"
+                                    },
+                                    "package_type": {
+                                        "type": "string",
+                                        "description": "Package type"
+                                    },
+                                    "download_rate": {
+                                        "type": "string",
+                                        "description": "Download rate"
+                                    },
+                                    "upload_rate": {
+                                        "type": "string",
+                                        "description": "Upload rate"
+                                    },
+                                    "package_code": {
+                                        "type": "string",
+                                        "description": "Package code"
+                                    },
+                                    "local_address": {
+                                        "type": "string",
+                                        "description": "Local address"
+                                    },
+                                    "remote_address": {
+                                        "type": "string",
+                                        "description": "Remote address"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Internet Packages id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/internetpackages/internetpackages": {
+            "get": {
+                "summary": "Get Internet Packages",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Internet Packages",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "plan_name": {
+                                        "type": "string",
+                                        "description": "Plan name"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "package_data_rate": {
+                                        "type": "string",
+                                        "description": "Package data rate"
+                                    },
+                                    "onexpiry_service": {
+                                        "type": "string",
+                                        "description": "Onexpiry service"
+                                    },
+                                    "package_amount": {
+                                        "type": "string",
+                                        "description": "Package amount"
+                                    },
+                                    "package_duration": {
+                                        "type": "string",
+                                        "description": "Package duration"
+                                    },
+                                    "package_type": {
+                                        "type": "string",
+                                        "description": "Package type"
+                                    },
+                                    "download_rate": {
+                                        "type": "string",
+                                        "description": "Download rate"
+                                    },
+                                    "upload_rate": {
+                                        "type": "string",
+                                        "description": "Upload rate"
+                                    },
+                                    "package_code": {
+                                        "type": "string",
+                                        "description": "Package code"
+                                    },
+                                    "local_address": {
+                                        "type": "string",
+                                        "description": "Local address"
+                                    },
+                                    "remote_address": {
+                                        "type": "string",
+                                        "description": "Remote address"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Internet Packages",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "plan_name": {
+                                        "type": "string",
+                                        "description": "Plan name"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "package_data_rate": {
+                                        "type": "string",
+                                        "description": "Package data rate"
+                                    },
+                                    "onexpiry_service": {
+                                        "type": "string",
+                                        "description": "Onexpiry service"
+                                    },
+                                    "package_amount": {
+                                        "type": "string",
+                                        "description": "Package amount"
+                                    },
+                                    "package_duration": {
+                                        "type": "string",
+                                        "description": "Package duration"
+                                    },
+                                    "package_type": {
+                                        "type": "string",
+                                        "description": "Package type"
+                                    },
+                                    "download_rate": {
+                                        "type": "string",
+                                        "description": "Download rate"
+                                    },
+                                    "upload_rate": {
+                                        "type": "string",
+                                        "description": "Upload rate"
+                                    },
+                                    "package_code": {
+                                        "type": "string",
+                                        "description": "Package code"
+                                    },
+                                    "local_address": {
+                                        "type": "string",
+                                        "description": "Local address"
+                                    },
+                                    "remote_address": {
+                                        "type": "string",
+                                        "description": "Remote address"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Internet Packages id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

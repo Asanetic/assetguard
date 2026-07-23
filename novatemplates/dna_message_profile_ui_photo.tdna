@@ -1,0 +1,85 @@
+<div className="elforge_message_profile_v1_workspace container-fluid">
+<form {'formisle'}>
+
+{/* PROFILE HEADER */}
+<div className="col-md-12 mb-2 p-lg-0 pt-3 border-bottom border_set">
+{'navigationisle'}
+</div>
+<div className="elforge_message_profile_v1_header">
+<div className="elforge_message_profile_v2_avatar_block mosy_image_toggle_isle ">
+
+  <div className="elforge_message_profile_v2_avatar_wrapper">
+
+<div className="elforge_message_profile_v2_avatar">
+{'imageisle'}
+</div>
+</div>
+</div>
+
+<div>
+
+<div className="elforge_message_profile_v1_name">
+ <h4>{'profiletitle'}</h4>
+</div>
+
+<div className="elforge_message_profile_v1_meta">
+{'data2'}
+</div>
+
+</div>
+
+</div>
+
+
+
+{/* CONTENT */}
+
+<div className="elforge_message_profile_v1_body">
+
+
+{/* LEFT PANEL */}
+
+<div className="elforge_message_profile_v1_main_panel">
+
+<div className="elforge_message_profile_v1_message p-0 m-0 ">
+
+{'inputssection'}
+
+</div>
+
+</div>
+
+
+
+{/* RIGHT SIDEBAR */}
+
+<div className="elforge_message_profile_v1_sidebar">
+
+<div className="elforge_message_profile_v1_info_card">
+<div className="elforge_message_profile_v1_info_title">{'label:data1'}</div>
+<div className="elforge_message_profile_v1_info_value">{'data1'}</div>
+</div>
+
+<div className="elforge_message_profile_v1_info_card">
+<div className="elforge_message_profile_v1_info_title">{'label:data2'}</div>
+<div className="elforge_message_profile_v1_info_value">{'data2'}</div>
+</div>
+
+<div className="elforge_message_profile_v1_info_card">
+<div className="elforge_message_profile_v1_info_title">{'label:data3'}</div>
+<div className="elforge_message_profile_v1_info_value">{'data3'}</div>
+</div>
+
+<div className="elforge_message_profile_v1_info_card">
+<div className="elforge_message_profile_v1_info_title">{'label:data4'}</div>
+<div className="elforge_message_profile_v1_info_value">{'data4'}</div>
+</div>
+
+</div>
+
+
+</div>
+</form>
+
+{'minilistisle'}
+</div>

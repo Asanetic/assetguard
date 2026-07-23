@@ -1,0 +1,873 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "User Manifest  API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/usermanifest/usermanifest": {
+            "get": {
+                "summary": "Get User Manifest ",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "description": "User id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "project_id": {
+                                        "type": "string",
+                                        "description": "Project id"
+                                    },
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Project name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update User Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "description": "User id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "project_id": {
+                                        "type": "string",
+                                        "description": "Project id"
+                                    },
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Project name"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " User Manifest  id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/grupet/usermanifest/usermanifest": {
+            "get": {
+                "summary": "Get User Manifest ",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "description": "User id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "project_id": {
+                                        "type": "string",
+                                        "description": "Project id"
+                                    },
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Project name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update User Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "description": "User id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "project_id": {
+                                        "type": "string",
+                                        "description": "Project id"
+                                    },
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Project name"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " User Manifest  id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/usermanifest/usermanifest": {
+            "get": {
+                "summary": "Get User Manifest ",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "description": "User id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "project_id": {
+                                        "type": "string",
+                                        "description": "Project id"
+                                    },
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Project name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update User Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "description": "User id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "project_id": {
+                                        "type": "string",
+                                        "description": "Project id"
+                                    },
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Project name"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " User Manifest  id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomcrm/usermanifest/usermanifest": {
+            "get": {
+                "summary": "Get User Manifest ",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "description": "User id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "project_id": {
+                                        "type": "string",
+                                        "description": "Project id"
+                                    },
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Project name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update User Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "description": "User id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "project_id": {
+                                        "type": "string",
+                                        "description": "Project id"
+                                    },
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Project name"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " User Manifest  id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomnovabill/usermanifest/usermanifest": {
+            "get": {
+                "summary": "Get User Manifest ",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "description": "User id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "project_id": {
+                                        "type": "string",
+                                        "description": "Project id"
+                                    },
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Project name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update User Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "description": "User id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "project_id": {
+                                        "type": "string",
+                                        "description": "Project id"
+                                    },
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Project name"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " User Manifest  id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/supercrm/usermanifest/usermanifest": {
+            "get": {
+                "summary": "Get User Manifest ",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "description": "User id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "project_id": {
+                                        "type": "string",
+                                        "description": "Project id"
+                                    },
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Project name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update User Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "description": "User id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "project_id": {
+                                        "type": "string",
+                                        "description": "Project id"
+                                    },
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Project name"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " User Manifest  id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/assetguard/usermanifest/usermanifest": {
+            "get": {
+                "summary": "Get User Manifest ",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "admin_manifest_key": {
+                                        "type": "string",
+                                        "description": "Admin manifest key"
+                                    },
+                                    "user_id": {
+                                        "type": "string",
+                                        "description": "User id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "project_id": {
+                                        "type": "string",
+                                        "description": "Project id"
+                                    },
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Project name"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update User Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "admin_manifest_key": {
+                                        "type": "string",
+                                        "description": "Admin manifest key"
+                                    },
+                                    "user_id": {
+                                        "type": "string",
+                                        "description": "User id"
+                                    },
+                                    "user_name": {
+                                        "type": "string",
+                                        "description": "User name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "project_id": {
+                                        "type": "string",
+                                        "description": "Project id"
+                                    },
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Project name"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " User Manifest  id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

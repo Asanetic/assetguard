@@ -1,0 +1,249 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Smart Payments API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/smartpayments/smartpayments": {
+            "get": {
+                "summary": "Get Smart Payments",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Smart Payments",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "payment_reference": {
+                                        "type": "string",
+                                        "description": "Payment reference"
+                                    },
+                                    "request_reference": {
+                                        "type": "string",
+                                        "description": "Request reference"
+                                    },
+                                    "related_module": {
+                                        "type": "string",
+                                        "description": "Related module"
+                                    },
+                                    "related_record_id": {
+                                        "type": "string",
+                                        "description": "Related record id"
+                                    },
+                                    "receipt_number": {
+                                        "type": "string",
+                                        "description": "Receipt number"
+                                    },
+                                    "payer_name": {
+                                        "type": "string",
+                                        "description": "Payer name"
+                                    },
+                                    "payer_phone": {
+                                        "type": "string",
+                                        "description": "Payer phone"
+                                    },
+                                    "payer_email": {
+                                        "type": "string",
+                                        "description": "Payer email"
+                                    },
+                                    "payment_method": {
+                                        "type": "string",
+                                        "description": "Payment method"
+                                    },
+                                    "payment_channel": {
+                                        "type": "string",
+                                        "description": "Payment channel"
+                                    },
+                                    "transaction_code": {
+                                        "type": "string",
+                                        "description": "Transaction code"
+                                    },
+                                    "currency": {
+                                        "type": "string",
+                                        "description": "Currency"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "payment_description": {
+                                        "type": "string",
+                                        "description": "Payment description"
+                                    },
+                                    "payment_notes": {
+                                        "type": "string",
+                                        "description": "Payment notes"
+                                    },
+                                    "payment_date": {
+                                        "type": "string",
+                                        "description": "Payment date"
+                                    },
+                                    "payment_status": {
+                                        "type": "string",
+                                        "description": "Payment status"
+                                    },
+                                    "processed_by": {
+                                        "type": "string",
+                                        "description": "Processed by"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "updated_on": {
+                                        "type": "string",
+                                        "description": "Updated on"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Smart Payments",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "payment_reference": {
+                                        "type": "string",
+                                        "description": "Payment reference"
+                                    },
+                                    "request_reference": {
+                                        "type": "string",
+                                        "description": "Request reference"
+                                    },
+                                    "related_module": {
+                                        "type": "string",
+                                        "description": "Related module"
+                                    },
+                                    "related_record_id": {
+                                        "type": "string",
+                                        "description": "Related record id"
+                                    },
+                                    "receipt_number": {
+                                        "type": "string",
+                                        "description": "Receipt number"
+                                    },
+                                    "payer_name": {
+                                        "type": "string",
+                                        "description": "Payer name"
+                                    },
+                                    "payer_phone": {
+                                        "type": "string",
+                                        "description": "Payer phone"
+                                    },
+                                    "payer_email": {
+                                        "type": "string",
+                                        "description": "Payer email"
+                                    },
+                                    "payment_method": {
+                                        "type": "string",
+                                        "description": "Payment method"
+                                    },
+                                    "payment_channel": {
+                                        "type": "string",
+                                        "description": "Payment channel"
+                                    },
+                                    "transaction_code": {
+                                        "type": "string",
+                                        "description": "Transaction code"
+                                    },
+                                    "currency": {
+                                        "type": "string",
+                                        "description": "Currency"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "payment_description": {
+                                        "type": "string",
+                                        "description": "Payment description"
+                                    },
+                                    "payment_notes": {
+                                        "type": "string",
+                                        "description": "Payment notes"
+                                    },
+                                    "payment_date": {
+                                        "type": "string",
+                                        "description": "Payment date"
+                                    },
+                                    "payment_status": {
+                                        "type": "string",
+                                        "description": "Payment status"
+                                    },
+                                    "processed_by": {
+                                        "type": "string",
+                                        "description": "Processed by"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "updated_on": {
+                                        "type": "string",
+                                        "description": "Updated on"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Smart Payments id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

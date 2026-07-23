@@ -1,0 +1,111 @@
+<div className="row justify-content-center p-4 elforge_userlist_template_v1_wrapper">
+
+  {/* SEARCH BAR */}
+  {showDataControlSections && (
+  <>
+    <div className="elforge_userlist_template_v1_searchBar mb-4 col-md-12">
+      <div className="align-items-center col-md-12">
+        <div className="row g-2 align-items-center col-md-12">
+
+          <div className="col-md-4 pt-2">
+           <b >{'pagetitle'}</b> {'actionbuttons'}
+          </div>
+
+          <div className="col-md-5">
+            {showDataControlSections && (
+            <>
+              <div className="col-md-12 row m-0 p-0 justify-content-start">
+                <div className="col-md-8 text-left mx-0 px-0">
+                  {'searchisle'}
+                </div>
+                <div className="col-md-4 text-left mx-0 px-0">
+                  {'refreshisle'}
+                </div>
+              </div>
+            </>
+            )}
+          </div>
+
+          <div className="col-md-3 text-right">
+            {'addnewbtn'}
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </>
+  )}
+
+  {/* GRID */}
+  <div className="row col-md-12 justify-content-center m-0 p-0">
+
+    {'csgridstart'}
+
+    <div key={index} className="col-md-3 mb-4 datarow_card">
+
+      <div className="elforge_userlist_template_v1_card">
+
+        {/* Rating */}
+        <div className="elforge_userlist_template_v1_rating">
+          {'data9'}
+        </div>
+
+        {/* Favorite */}
+        <div className="elforge_userlist_template_v1_favorite">-</div>
+
+        {/* Avatar */}
+        <div className="elforge_userlist_template_v1_avatarWrap">
+
+          <MosyImageViewer
+            media={`/api/mediaroom?media=${btoa(({'data2'}))}`}
+            mediaRoot={""}
+            defaultLogo={logo.src}
+            imageClass="elforge_userlist_template_v1_avatar"
+          />
+
+        </div>
+
+        {/* Info */}
+        <h6 className="fw-semibold mb-1">{'data3'}</h6>
+
+        <span className="elforge_userlist_template_v1_specialty">
+          {'data4'}
+        </span>
+
+        <div className="elforge_userlist_template_v1_address">
+          {'data5'}
+        </div>
+
+        <div className="col-md-12" style={{position:`relative`}}>
+          {'rowoptions'}
+        </div>
+
+        {/* Footer */}
+        <div className="elforge_userlist_template_v1_footer">
+
+          <span className="elforge_userlist_template_v1_availability">
+            {'data6'}
+          </span>
+
+          <button
+            type="button"
+            className="elforge_userlist_template_v1_askBtn"
+          >
+            {'data7'}
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    {'csgridend'}
+
+    <div className="col-md-12 mt-3">
+      {'pagination'}
+    </div>
+
+  </div>
+
+</div>

@@ -1,0 +1,161 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Users API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/users/users": {
+            "get": {
+                "summary": "Get Users",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Users",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "full_name": {
+                                        "type": "string",
+                                        "description": "Full name"
+                                    },
+                                    "phone_number": {
+                                        "type": "string",
+                                        "description": "Phone number"
+                                    },
+                                    "email_address": {
+                                        "type": "string",
+                                        "description": "Email address"
+                                    },
+                                    "user_password": {
+                                        "type": "string",
+                                        "description": "User password"
+                                    },
+                                    "user_role": {
+                                        "type": "string",
+                                        "description": "User role"
+                                    },
+                                    "department_name": {
+                                        "type": "string",
+                                        "description": "Department name"
+                                    },
+                                    "profile_photo": {
+                                        "type": "string",
+                                        "description": "Profile photo"
+                                    },
+                                    "account_status": {
+                                        "type": "string",
+                                        "description": "Account status"
+                                    },
+                                    "last_login": {
+                                        "type": "string",
+                                        "description": "Last login"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Users",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "full_name": {
+                                        "type": "string",
+                                        "description": "Full name"
+                                    },
+                                    "phone_number": {
+                                        "type": "string",
+                                        "description": "Phone number"
+                                    },
+                                    "email_address": {
+                                        "type": "string",
+                                        "description": "Email address"
+                                    },
+                                    "user_password": {
+                                        "type": "string",
+                                        "description": "User password"
+                                    },
+                                    "user_role": {
+                                        "type": "string",
+                                        "description": "User role"
+                                    },
+                                    "department_name": {
+                                        "type": "string",
+                                        "description": "Department name"
+                                    },
+                                    "profile_photo": {
+                                        "type": "string",
+                                        "description": "Profile photo"
+                                    },
+                                    "account_status": {
+                                        "type": "string",
+                                        "description": "Account status"
+                                    },
+                                    "last_login": {
+                                        "type": "string",
+                                        "description": "Last login"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Users id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "assetalarms/profile": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvYXNzZXRfYWxhcm1zL0Fzc2V0IEFsYXJtc19ibHVlcHJpbnQuRG5hYWY=",
+    "assetalarms/list": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvYXNzZXRfYWxhcm1zL0Fzc2V0IEFsYXJtc19ibHVlcHJpbnQuRG5hYWY=",
+    "devicelist/profile": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvZGV2aWNlX2xpc3QvRGV2aWNlIExpc3RfYmx1ZXByaW50LkRuYWFm",
+    "devicelist/list": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvZGV2aWNlX2xpc3QvRGV2aWNlIExpc3RfYmx1ZXByaW50LkRuYWFm",
+    "devicepings/profile": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvZGV2aWNlX3BpbmdzL0RldmljZSBQaW5nc19ibHVlcHJpbnQuRG5hYWY=",
+    "devicepings/list": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvZGV2aWNlX3BpbmdzL0RldmljZSBQaW5nc19ibHVlcHJpbnQuRG5hYWY=",
+    "gpslogs/profile": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvZ3BzX2xvZ3MvR3BzIExvZ3NfYmx1ZXByaW50LkRuYWFm",
+    "gpslogs/list": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvZ3BzX2xvZ3MvR3BzIExvZ3NfYmx1ZXByaW50LkRuYWFm",
+    "pagemanifest/profile": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvcGFnZV9tYW5pZmVzdF8vUGFnZSBNYW5pZmVzdCBfYmx1ZXByaW50LkRuYWFm",
+    "pagemanifest/list": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvcGFnZV9tYW5pZmVzdF8vUGFnZSBNYW5pZmVzdCBfYmx1ZXByaW50LkRuYWFm",
+    "sites/profile": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvc2l0ZXMvU2l0ZXNfYmx1ZXByaW50LkRuYWFm",
+    "sites/list": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvc2l0ZXMvU2l0ZXNfYmx1ZXByaW50LkRuYWFm",
+    "systemrolebundles/profile": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvc3lzdGVtX3JvbGVfYnVuZGxlcy9TeXN0ZW0gUm9sZSBCdW5kbGVzX2JsdWVwcmludC5EbmFhZg==",
+    "systemrolebundles/list": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvc3lzdGVtX3JvbGVfYnVuZGxlcy9TeXN0ZW0gUm9sZSBCdW5kbGVzX2JsdWVwcmludC5EbmFhZg==",
+    "systemusers/profile": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvc3lzdGVtX3VzZXJzL1N5c3RlbSBVc2Vyc19ibHVlcHJpbnQuRG5hYWY=",
+    "systemusers/list": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvc3lzdGVtX3VzZXJzL1N5c3RlbSBVc2Vyc19ibHVlcHJpbnQuRG5hYWY=",
+    "userbundlerolefunctions/profile": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvdXNlcl9idW5kbGVfcm9sZV9mdW5jdGlvbnMvVXNlciBCdW5kbGUgUm9sZSBGdW5jdGlvbnNfYmx1ZXByaW50LkRuYWFm",
+    "userbundlerolefunctions/list": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvdXNlcl9idW5kbGVfcm9sZV9mdW5jdGlvbnMvVXNlciBCdW5kbGUgUm9sZSBGdW5jdGlvbnNfYmx1ZXByaW50LkRuYWFm",
+    "usermanifest/profile": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvdXNlcl9tYW5pZmVzdF8vVXNlciBNYW5pZmVzdCBfYmx1ZXByaW50LkRuYWFm",
+    "usermanifest/list": "http://localhost/nextv2/mainapps/assetguard/terminal/home?check_autoload=Li4vYXBwZG5hL2Fzc2V0Z3VhcmQvdXNlcl9tYW5pZmVzdF8vVXNlciBNYW5pZmVzdCBfYmx1ZXByaW50LkRuYWFm"
+}

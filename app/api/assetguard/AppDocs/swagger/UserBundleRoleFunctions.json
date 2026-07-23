@@ -1,0 +1,753 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "User Bundle Role Functions API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/userbundlerolefunctions/userbundlerolefunctions": {
+            "get": {
+                "summary": "Get User Bundle Role Functions",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User Bundle Role Functions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "bundle_id": {
+                                        "type": "string",
+                                        "description": "Bundle id"
+                                    },
+                                    "bundle_name": {
+                                        "type": "string",
+                                        "description": "Bundle name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update User Bundle Role Functions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "bundle_id": {
+                                        "type": "string",
+                                        "description": "Bundle id"
+                                    },
+                                    "bundle_name": {
+                                        "type": "string",
+                                        "description": "Bundle name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " User Bundle Role Functions id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/grupet/userbundlerolefunctions/userbundlerolefunctions": {
+            "get": {
+                "summary": "Get User Bundle Role Functions",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User Bundle Role Functions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "bundle_id": {
+                                        "type": "string",
+                                        "description": "Bundle id"
+                                    },
+                                    "bundle_name": {
+                                        "type": "string",
+                                        "description": "Bundle name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update User Bundle Role Functions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "bundle_id": {
+                                        "type": "string",
+                                        "description": "Bundle id"
+                                    },
+                                    "bundle_name": {
+                                        "type": "string",
+                                        "description": "Bundle name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " User Bundle Role Functions id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/userbundlerolefunctions/userbundlerolefunctions": {
+            "get": {
+                "summary": "Get User Bundle Role Functions",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User Bundle Role Functions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "bundle_id": {
+                                        "type": "string",
+                                        "description": "Bundle id"
+                                    },
+                                    "bundle_name": {
+                                        "type": "string",
+                                        "description": "Bundle name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update User Bundle Role Functions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "bundle_id": {
+                                        "type": "string",
+                                        "description": "Bundle id"
+                                    },
+                                    "bundle_name": {
+                                        "type": "string",
+                                        "description": "Bundle name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " User Bundle Role Functions id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomcrm/userbundlerolefunctions/userbundlerolefunctions": {
+            "get": {
+                "summary": "Get User Bundle Role Functions",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User Bundle Role Functions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "bundle_id": {
+                                        "type": "string",
+                                        "description": "Bundle id"
+                                    },
+                                    "bundle_name": {
+                                        "type": "string",
+                                        "description": "Bundle name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update User Bundle Role Functions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "bundle_id": {
+                                        "type": "string",
+                                        "description": "Bundle id"
+                                    },
+                                    "bundle_name": {
+                                        "type": "string",
+                                        "description": "Bundle name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " User Bundle Role Functions id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomnovabill/userbundlerolefunctions/userbundlerolefunctions": {
+            "get": {
+                "summary": "Get User Bundle Role Functions",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User Bundle Role Functions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "bundle_id": {
+                                        "type": "string",
+                                        "description": "Bundle id"
+                                    },
+                                    "bundle_name": {
+                                        "type": "string",
+                                        "description": "Bundle name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update User Bundle Role Functions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "bundle_id": {
+                                        "type": "string",
+                                        "description": "Bundle id"
+                                    },
+                                    "bundle_name": {
+                                        "type": "string",
+                                        "description": "Bundle name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " User Bundle Role Functions id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/supercrm/userbundlerolefunctions/userbundlerolefunctions": {
+            "get": {
+                "summary": "Get User Bundle Role Functions",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User Bundle Role Functions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "bundle_id": {
+                                        "type": "string",
+                                        "description": "Bundle id"
+                                    },
+                                    "bundle_name": {
+                                        "type": "string",
+                                        "description": "Bundle name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update User Bundle Role Functions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "bundle_id": {
+                                        "type": "string",
+                                        "description": "Bundle id"
+                                    },
+                                    "bundle_name": {
+                                        "type": "string",
+                                        "description": "Bundle name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " User Bundle Role Functions id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/assetguard/userbundlerolefunctions/userbundlerolefunctions": {
+            "get": {
+                "summary": "Get User Bundle Role Functions",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User Bundle Role Functions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "bundle_id": {
+                                        "type": "string",
+                                        "description": "Bundle id"
+                                    },
+                                    "bundle_name": {
+                                        "type": "string",
+                                        "description": "Bundle name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update User Bundle Role Functions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "bundle_id": {
+                                        "type": "string",
+                                        "description": "Bundle id"
+                                    },
+                                    "bundle_name": {
+                                        "type": "string",
+                                        "description": "Bundle name"
+                                    },
+                                    "role_id": {
+                                        "type": "string",
+                                        "description": "Role id"
+                                    },
+                                    "role_name": {
+                                        "type": "string",
+                                        "description": "Role name"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " User Bundle Role Functions id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

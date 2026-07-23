@@ -1,0 +1,281 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Assets API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/grupet/assets/assets": {
+            "get": {
+                "summary": "Get Assets",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Assets",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "asset_code": {
+                                        "type": "string",
+                                        "description": "Asset code"
+                                    },
+                                    "asset_name": {
+                                        "type": "string",
+                                        "description": "Asset name"
+                                    },
+                                    "asset_type": {
+                                        "type": "string",
+                                        "description": "Asset type"
+                                    },
+                                    "pricing_type": {
+                                        "type": "string",
+                                        "description": "Pricing type"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "logo": {
+                                        "type": "string",
+                                        "description": "Logo"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Assets",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "asset_code": {
+                                        "type": "string",
+                                        "description": "Asset code"
+                                    },
+                                    "asset_name": {
+                                        "type": "string",
+                                        "description": "Asset name"
+                                    },
+                                    "asset_type": {
+                                        "type": "string",
+                                        "description": "Asset type"
+                                    },
+                                    "pricing_type": {
+                                        "type": "string",
+                                        "description": "Pricing type"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "logo": {
+                                        "type": "string",
+                                        "description": "Logo"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Assets id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomnovabill/assets/assets": {
+            "get": {
+                "summary": "Get Assets",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Assets",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "asset_code": {
+                                        "type": "string",
+                                        "description": "Asset code"
+                                    },
+                                    "asset_name": {
+                                        "type": "string",
+                                        "description": "Asset name"
+                                    },
+                                    "asset_type": {
+                                        "type": "string",
+                                        "description": "Asset type"
+                                    },
+                                    "pricing_type": {
+                                        "type": "string",
+                                        "description": "Pricing type"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "logo": {
+                                        "type": "string",
+                                        "description": "Logo"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Assets",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "asset_code": {
+                                        "type": "string",
+                                        "description": "Asset code"
+                                    },
+                                    "asset_name": {
+                                        "type": "string",
+                                        "description": "Asset name"
+                                    },
+                                    "asset_type": {
+                                        "type": "string",
+                                        "description": "Asset type"
+                                    },
+                                    "pricing_type": {
+                                        "type": "string",
+                                        "description": "Pricing type"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "logo": {
+                                        "type": "string",
+                                        "description": "Logo"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Assets id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}
