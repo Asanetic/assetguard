@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useEntityController } from './useEntityController';
-import { useFormEngine } from '../uiControl/FormEngine';
+import { useFormEngine } from '../UiControl/FormEngine';
 import { MosyAlertCard, MosyNotify, closeMosyModal } from '../../../MosyUtils/ActionModals';
 // UI-only role gate — same convention as CompaniesGrid.jsx/EntityRowActionsMenu.jsx
 import { mosyACTRLHasRole } from '../../../auth/authAccesControl';
