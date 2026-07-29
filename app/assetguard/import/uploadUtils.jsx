@@ -4,7 +4,7 @@ import { mosyPostData } from "../../MosyUtils/hiveUtils";
 export async function mosyCsvFileImport({endpoint, csvData,colsArray}) {
     if (!csvData.length) return;
   
-    console.log(`mosyCsvFileImport ${endpoint}`)
+    //console.log(`mosyCsvFileImport ${endpoint}`)
 
     MosyNotify({message : "Uploading...", icon : "upload", addTimer : false})
 

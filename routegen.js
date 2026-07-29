@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const targetDir = path.join(__dirname, '..', 'app', '');
+const targetDir = path.join(__dirname, '..', 'assetguard', 'app/assetguard');
 
 const folders = fs.readdirSync(targetDir, { withFileTypes: true })
   .filter(d => d.isDirectory())
