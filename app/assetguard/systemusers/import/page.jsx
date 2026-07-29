@@ -4,11 +4,12 @@ import ImportCSVComponent from '../../import/uploadData';
 import { hiveRoutes } from '../../../appConfigs/hiveRoutes';
 
 import { getApiRoutes } from '../../AppRoutes/apiRoutesHandler';
+import { SystemusersSchema } from '../schema';
 
 const apiRoutes = getApiRoutes()
 
 export async function generateMetadata({ searchParams }) {
-  const mosyTitle = 'Import System Users data ';
+  const mosyTitle = 'Import Systemusers data ';
 
   return {
     title: mosyTitle ,
@@ -32,7 +33,7 @@ export default function UploadCsvPage() {
              <div className='content container-fluid p-0 m-0'>
               <div className='p-3'>
                <Suspense fallback={<div className='col-md-12 p-5 text-center h3'>Loading...</div>}>
-               <ImportCSVComponent colsArray={colsArray} title='Import System Users data ' endpoint={apiRoutes.systemusers.import} templateName='import_system_users_data__template.csv'/>
+               <ImportCSVComponent colsArray={colsArray} title='Import Systemusers data ' endpoint={apiRoutes.systemusers.import} templateName='import_system_users_data__template.csv'/>
               </Suspense>
             </div>
              </div>

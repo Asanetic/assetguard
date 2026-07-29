@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEntityController } from './useEntityController';
 import { useFormEngine } from '../uiControl/FormEngine';
-import { runRegisteredAction } from '../logicControl/actionsRegistry';
+import { MosyNotify } from '../../../MosyUtils/ActionModals';
+import { runRegisteredAction, normalizeActionResult } from '../logicControl/actionsRegistry'; // export normalizeActionResult from EntityDataEngine.js, re-export or import directly — your call
 
 // useEntityFormController — the ONE place profile/form behavior lives.
 // Mirrors useEntityGridController: any UI template (DynamicForm, a modal,
@@ -84,14 +85,15 @@ export function useEntityFormController(schema, { id, onDone, redirectOnDelete }
   // already use — one registry, one place to add "activate_account",
   // "disable_account", "send_reminder", etc.
   const runAction = useCallback(async (key) => {
-    if (!record) return;
-    await runRegisteredAction(key, [record], schema, router);
-    // Re-pull the record in case the action mutated it server-side
-    // (activate/disable status changes) — mirrors grid's runRowAction reload.
-    if (id) {
+    if (!record) return { ok: false, reload: false };
+    const result = normalizeActionResult(await runRegisteredAction(key, [record], schema, router));
+  
+    if (result.reload && id) {
       const fresh = await c.getOne(id);
       setRecord(fresh);
     }
+    if (result.navigateTo) router.push(result.navigateTo);
+    return result;
   }, [record, schema, router, id, c]);
 
   const cloneRecord = useCallback(async () => {
@@ -121,7 +123,20 @@ export function useEntityFormController(schema, { id, onDone, redirectOnDelete }
           const url = typeof a.navigateTo === 'function' ? a.navigateTo({ record, schema }) : a.navigateTo;
           return router.push(url);
         }
-        return runAction(a.key);
+       
+        return runAction(a.key).then((result) => {
+          if (result?.message) {
+            MosyNotify({
+              message: result.message,
+              icon: result.ok ? 'check-circle' : 'times-circle',
+              iconColor: result.ok ? 'success' : 'danger',
+              id: `profile-action-${a.key}`,
+              addTimer: true,
+              duration: result.ok ? 2500 : 4000,
+            });
+          }
+        });
+
       },
     }));
 

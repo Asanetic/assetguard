@@ -1,10 +1,10 @@
 'use client';
 import { useSearchParams } from 'next/navigation';
-import DynamicForm from './DynamicForm';
+import DynamicForm from '../../moduleControl/UiControl/DynamicForm';
 import { SystemusersSchema } from '../schema';
-import { useEntityFormController } from '../dataControl/useEntityFormController';
+import { useEntityFormController } from '../../moduleControl/dataControl/useEntityFormController';
 import { mosyGetSchemaTitle } from '../../../MosyUtils/hiveUtils';
-// import TestGrid from './TestGrid';
+import SystemusersActions from '../logicControl/actionsRegistry';
 
 // SystemusersProfile — pure shell. It resolves the id, wires up the
 // controller, and hands DynamicForm the two strings that make this page
@@ -16,10 +16,10 @@ import { mosyGetSchemaTitle } from '../../../MosyUtils/hiveUtils';
 export default function SystemusersProfile({ id: idProp, onDone }) {
   const searchParams = useSearchParams();
   const id = idProp ?? searchParams.get(`${SystemusersSchema.entity}_dataNode`);
-  const form = useEntityFormController(SystemusersSchema, {
+  const form = useEntityFormController(SystemusersSchema, SystemusersActions, {
     id,
     onDone,
-    redirectOnDelete: '/assetguard/Systemusers',
+    redirectOnDelete: './list',
   });
 
   // TestGrid (devices at this site) intentionally left out for now:
@@ -28,8 +28,8 @@ export default function SystemusersProfile({ id: idProp, onDone }) {
   return (
     <DynamicForm
       controller={form}
-      eyebrow={form.isEditing ? 'System User Profile' : 'System User Directory'}
-      title={form.isEditing ? mosyGetSchemaTitle(SystemusersSchema, form.values, '') : 'New User'}
+      eyebrow={form.isEditing ? 'User Profile' : 'System users Directory'}
+      title={form.isEditing ? mosyGetSchemaTitle(SystemusersSchema, form.values, '') : 'New System user'}
 
     />
   );

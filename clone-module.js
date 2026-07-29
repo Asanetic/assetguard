@@ -15,6 +15,20 @@
  *   node clone-module.js Template Clients
  *   -> clones  app/_mosy_module_template -> app/clients  (and api/ counterpart)
  *
+ * NESTED BUNDLES: --nest=<parentFolder> groups the module under an extra
+ * parent folder (e.g. a "sales" bucket holding several sub-modules), and
+ * --split-list-profile pulls the list/ and profile/ page folders OUT of
+ * the module root so they become their own sibling folders next to it,
+ * named "<module><suffix>" (suffix defaults to "list"/"profile", override
+ * with --list-suffix= / --profile-suffix=). dataControl/uiControl/
+ * logicControl stay put inside the normal module folder either way.
+ *
+ *   node clone-module.js Template DailySales --app=superpos --nest=sales --split-list-profile
+ *   -> clones  app/superpos/sales/dailysales/          (dataControl, uiControl, logicControl)
+ *              app/superpos/sales/dailysaleslist/       (was list/)
+ *              app/superpos/sales/dailysalesprofile/    (was profile/)
+ *              app/api/superpos/sales/dailysales/ ...same split applied on the API side
+ *
  * SAFE TO RE-RUN: if the destination folder already exists, cloning proceeds
  * into it (files are merged in). If an individual destination FILE already
  * exists, it's moved into a "_recycled" folder inside that module (with a
@@ -29,6 +43,10 @@ const args = process.argv.slice(2);
 const [FromEntity, ToEntity] = args.filter((a) => !a.startsWith('--'));
 const sourceArg = args.find((a) => a.startsWith('--source='))?.split('=')[1];
 const appArg = args.find((a) => a.startsWith('--app='))?.split('=')[1];
+const nestArg = args.find((a) => a.startsWith('--nest='))?.split('=')[1];
+const splitListProfile = args.includes('--split-list-profile');
+const listSuffix = args.find((a) => a.startsWith('--list-suffix='))?.split('=')[1] || 'list';
+const profileSuffix = args.find((a) => a.startsWith('--profile-suffix='))?.split('=')[1] || 'profile';
 
 if (!FromEntity || !ToEntity) {
   console.error('❌ Usage: node clone-module.js <FromEntity> <ToEntity> [--app=namespace] [--source=folderName]');
@@ -50,17 +68,19 @@ const sourceFolderName = sourceArg || (FromEntity === 'Template' ? '_mosy_module
 
 // Run from project root always. --app inserts the namespace folder
 // (e.g. "superpos") between app/ and the module, matching your real layout.
+// --nest inserts an additional grouping folder (e.g. "sales") for the
+// DESTINATION only: app/<app>/<nest>/<module>. The template source is NOT
+// expected to live inside the nest folder — it's a shared golden copy that
+// sits at the normal app/<app>/ level regardless of where clones land.
 const projectRoot = process.cwd();
-const frontendBase = appArg
-  ? path.join(projectRoot, 'app', appArg)
-  : path.join(projectRoot, 'app');
-const backendBase = appArg
-  ? path.join(projectRoot, 'app', 'api', appArg)
-  : path.join(projectRoot, 'app', 'api');
+const frontendSourceBase = path.join(projectRoot, 'app', ...(appArg ? [appArg] : []));
+const backendSourceBase = path.join(projectRoot, 'app', 'api', ...(appArg ? [appArg] : []));
+const frontendDestBase = path.join(frontendSourceBase, ...(nestArg ? [nestArg] : []));
+const backendDestBase = path.join(backendSourceBase, ...(nestArg ? [nestArg] : []));
 
 const PAIRS = [
-  { src: path.join(frontendBase, sourceFolderName), dest: path.join(frontendBase, toLower) },
-  { src: path.join(backendBase, sourceFolderName), dest: path.join(backendBase, toLower) },
+  { src: path.join(frontendSourceBase, sourceFolderName), dest: path.join(frontendDestBase, toLower) },
+  { src: path.join(backendSourceBase, sourceFolderName), dest: path.join(backendDestBase, toLower) },
 ];
 
 const existingPairs = PAIRS.filter((p) => fs.existsSync(p.src));
@@ -120,16 +140,35 @@ function backupExistingFile(destPath, destRoot) {
   console.log(`   ♻️  existing file backed up -> ${path.relative(projectRoot, backupPath)}`);
 }
 
-function cloneDir(src, dest, destRoot) {
+// Folder names eligible for --split-list-profile pull-out. Matched
+// case-insensitively against the SOURCE folder name (before renameTokens),
+// since "list" and "profile" are fixed Mosy conventions, not entity words.
+const SPLIT_FOLDER_NAMES = new Set(['list', 'profile']);
+
+// isRoot is true only for the very first call per module (frontend or
+// backend base) — split-out only ever applies to list/profile sitting
+// directly under the module root, never to nested folders that happen to
+// be named "list" or "profile" deeper in the tree.
+function cloneDir(src, dest, destRoot, isRoot = false, splitOpts = null) {
   fs.mkdirSync(dest, { recursive: true });
 
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    if (isRoot && splitOpts && entry.isDirectory() && SPLIT_FOLDER_NAMES.has(entry.name.toLowerCase())) {
+      const suffix = entry.name.toLowerCase() === 'list' ? splitOpts.listSuffix : splitOpts.profileSuffix;
+      const siblingDest = path.join(path.dirname(dest), `${toLower}${suffix}`);
+      console.log(`   ↳ splitting "${entry.name}/" out -> ${path.relative(projectRoot, siblingDest)}`);
+      // Fresh recycle root for the split-out folder — its own "_recycled"
+      // lives inside itself, same convention as every other module folder.
+      cloneDir(path.join(src, entry.name), siblingDest, siblingDest, false, null);
+      continue;
+    }
+
     const srcPath = path.join(src, entry.name);
     const destName = renameTokens(entry.name);
     const destPath = path.join(dest, destName);
 
     if (entry.isDirectory()) {
-      cloneDir(srcPath, destPath, destRoot);
+      cloneDir(srcPath, destPath, destRoot, false, null);
     } else {
       if (fs.existsSync(destPath)) {
         backupExistingFile(destPath, destRoot);
@@ -151,13 +190,20 @@ console.log(`   ${FromEntity} -> ${ToEntity}`);
 console.log(`   ${fromLower} -> ${toLower}`);
 console.log(`   ${fromUpper} -> ${toUpper}\n`);
 
+const splitOpts = splitListProfile ? { listSuffix, profileSuffix } : null;
+
 for (const { src, dest } of existingPairs) {
   // dest is also the recycled-backup root for everything under it, so
   // backups land at <dest>/_recycled/... mirroring the real folder structure.
-  cloneDir(src, dest, dest);
+  cloneDir(src, dest, dest, true, splitOpts);
   console.log(`✅ ${path.relative(projectRoot, src)} -> ${path.relative(projectRoot, dest)}`);
 }
 
-const schemaPath = appArg ? `app/${appArg}/${toLower}/schema.js` : `app/${toLower}/schema.js`;
+const schemaPath = path.join('app', ...(appArg ? [appArg] : []), ...(nestArg ? [nestArg] : []), toLower, 'schema.js').split(path.sep).join('/');
 console.log(`\n👉 Now edit ${schemaPath} — that's the only file that needs changing.`);
 console.log(`👉 Then run db-cli.js to create the "${toLower}" table.`);
+if (splitListProfile) {
+  const listPath = path.join('app', ...(appArg ? [appArg] : []), ...(nestArg ? [nestArg] : []), `${toLower}${listSuffix}`).split(path.sep).join('/');
+  const profilePath = path.join('app', ...(appArg ? [appArg] : []), ...(nestArg ? [nestArg] : []), `${toLower}${profileSuffix}`).split(path.sep).join('/');
+  console.log(`👉 List page split out to ${listPath}, profile page split out to ${profilePath} — point their internal imports/links at ${schemaPath.replace('/schema.js', '')} if they don't already.`);
+}

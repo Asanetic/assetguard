@@ -16,6 +16,7 @@ import {
   Bell,
   FileText,
   ShieldCog,
+  Truck,
 } from "lucide-react";
 import { Brand } from "./AssetGuard/Brand";
 import { hiveRoutes } from "../appConfigs/hiveRoutes";
@@ -37,7 +38,7 @@ const mainroute = hiveRoutes.assettracker
  * and Device logs, then Admin (also expandable). Profile + Log out
  * render separately in the drawer footer.
  */
-const menu = [
+export const menu = [
   {
     key: "dashboard",
     label: "Dashboard",
@@ -88,6 +89,16 @@ const menu = [
     ],
   },
   {
+    key: "fieldresp",
+    label: "Field response",
+    icon: Truck,
+    color: "#8B5CF6",
+    children: [
+      { label: "Live view", href: `${mainroute}/playback/live` },
+      { label: "Missions", href: `${mainroute}/playback/exports` },
+    ],
+  },
+  {
     key: "notifications",
     label: "Notifications",
     href: `${mainroute}/notifications`,
@@ -107,9 +118,12 @@ const menu = [
     icon: ShieldCog,
     color: NAVY,
     children: [
-      { label: "Pending approvals", href: `${mainroute}/systemusers/list` },
-      { label: "Users and roles", href: `${mainroute}/admin/users-roles` },
+      { label: "System users", href: `${mainroute}/systemusers/list` },
+      { label: "Pending approvals", href: `${mainroute}/pendingapproval/list` },
+      { label: "Users and roles", href: `${mainroute}/systemroles/list` },
       { label: "Companies", href: `${mainroute}/companies/list` },
+      { label: "Regions", href: `${mainroute}/regions/list` },
+      { label: "Clusters", href: `${mainroute}/clusters/list` },
       { label: "System settings", href: `${mainroute}/#` },
       { label: "Audit logs", href: `${mainroute}/##` },
     ],
@@ -119,13 +133,13 @@ const menu = [
 const railItems = [
   {
     key: "sites",
-    href: `${mainroute}/sites`,
+    href: `${mainroute}/sitemap`,
     icon: MapPin,
     label: "Sites",
   },
   {
     key: "devices",
-    href: `${mainroute}/devices`,
+    href: `${mainroute}/devicemap`,
     icon: Cpu,
     label: "Devices",
   },

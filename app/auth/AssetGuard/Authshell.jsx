@@ -2,6 +2,7 @@
 
 import { Lock } from "lucide-react";
 import { Brand } from "../../components/AssetGuard/Brand";
+import DynamicModalProvider from "../../components/DynamicModalProvider";
 
 const DEFAULT_PILLS = ["Live tracking", "Smart alerts", "Reporting", "Field ops"];
 
@@ -76,6 +77,7 @@ export default function AuthShell({
             )}
 
             {children}
+            <DynamicModalProvider/>
 
             <div
               className="d-flex align-items-center justify-content-center gap-2 mt-4"

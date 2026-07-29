@@ -1,0 +1,37 @@
+//dna options== Digital Nexus Architecture (DNA) 
+$dna_file_name = "roles__table_script"; 
+$create_dna = "yes"; //yes | no; 
+$overwrite_dna_file = "yes"; //yes | no 
+//dna options==
+
+
+//======= create table in db
+
+//=========== CLIENTS TABLE
+$client_table_script = "
+`primkey` int(11) PRIMARY KEY AUTO_INCREMENT,
+`record_id` varchar(100) NOT NULL,
+`role_name` varchar(255) NOT NULL,
+`role_description` varchar(500),
+`date_created` datetime DEFAULT CURRENT_TIMESTAMP
+";
+
+$client_table = 'system_roles';
+create_table($mysqliconn, $dbname, $client_table, $client_table_script);
+
+
+
+//=========== CLIENTS TABLE
+$client_table_script = "
+`primkey` int(11) PRIMARY KEY AUTO_INCREMENT,
+`record_id` varchar(100) NOT NULL,
+`module_name` varchar(255) NOT NULL,
+`module_key` varchar(500),
+`module_group` varchar(500),
+`module_type` varchar(500),
+`module_status` varchar(500),
+`date_created` datetime DEFAULT CURRENT_TIMESTAMP
+";
+
+$client_table = 'system_modules';
+create_table($mysqliconn, $dbname, $client_table, $client_table_script);

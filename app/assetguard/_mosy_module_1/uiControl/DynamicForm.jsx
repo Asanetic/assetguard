@@ -108,7 +108,7 @@ export default function DynamicForm({ controller, title, eyebrow }) {
       // fires. The grid's own "click a row -> go to profile" flow (see
       // Entityroweventinterpreter.jsx's `select` branch) uses
       // `router.push(data.url, { scroll: false })` — NOT router.replace.
-      // That's the one proven to correctly re-run MosyTemplateProfile's
+      // That's the one proven to correctly re-run Templatev1Profile's
       // `searchParams.get(...)` -> flip `isEditing` -> resolve the real
       // Update/Delete/Clone action set. Matching it exactly here instead
       // of using replace().

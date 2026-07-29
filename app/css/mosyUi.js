@@ -493,7 +493,7 @@ thead {
 
 
 .form-control {
-  height: 48px !important;
+  height: 44px !important;
   border-radius:${mosyThemeConfigs.systemBorderRadius};
 }
 
@@ -1098,8 +1098,8 @@ body {
 /*------------------------custom theme color scheme  ------------------------------*/
 
 .form-control {
-  background-color: transparent;
-  border: 1px solid ${mosyThemeConfigs.genBorderColor} !important;
+  background-color: #fff !important;
+  border: 1px solid #ccc !important;
   color: #000;
 }
 
@@ -1223,7 +1223,7 @@ body {
 
 
 .form-control {
-  height: 48px !important;
+  height: 44px !important;
 }
 
 .label_text {

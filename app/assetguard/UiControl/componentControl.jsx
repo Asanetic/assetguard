@@ -667,7 +667,7 @@ export function SmartDropdown({
   
   return (
     <>
-      <label className="cpointer">
+      <label className="cpointer text-left">
         {label}
         <span className="pr-2">{' '}</span> | 
         {!isCustom ? (
@@ -744,6 +744,7 @@ export function LiveSearchDropdown({
   labelClassName="",
   mosyFilterOptions={},
   customDisplay = ""}) {
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -760,6 +761,7 @@ export function LiveSearchDropdown({
     });
   };
 
+  console.log(`[LiveSearchDropdown] defaultValue ${JSON.stringify(defaultValue)} inputName ${inputName} displayField ${displayField} valueField ${valueField} ${tblName} parent ${parentTable}`);
   // Set default value on mount
   useEffect(() => {
     if (defaultValue && defaultValue[valueField]) {
@@ -874,10 +876,10 @@ export function LiveSearchDropdown({
 
   return (
                       
-    <div className={`form-group ${defaultColSize} hive_data_cell ${cellClass}`}>
+    <div className={`form-group ${defaultColSize} text-left  p-0 m-0 hive_data_cell ${cellClass}`}>
     <div className="col-md-12 p-0 m-0 " id="">          
     <div className="form-group position-relative p-0 m-0 ">
-      <label className={labelClassName}>{label}</label>
+      <label className={`${labelClassName} text-left`}>{label}</label>
       <input
         type="text"
         className="form-control"

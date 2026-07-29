@@ -1,6 +1,6 @@
 'use client';
 
-export default function AccessDenied({moduleName=""}) 
+export default function AccessDenied({ moduleName = "", reason = "" }) 
 {
   return (
     <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-light">
@@ -34,7 +34,7 @@ export default function AccessDenied({moduleName=""})
             </h4>
 
             <p className="text-muted mb-4">
-              Please contact your system administrator for assistance.
+              {reason || "Please contact your system administrator for assistance."}
             </p>
 
             <div className="col-md-12">

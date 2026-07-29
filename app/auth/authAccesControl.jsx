@@ -45,7 +45,7 @@ export function mosyACTRLGetSession() {
     }
 }
 
-export function mosyACTRLHasRole(role, validateAccess = true) {
+export function mosyACTRLHasRole(role, validateAccess = false) {
 
     // Global bypass
     if (!validateAccess) {

@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-import SystemusersList from '../uiControl/SystemusersList';
 import { hiveRoutes } from '../../../appConfigs/hiveRoutes';
 import SystemusersProfile from '../uiControl/SystemusersProfile';
 

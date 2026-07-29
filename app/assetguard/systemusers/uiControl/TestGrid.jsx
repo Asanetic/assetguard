@@ -6,6 +6,7 @@ import EntityPaginationUi from './EntityPaginationUi';
 import EntityRowOptions from './Entityrowoptions';
 import { interpretEntityRowEvent } from './Entityroweventinterpreter';
 import mosyThemeConfigs from '../../../appConfigs/mosyTheme';
+import { MosyNotify } from '../../../MosyUtils/ActionModals';
  
 // TestGrid — markup only. All behavior (search, refresh, export, print,
 // pagination, visible fields, row-options dropdown) lives in
@@ -114,11 +115,19 @@ export default function TestGrid({
     setChildDataOut(data);
   };
 
-  // Every rowLinks entry (navigation or mutation) routes through
-  // actionsRegistry.js via the engine's single-row action runner —
-  // router is passed through in case the registered function navigates.
-  const handleRunAction = (key, row, router) => {
-    g.runRowAction(key, row, router);
+  const handleRunAction = async (key, row, router) => {
+    const result = await g.runRowAction(key, row, router);
+    if (result?.message) {
+      MosyNotify({
+        message: result.message,
+        icon: result.ok ? 'check-circle' : 'times-circle',
+        iconColor: result.ok ? 'success' : 'danger',
+        id: `row-action-${key}`,
+        addTimer: true,
+        duration: result.ok ? 2500 : 4000,
+      });
+    }
+    if (result?.navigateTo) router.push(result.navigateTo);
   };
 
   return (
@@ -171,7 +180,10 @@ export default function TestGrid({
                 key={action.key}
                 type="button"
                 className={`etc-btn ${variantClass(action.variant)}`.trim()}
-                onClick={() => g.runAction(action.key)}
+                onClick={async () => {
+                  const result = await g.runAction(action.key);
+                  if (result?.message) MosyNotify({ message: result.message, icon: result.ok ? 'check-circle' : 'times-circle', iconColor: result.ok ? 'success' : 'danger', id: `bulk-${action.key}`, addTimer: true, duration: result.ok ? 2500 : 4000 });
+                }}
               >
                 {action.icon && <i className={`fa fa-${action.icon}`}></i>} {action.label}
               </button>

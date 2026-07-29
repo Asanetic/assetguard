@@ -109,16 +109,22 @@ export function mosyMutateQuery(tblName, searchParams, authData, tablePrimKey)
 export function mutateInputArray(src, inputArray, postRequest, newrecordId, authData) {
     const mutated = { ...inputArray };
 
+    
     // Replace or inject values based on rules
-    // if (authData.hive_site_id) {
-    //   mutated.hive_site_id = authData.hive_site_id;
-    // }
+    if (authData.hive_site_id) {
+      mutated.hive_site_id = authData.hive_site_id;
+    }
   
-    // if (authData.hive_site_name) {
-    //   mutated.hive_site_name = authData.hive_site_name;
-    // }
+    if (authData.hive_site_name) {
+      mutated.hive_site_name = authData.hive_site_name;
+    }
 
-    console.log(`mutateInputArraymutateInputArray`, mutated , newrecordId)
+    if(src=="system_modules")
+    {
+      mutated.module_key = (postRequest.module_name)?.toLowerCase().replace(/[^a-zA-Z0-9]/g, "_")  || "Ke"
+    }
+
+    console.log(`mutateInputArraymutateInputArray`, mutated , newrecordId, postRequest.body)
     return mutated;
   }
   

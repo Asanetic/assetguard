@@ -1,0 +1,97 @@
+//Table name : system_roles
+
+// columns : "primkey" , "record_id" , "role_name" , "role_description" , "date_created" , "hive_site_id" , "hive_site_name" , "permissions" , 
+
+//Table name : system_modules
+
+// columns : "primkey" , "record_id" , "module_name" , "module_key" , "module_group" , "module_type" , "module_status" , "date_created" , "hive_site_id" , "hive_site_name" , 
+
+ 
+//dna options== Digital Nexus Architecture (DNA)
+$dna_file_name = "role_permissions__table_script";
+$create_dna = "yes"; //yes | no
+$overwrite_dna_file = "yes"; //yes | no
+//dna options==
+
+
+//=========================================================
+// ROLE PERMISSION MATRIX
+//=========================================================
+//
+// One record represents:
+//
+// ROLE + MODULE + SITE
+//
+// Example:
+//
+// Admin + Sites Map + SITE001
+//
+// can_view      = 1
+// can_add       = 1
+// can_edit      = 1
+// can_delete    = 0
+// can_approve   = 1
+// can_export    = 1
+// can_reports   = 1
+// can_dashboard = 1
+//
+//=========================================================
+
+$client_table_script = "
+
+`primkey` int(11) PRIMARY KEY AUTO_INCREMENT,
+
+`record_id` varchar(100) NOT NULL,
+
+`role_id` varchar(100) NOT NULL,
+
+`module_id` varchar(100) NOT NULL,
+
+`can_view` tinyint(1) NOT NULL DEFAULT 0,
+
+`can_add` tinyint(1) NOT NULL DEFAULT 0,
+
+`can_edit` tinyint(1) NOT NULL DEFAULT 0,
+
+`can_delete` tinyint(1) NOT NULL DEFAULT 0,
+
+`can_approve` tinyint(1) NOT NULL DEFAULT 0,
+
+`can_export` tinyint(1) NOT NULL DEFAULT 0,
+
+`can_reports` tinyint(1) NOT NULL DEFAULT 0,
+
+`can_dashboard` tinyint(1) NOT NULL DEFAULT 0,
+
+`hive_site_id` varchar(100) DEFAULT NULL,
+
+`hive_site_name` varchar(255) DEFAULT NULL,
+
+`date_created` datetime DEFAULT CURRENT_TIMESTAMP,
+
+`date_updated` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+UNIQUE KEY `unique_record_id` (`record_id`),
+
+UNIQUE KEY `unique_role_module_site` (
+    `role_id`,
+    `module_id`,
+    `hive_site_id`
+),
+
+KEY `idx_role_id` (`role_id`),
+
+KEY `idx_module_id` (`module_id`),
+
+KEY `idx_hive_site_id` (`hive_site_id`)
+
+";
+
+$client_table = 'system_role_permissions';
+
+create_table(
+    $mysqliconn,
+    $dbname,
+    $client_table,
+    $client_table_script
+);

@@ -341,7 +341,7 @@ export async function mosySqlInsert(tbl, fieldsAndValuesJson, formBody, prefix="
   try {
     const [result] = await conn.execute(query, magicValues);
 
-    return { message: 'Data inserted successfully', record_id: result.insertId };
+    return { message: 'Record added successfully', record_id: result.insertId };
 
   } catch (err) {
     throw new Error(`Insert failed: ${err.message}`);
@@ -412,7 +412,7 @@ export async function mosySqlUpdate(tbl, fieldsAndValuesJson, formBody, whereStr
     const [result] = await conn.execute(query, magicValues);
 
     return {
-      message: 'Data updated successfully',
+      message: 'Record updated successfully',
       affectedRows: result.affectedRows,
     };
   } catch (err) {
@@ -1453,6 +1453,299 @@ export async function mosySecureCount({
   console.log(`🧮 mosySecureCount END: ${key}`);
 }
 
+export async function mosySecureCountFlags({
+  key,
+  config,
+  rows,
+  enrichedMap,
+  authData,
+  conn,
+  recordIdColumn
+}) {
+
+  /*
+  |--------------------------------------------------------------------------
+  | Validate
+  |--------------------------------------------------------------------------
+  */
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return;
+  }
+
+
+  if (
+    !config?.table ||
+    !config?.link ||
+    !Array.isArray(config?.columns) ||
+    config.columns.length === 0
+  ) {
+
+    console.error(
+      "mosySecureCountFlags: Invalid config",
+      config
+    );
+
+    return;
+
+  }
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Link
+  |--------------------------------------------------------------------------
+  |
+  | Example:
+  |
+  | role_id:record_id
+  |
+  | childColumn  = role_id
+  | parentColumn = record_id
+  |
+  */
+
+  const linkParts =
+    config.link.split(":");
+
+
+  if (linkParts.length !== 2) {
+
+    console.error(
+      "mosySecureCountFlags: Invalid link",
+      config.link
+    );
+
+    return;
+
+  }
+
+
+  const [
+    childColumn,
+    parentColumn
+  ] = linkParts;
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Parent values
+  |--------------------------------------------------------------------------
+  */
+
+  const parentValues = [
+
+    ...new Set(
+
+      rows
+        .map(
+          row =>
+            row?.[parentColumn]
+        )
+        .filter(
+          value =>
+            value !== undefined &&
+            value !== null &&
+            value !== ""
+        )
+
+    )
+
+  ];
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Default everything to zero
+  |--------------------------------------------------------------------------
+  */
+
+  if (parentValues.length === 0) {
+
+    for (const row of rows) {
+
+      const parentRecordId =
+        row[recordIdColumn];
+
+
+      if (!enrichedMap[parentRecordId]) {
+
+        enrichedMap[parentRecordId] = {};
+
+      }
+
+
+      enrichedMap[parentRecordId][key] = 0;
+
+    }
+
+
+    return;
+
+  }
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Build placeholders
+  |--------------------------------------------------------------------------
+  */
+
+  const placeholders =
+    parentValues
+      .map(() => "?")
+      .join(",");
+
+
+  const whereParts = [
+
+    `\`${childColumn}\` IN (${placeholders})`
+
+  ];
+
+
+  const values = [
+    ...parentValues
+  ];
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Tenant enforcement
+  |--------------------------------------------------------------------------
+  */
+
+  if (authData?.hive_site_id) {
+
+    whereParts.push(
+      "`hive_site_id` = ?"
+    );
+
+
+    values.push(
+      authData.hive_site_id
+    );
+
+  }
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Build permission expression
+  |--------------------------------------------------------------------------
+  |
+  | Generates:
+  |
+  | COALESCE(can_view,0)
+  | + COALESCE(can_add,0)
+  | + COALESCE(can_edit,0)
+  | ...
+  |
+  */
+
+  const permissionExpression =
+    config.columns
+      .map(
+        column =>
+          `COALESCE(\`${column}\`, 0)`
+      )
+      .join(" + ");
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Query
+  |--------------------------------------------------------------------------
+  |
+  | SUM() adds the enabled flags across ALL module rows belonging
+  | to the role.
+  |
+  */
+
+  const sql = `
+
+    SELECT
+
+      \`${childColumn}\` AS ref_id,
+
+      SUM(
+        ${permissionExpression}
+      ) AS total
+
+    FROM
+      \`${activeDB}\`.\`${config.table}\`
+
+    WHERE
+      ${whereParts.join(" AND ")}
+
+    GROUP BY
+      \`${childColumn}\`
+
+  `;
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Execute
+  |--------------------------------------------------------------------------
+  */
+
+  const results =
+    await mosyBatchSelect({
+      sql,
+      values,
+      conn
+    });
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Lookup map
+  |--------------------------------------------------------------------------
+  */
+
+  const resultMap = {};
+
+
+  for (const result of results) {
+
+    resultMap[
+      result.ref_id
+    ] =
+      Number(result.total) || 0;
+
+  }
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Attach to parent rows
+  |--------------------------------------------------------------------------
+  */
+
+  for (const row of rows) {
+
+    const parentRecordId =
+      row[recordIdColumn];
+
+
+    const lookupValue =
+      row[parentColumn];
+
+
+    if (!enrichedMap[parentRecordId]) {
+
+      enrichedMap[parentRecordId] = {};
+
+    }
+
+
+    enrichedMap[parentRecordId][key] =
+      resultMap[lookupValue] ?? 0;
+
+  }
+
+}
 
 export async function mosyEnrichFinalResponse({
   batchMutations,
@@ -1520,6 +1813,18 @@ export async function mosyEnrichFinalResponse({
           conn,
           recordIdColumn
         });
+        break;
+
+      case "count_flags":
+        await mosySecureCountFlags({
+          key,
+          config,
+          rows,
+          enrichedMap,
+          authData,
+          conn,
+          recordIdColumn
+        });      
         break;
 
       case "join":

@@ -28,6 +28,130 @@ export function mosyGetPrimaryKey(schema, row) {
   return field ? row?.[field.key] : undefined;
 }
 
+/* ============================================================
+   PATCH FOR: hiveUtils.jsx (bugfix — pre-existing, not introduced
+   by earlier patches, but it breaks RegisterForm's error handling)
+   ------------------------------------------------------------
+   Both mosyPostData and mosyGetData returned the raw fetch
+   Response object on !res.ok instead of the parsed JSON body.
+   That means `result?.status === "error"` in RegisterForm (and
+   anywhere else checking the same shape) never matches on a real
+   failure — res.status is the numeric HTTP code (409, 400...),
+   not the string "error" your API routes send back.
+
+   Fix: always return the parsed JSON. If a route ever fails
+   without a JSON body (network error, non-API 500 page, etc.),
+   fall back to a synthesized { status: 'error' } shape so callers
+   never have to special-case "got a Response instead of JSON".
+   ============================================================ */
+
+// ---- mosyPostData: replace the tail end ----
+export async function mosyPostData({
+  url,
+  data = {},
+  method = 'POST',
+  isMultipart = false,
+  requiresAuth = true,
+}) {
+  let body;
+  let headers = {};
+
+  console.log(`Posting to ${url} with data:`, data);
+
+  if (requiresAuth) {
+    const sessionPrefix = saAuthConfigs.sessionPrefix;
+    const authToken = mosyGetLSData(`${sessionPrefix}_authToken`);
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  if (isMultipart) {
+    body = new FormData();
+    for (const key in data) {
+      body.append(key, data[key]);
+    }
+  } else {
+    body = JSON.stringify(data);
+    headers['Content-Type'] = 'application/json';
+  }
+
+  const res = await fetch(url, { method, headers, body });
+
+  if (res.status === 403 && requiresAuth) {
+    destroyAppSession(true);
+  }
+
+  let result;
+  try {
+    result = await res.json();
+  } catch {
+    result = null; // body wasn't JSON (e.g. a raw 500 HTML page)
+  }
+
+  if (!res.ok) {
+    console.warn(`Request failed:`, result);
+    // Always return the parsed body when we have one — every API
+    // route in this app already returns { status: 'error', message }
+    // on failure, so this is just trusting that shape instead of
+    // handing back the raw Response.
+    return result ?? { status: 'error', message: `Request failed (${res.status})` };
+  }
+
+  return result;
+}
+
+
+// ---- mosyGetData: replace the tail end ----
+export async function mosyGetData({
+  endpoint = '',
+  params = {},
+  headers = {},
+  onError = (err) => console.error('MosyFetchError:', err),
+  rawResponse = false,
+  requiresAuth = true,
+}) {
+  try {
+    const query = new URLSearchParams(params).toString();
+    const url = query ? `${endpoint}?${query}` : endpoint;
+
+    let mergedHeaders = { ...headers };
+    if (requiresAuth) {
+      const sessionPrefix = saAuthConfigs.sessionPrefix;
+      mergedHeaders = {
+        'Authorization': `Bearer ${mosyGetLSData(`${sessionPrefix}_authToken`)}`,
+        ...headers,
+      };
+    }
+
+    const res = await fetch(url, { method: 'GET', headers: mergedHeaders });
+
+    if (res.status === 403 && requiresAuth) {
+      destroyAppSession(true);
+    }
+
+    if (rawResponse) {
+      return res; // caller explicitly wants the raw Response — leave as-is
+    }
+
+    let json;
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    }
+
+    if (!res.ok) {
+      return json ?? { status: 'error', message: `Request failed (${res.status})` };
+    }
+
+    return json;
+
+  } catch (err) {
+    onError(err);
+    return { status: 'error', message: err.message, data: [] };
+  }
+}
+
+
 // data_control/postFormData.js
 export async function mosyPostFormData({ formId, url, method = 'POST', isMultipart = true }) {
   const form = document.getElementById(formId);
@@ -82,120 +206,6 @@ export async function mosyPostFormData({ formId, url, method = 'POST', isMultipa
 
   return result;
 }
-
-
-//post data no DOM form id
-export async function mosyPostData({
-  url,
-  data = {},       // pass raw JS object
-  method = 'POST',
-  isMultipart = false
-}) {
-
-  let body;
-  let headers = {};
-
-  console.log(`Posting to ${url} with data:`, data);
-  
-  const sessionPrefix = saAuthConfigs.sessionPrefix;
-  const authToken = mosyGetLSData(`${sessionPrefix}_authToken`);
-
-  headers['Authorization'] = `Bearer ${authToken}`;
-
-  if (isMultipart) {
-    body = new FormData();
-    for (const key in data) {
-      body.append(key, data[key]);
-    }
-    // Content-Type is set automatically by browser for FormData
-  } else {
-    body = JSON.stringify(data);
-    headers['Content-Type'] = 'application/json';
-  }
-
-  const res = await fetch(url, {
-    method,
-    headers,
-    body,
-  });
-
-  if (res.status === 403) {
-    destroyAppSession(true);
-  }
-
-  const result = await res.json();
-
-  if (!res.ok) {
-    console.warn(`Request failed:`, result);
-    return res;
-  }
-
-  return result;
-}
-
-
-export async function mosyGetData({
-  endpoint = '',
-  params = {},
-  headers = {}, // 🔥 new param
-  onError = (err) => console.error('MosyFetchError:', err),
-  rawResponse = false
-}) {
-  try {
-    const query = new URLSearchParams(params).toString();
-    const url = query ? `${endpoint}?${query}` : endpoint;
-
-    const sessionPrefix = saAuthConfigs.sessionPrefix;
-    const defaultHeaders = {
-      'Authorization': `Bearer ${mosyGetLSData(`${sessionPrefix}_authToken`)}`,
-    };
-
-    const mergedHeaders = {
-      ...defaultHeaders,
-      ...headers, // 🧠 if there's a conflict, this overrides
-    };
-
-
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: mergedHeaders,
-    });
-
-    //console.log("mosygetttttt", res)
-    if(res.status=="403"){
-      destroyAppSession(true)
-    }
-
-    if (!res.ok) {
-      return res;
-    }
-
-    if(res.ok){
-      if(rawResponse)
-      {
-        return res
-      }else{
-        const json = await res.json();
-
-        if (json.status !== 'success') {
-          return json;
-        }
-    
-        return json;
-      }
-    }
-
-  } catch (err) {
-    onError(err);
-    return {
-      status: 'error',
-      message: err.message,
-      data: [],
-    };
-  }
-}
-
-
 
 export function mosyHydrateFormData(responseObj, tblCallback = "") {
   console.log('Sent data to hydrate:', JSON.stringify(responseObj, null, 2));

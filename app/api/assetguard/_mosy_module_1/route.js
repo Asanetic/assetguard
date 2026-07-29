@@ -15,7 +15,7 @@ import {
 import { mutateInputArray } from '../beMonitor';
 import { validateRoleAccess } from '../validateRoleAccess';
 import { processAuthToken } from '../../auth/authManager';
-import { MosyTemplateSchema as schema } from './schema';
+import { Templatev1Schema as schema } from './schema';
 
 // schema.fields[0] and [1] are always the system PK columns (primkey, record_id)
 // — see db-cli.js. Resolve them here instead of hardcoding the column names,
@@ -91,6 +91,15 @@ export async function GET(request) {
       return Response.json({ status: 'error', message: canSelect.message, data: [] });
     }
 
+        //Backend-enforced filters
+        const enforcedFilters = {}; // eg {accountStatus_not:`approved`};
+
+        // Override anything client passed
+          Object.entries(enforcedFilters).forEach(([key, value]) => {
+            searchParams.set(key, btoa(value));
+          });
+    
+          
     const result = await mosySecureSelect({
       table: schema.entity,
       recordIdColumn: recordIdCol,
@@ -114,7 +123,7 @@ export async function POST(request) {
 
     const { valid, reason, data: authData } = processAuthToken(request);
     if (!valid) {
-      //return Response.json({ status: 'unauthorized', message: reason }, { status: 403 });
+      return Response.json({ status: 'unauthorized', message: reason }, { status: 403 });
     }
 
     const canPost = validateRoleAccess({
@@ -152,7 +161,7 @@ export async function PUT(request) {
 
     const { valid, reason, data: authData } = processAuthToken(request);
     if (!valid) {
-      //return Response.json({ status: 'unauthorized', message: reason }, { status: 403 });
+      return Response.json({ status: 'unauthorized', message: reason }, { status: 403 });
     }
 
     const canUpdate = validateRoleAccess({

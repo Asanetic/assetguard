@@ -7,7 +7,6 @@ import { Mail, Phone, Eye, EyeOff, ChevronDown } from "lucide-react";
 import { hiveRoutes } from "../../appConfigs/hiveRoutes";
 import { ProcessUserLogin } from "../AuthUtils";
 import { closeMosyModal, MosyNotify } from "../../MosyUtils/ActionModals";
-import DynamicModalProvider from "../../components/DynamicModalProvider";
 
 const BLUE = "#2E6CF5";
 const BORDER = "#E2E8F0";
@@ -195,12 +194,15 @@ export default function LoginForm({ onLogin, redirectTo = "/dashboard" }) {
       </button>
       <input type="hidden" id="auth_mosy_action" name="auth_mosy_action" value="auth_login" />
       <input type="hidden" id="login_method" name="login_method" value={method} />
-      <DynamicModalProvider/>
       <div className="text-center mt-4" style={{ fontSize: 14, color: "#64748B" }}>
         New to AssetGuard?{" "}
-        <Link href={`${hiveRoutes.auth}/registration`} className="fw-semibold text-decoration-none" style={{ color: "#334155" }}>
+        <Link href={`${hiveRoutes.auth}/registration`} className="fw-semibold text-decoration-none mr-2" style={{ color: "#334155" }}>
           Request access
-        </Link>
+        </Link>      
+        |
+        <Link href={`${hiveRoutes.auth}/accstatus`} className="fw-semibold ml-2 text-decoration-none" style={{ color: BLUE }}>
+          Check status 
+        </Link> 
       </div>
     </form>
   );

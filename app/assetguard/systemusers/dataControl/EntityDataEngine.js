@@ -5,6 +5,22 @@
 import { mosyGetData, mosyPostData } from '../../../MosyUtils/hiveUtils';
 import { runRegisteredAction } from '../logicControl/actionsRegistry';
 
+// ---- Normalize whatever a registered action returns into one shape, so
+// runAction/runRowAction never hand back a mystery `undefined`.
+function normalizeActionResult(raw) {
+  if (raw === false) return { ok: true, reload: false };
+  if (raw && typeof raw === 'object') {
+    return {
+      ok: raw.ok !== false,
+      message: raw.message,
+      reload: raw.reload !== undefined ? !!raw.reload : raw.ok !== false,
+      data: raw.data,
+      navigateTo: raw.navigateTo,
+    };
+  }
+  return { ok: true, reload: true };
+}
+
 export class EntityDataEngine {
   constructor(schema, options = {}) {
     this.schema = schema;
@@ -293,46 +309,39 @@ export class EntityDataEngine {
     return { ok, message };
   }
 
-  // ---- Registered actions (e.g. "Send SMS to Inactive") ----
-  // Reloading after every action was previously unconditional — fine for
-  // something that mutates rows (Activate Account), wasteful/wrong for
-  // something that doesn't (opening a date-filter panel, a pure
-  // navigation action, a "copy link" button). The registered function
-  // now controls this itself: return `false` from the function in
-  // actionsRegistry.js to skip the reload; return anything else
-  // (undefined, true, a value) and it reloads exactly as before. Every
-  // existing registered action is unaffected unless it's updated to
-  // explicitly opt out.
   async runAction(actionKey) {
     const action = this.schema.actions?.find((a) => a.key === actionKey);
-    if (!action) return;
-
+    if (!action) return { ok: false, message: `No action "${actionKey}" on schema.actions`, reload: false };
+  
     const targetRows = action.appliesTo
       ? this.state.rows.filter((row) =>
           Object.entries(action.appliesTo).every(([k, v]) => row[k] === v)
         )
       : this.state.rows;
-
-    const result = await runRegisteredAction(action.key, targetRows, this.schema);
-    if (result !== false) {
-      await this.load();
-    }
+  
+    const result = normalizeActionResult(
+      await runRegisteredAction(action.key, targetRows, this.schema)
+    );
+  
+    // Anyone subscribed (not just whoever awaited the call) can react too —
+    // e.g. a toast component watching c.lastAction.
+    this._setState({ lastAction: { key: actionKey, ...result, at: Date.now() } });
+  
+    if (result.reload) await this.load();
+    return result;
   }
-
-  // ---- Single-row actions (e.g. "Activate Account" or "View Payment
-  // History" from a row's dropdown menu) — runAction above targets
-  // schema.actions' appliesTo-filtered bulk set; this targets exactly
-  // the one row the person clicked on. Does NOT require a matching entry
-  // in schema.actions — the rowLinks entry (key + label) is enough; the
-  // key just needs to exist in actionsRegistry.js. `router` is optional
-  // and only needed by registered functions that navigate.
+  
   async runRowAction(actionKey, row, router) {
-    const result = await runRegisteredAction(actionKey, [row], this.schema, router);
-    if (result !== false) {
-      await this.load();
-    }
+    const result = normalizeActionResult(
+      await runRegisteredAction(actionKey, [row], this.schema, router)
+    );
+  
+    this._setState({ lastAction: { key: actionKey, ...result, at: Date.now() } });
+  
+    if (result.reload) await this.load();
+    return result;
   }
-
+  
   // Call this when the UI unmounts / closes, to stop any pending debounce
   // and make sure any in-flight load() response gets ignored when it lands.
   destroy() {

@@ -16,13 +16,16 @@ import nodemailer from 'nodemailer';
  * @returns {Promise<Object>} - Response object { status, message, data }
  */
 export async function mosySendEmail(email, subject, message) {
+    const emailpassword = `ksff wxtm mqfd ngww`
+    const emailAccount  =`symphonygpske@gmail.com`;
+
     try {
         // Configure Gmail transport
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: 'spectrabill@gmail.com',
-                pass: 'hzti bulj belm tqdt', // Gmail App Password
+                user: `${emailAccount}`,
+                pass: `${emailpassword}`, // Gmail App Password
             },
         });
 
@@ -30,7 +33,7 @@ export async function mosySendEmail(email, subject, message) {
 
         // Send email
         const info = await transporter.sendMail({
-            from: '"Spectra Bill" <spectrabill@gmail.com>',
+            from: `Symphony <${emailAccount}>`,
             to: email,
             subject: subject,
             text: message, // Plain text version

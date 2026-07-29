@@ -542,17 +542,64 @@ export const ${toPascalCase(moduleName)}Schema = {
   label: '${label}',                 // optional, defaults to entity capitalized
   apiBase: '${apiBase}',
 
+  // Page-level UI gate — checked once, for the WHOLE grid AND the WHOLE
+  // profile/form page, via mosyACTRLHasRole. No moduleRole set -> open to
+  // anyone (same additive convention as every other role/flag in this
+  // file). This is a different layer than the per-action \`role\` flag
+  // inside individual moduleActions entries below: moduleRole controls
+  // whether someone can reach the page at all; a per-action role controls
+  // whether one specific button shows up once they're already in. Same
+  // UI-only caveat as those: route.js needs the equivalent server-side
+  // check for this to be real enforcement, not just hiding.
+  moduleRole: 'view_${moduleName}',
+
   // Field keys shown as columns in list view, in display order.
   showInList: ${showInListLiteral},
 
   rowLinks: [],
 
+  // profileActions — one array, three possible places each entry can
+  // render, spelled out explicitly on every entry (no implicit
+  // defaults): the grid, DynamicForm.jsx, and EntityRowOptions' dropdown
+  // all read this SAME array, each filtering on its own flag. Comment an
+  // entry out, or flip a flag to false, and it disappears from that one
+  // place — no component edit needed.
+  //   grid: true/false      -> grid toolbar (list page)
+  //   form: true/false      -> profile/form toolbar ('save' is also the
+  //                            primary submit button — DynamicForm picks
+  //                            the submit button as whichever entry has
+  //                            both form:true and key:'save')
+  //   rowAction: true/false -> per-row dropdown in the grid (EntityRowOptions)
+  //   editOnly: true        -> only shown once a record exists (form/rowAction contexts)
+  //   role: 'role_name'     -> UI-ONLY gate, checked via mosyACTRLHasRole
+  //                            (session roles from localStorage). Omit
+  //                            entirely and the action is open to anyone —
+  //                            this is additive, not a default-deny system.
+  //                            NOTE: this does not by itself stop the
+  //                            request server-side — route.js currently
+  //                            gates every mutation behind one blanket
+  //                            manage_<entity> role regardless of which
+  //                            action triggered it. Real enforcement needs
+  //                            the same per-action role checked there too.
   profileActions: [
-    { key: 'back', label: 'Back to list', icon: 'arrow-left', variant: 'outline-secondary', navigateTo: '/${appNamespace ? appNamespace + '/' : ''}${moduleName}/list' },
-    { key: 'delete', label: 'Delete', icon: 'trash', variant: 'outline-danger', confirm: 'Are you sure you want to delete this ${singular}?', editOnly: true },
-    { key: 'new', label: 'New ${label.replace(/s$/, '')}', icon: 'plus', variant: 'outline-primary', navigateTo: '/${appNamespace ? appNamespace + '/' : ''}${moduleName}/profile' },
-    //{ key: 'clone', label: 'Clone Record', icon: 'copy', variant: 'outline-secondary', editOnly: true },
-    //{ key: 'filterByDate', label: 'Filter by date', icon: 'calendar', variant: 'outline-primary' },
+    { key: 'back', label: 'Back to list', icon: 'arrow-left', variant: 'outline-secondary', navigateTo: '/${appNamespace ? appNamespace + '/' : ''}${moduleName}/list', grid: false, form: true },
+    { key: 'save', label: 'Save', icon: 'save', variant: 'primary', grid: false, form: true, rowAction: false },
+    { key: 'delete', label: 'Delete', icon: 'trash', variant: 'outline-danger', confirm: 'Are you sure you want to delete this ${singular}?', editOnly: true, grid: false, form: true, rowAction: true, role: 'manage_${moduleName}' },
+    { key: 'view', label: 'View more', icon: 'edit', rowAction: true },
+    { key: 'new', label: 'New ${label.replace(/s$/, '')}', icon: 'plus', variant: 'outline-primary', navigateTo: '/${appNamespace ? appNamespace + '/' : ''}${moduleName}/profile', grid: true, form: false, rowAction: false },
+    //{ key: 'clone', label: 'Clone Record', icon: 'copy', variant: 'outline-secondary', editOnly: true, grid: false, form: true, rowAction: false, role: 'manage_${moduleName}' },
+    //{ key: 'filterByDate', label: 'Filter by date', icon: 'calendar', variant: 'outline-primary', type: 'action', grid: true, form: false, rowAction: false },
+  ],
+
+  // customBlocks — the escape hatch for UI that doesn't fit the rigid
+  // field-grid: a raw component, handed the SAME values/setValue/errors/
+  // schema/isEditing/row context a real field gets. A block's \`key\` just
+  // sits in a section's \`fields\` array exactly like a real field key —
+  // wherever it appears there is where it renders. Empty by default;
+  // uncomment and point at a real component when a field needs custom UI
+  // (see SCHEMA-SPEC.md for the full pattern, e.g. companies/schema.js).
+  customBlocks: [
+    // { key: 'some_field', component: SomeComponent, colSpan: 7 },
   ],
 
   fieldGroups: [],

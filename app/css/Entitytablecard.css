@@ -238,10 +238,10 @@
     color: var(--etc-primary-contrast);
   }
   
-  .etc-btn-primary:hover {
+  /* .etc-btn-primary:hover {
     filter: brightness(0.9);
     color: var(--etc-primary-contrast);
-  }
+  } */
   
   .etc-btn-success {
     background: #ecfdf5;

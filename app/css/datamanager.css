@@ -163,8 +163,8 @@
   --etc-muted: #94a0b3;
   --etc-line: #e7eaf0;
   --etc-surface: #f8fafc;
-  --etc-accent: #0d7a6c;
-  --etc-accent-dark: #0a5f54;
+  --etc-accent: #14315D;
+  --etc-accent-dark: #14315D;
   --etc-accent-soft: #e6f5f2;
   --etc-danger: #b91c1c;
   --etc-radius: 10px;
@@ -372,13 +372,13 @@
   padding: 1.15rem 1.5rem 1.4rem;
 }
 
-.etc-table-wrap {
+.etc-table-data-wrap {
   border: 1px solid var(--etc-line);
   border-radius: var(--etc-radius);
   overflow: hidden;
 }
 
-.etc-table {
+.etc-table-data {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -386,8 +386,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-.etc-table thead th {
-  background-color: var(--etc-surface);
+.etc-table-data thead th {
+  background-color: #14315D;
   border-bottom: 1px solid var(--etc-line);
   padding: 0.7rem 1.1rem;
   text-align: left;
@@ -395,15 +395,16 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--etc-muted);
+  color: #fff;
   white-space: nowrap;
 }
+
 
 .etc-th-right {
   text-align: right !important;
 }
 
-.etc-table tbody td {
+.etc-table-data tbody td {
   padding: 0.8rem 1.1rem;
   color: var(--etc-body);
   vertical-align: middle;
@@ -411,7 +412,7 @@
   transition: box-shadow 0.15s ease, background-color 0.12s ease;
 }
 
-.etc-table tbody td:first-child {
+.etc-table-data tbody td:first-child {
   color: var(--etc-ink);
   font-weight: 600;
 }

@@ -15,6 +15,7 @@
  * register functions under those two keys, they will never fire.
  */
 
+
 const registry = {
   sms_inactive: async (rows) => {
     const numbers = rows.map((r) => r.phone).filter(Boolean);
@@ -31,9 +32,7 @@ const registry = {
   // Mutation example — single-row action from a grid dropdown OR a
   // profile button (schema.profileActions). Same function, same registry,
   // works from either place because both pass rows/schema/router identically.
-  activate_account: async (rows, schema) => {
-    alert(`activate_accountnbnb kaliii -- ${rows[0].site_name}`);
-  },
+
 
   disable_account: async (rows, schema) => {
     alert(`toanisha disable_account -- ${rows[0].site_name}`);
@@ -70,4 +69,20 @@ export async function runRegisteredAction(key, rows, schema, router) {
     return;
   }
   return fn(rows, schema, router);
+}
+
+// ---- Normalize whatever a registered action returns into one shape, so
+// runAction/runRowAction never hand back a mystery `undefined`.
+export function normalizeActionResult(raw) {
+  if (raw === false) return { ok: true, reload: false };
+  if (raw && typeof raw === 'object') {
+    return {
+      ok: raw.ok !== false,
+      message: raw.message,
+      reload: raw.reload !== undefined ? !!raw.reload : raw.ok !== false,
+      data: raw.data,
+      navigateTo: raw.navigateTo,
+    };
+  }
+  return { ok: true, reload: true };
 }

@@ -2,7 +2,6 @@
 
 import AccessDenied from "./MosyAccessDenied";
 
-export function MosyUIGuard({ reason }) {
-
-    return(<AccessDenied/>)
+export function MosyUIGuard({ moduleName, reason }) {
+    return <AccessDenied moduleName={moduleName} reason={reason} />;
 }

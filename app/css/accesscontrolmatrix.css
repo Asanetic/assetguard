@@ -1,0 +1,449 @@
+* {
+    box-sizing: border-box;
+  }
+
+  .permission-page {
+    min-height: 100vh;
+    background: #f8fafc;
+    padding: 14px;
+    color: #0f2747;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  /* -------------------------------------------------------
+     TOP TABS
+  ------------------------------------------------------- */
+
+  .permission-tabs {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 11px;
+  }
+
+  .permission-tab {
+    height: 31px;
+    border: 1px solid #d6deea;
+    background: #ffffff;
+    color: #142a48;
+    border-radius: 7px;
+    padding: 0 12px;
+    font-size: 14px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: 0.15s ease;
+  }
+
+  .permission-tab:hover {
+    background: #f4f7fb;
+  }
+
+  .permission-tab.active {
+    background: #2864f0;
+    color: #ffffff;
+    border-color: #2864f0;
+  }
+
+  /* -------------------------------------------------------
+     CARD
+  ------------------------------------------------------- */
+
+  .permission-card {
+    background: #ffffff;
+    border: 1px solid #dbe2eb;
+    border-radius: 9px;
+    padding: 14px 11px 18px;
+    overflow: hidden;
+  }
+
+  .permission-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin-bottom: 14px;
+  }
+
+  .title-icon {
+    color: #3167f4;
+    margin-top: 2px;
+  }
+
+  .permission-card-header h1 {
+    margin: 0 0 3px;
+    font-size: 15px;
+    line-height: 1.2;
+    font-weight: 800;
+    color: #102747;
+  }
+
+  .permission-card-header p {
+    margin: 0;
+    font-size: 12px;
+    color: #6c7d94;
+  }
+
+  /* -------------------------------------------------------
+     ROLE
+  ------------------------------------------------------- */
+
+  .role-section {
+    margin-bottom: 12px;
+  }
+
+  .role-section label {
+    display: block;
+    font-size: 12px;
+    font-weight: 800;
+    color: #152c4b;
+    margin-bottom: 4px;
+  }
+
+  .role-control-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .role-select {
+    width: 188px;
+    height: 34px;
+    border: 1px solid #ccd6e3;
+    border-radius: 7px;
+    color: #203551;
+    font-size: 12px;
+    padding: 0 30px 0 10px;
+    box-shadow: none !important;
+  }
+
+  .permission-count {
+    color: #708097;
+    font-size: 12px;
+  }
+
+  /* -------------------------------------------------------
+     REGION
+  ------------------------------------------------------- */
+
+  .region-panel {
+    border: 1px solid #dce5ef;
+    background: #f7f9fc;
+    border-radius: 8px;
+    padding: 9px 11px;
+    margin-bottom: 10px;
+  }
+
+  .region-heading {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    color: #2b61ef;
+  }
+
+  .region-heading strong {
+    display: block;
+    color: #1a304d;
+    font-size: 12px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .region-heading p {
+    margin: 0;
+    color: #8996a9;
+    font-size: 12px;
+  }
+
+  .region-list {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 8px;
+  }
+
+  .region-pill {
+    border: 0;
+    height: 24px;
+    border-radius: 20px;
+    padding: 0 11px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #ffffff;
+    background: #8ba9f4;
+    cursor: pointer;
+    transition: 0.15s ease;
+  }
+
+  .region-pill.active {
+    background: #3265f1;
+  }
+
+  .region-pill:not(.active) {
+    background: #dbe4f7;
+    color: #71809a;
+  }
+
+  /* -------------------------------------------------------
+     MATRIX
+  ------------------------------------------------------- */
+
+  .matrix-wrapper {
+    width: 100%;
+    border: 1px solid #d8e0ea;
+    border-radius: 7px;
+    overflow-x: auto;
+  }
+
+  .permission-table {
+    width: 100%;
+    min-width: 850px;
+    border-collapse: collapse;
+    table-layout: fixed;
+    margin: 0;
+  }
+
+  .permission-table thead {
+    background: #0e315f;
+    color: #ffffff;
+  }
+
+  .permission-table thead th {
+    border: none;
+    height: 32px;
+    padding: 0 4px;
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .permission-table thead .module-column {
+    width: 250px;
+    text-align: left;
+    padding-left: 11px;
+  }
+
+  /* -------------------------------------------------------
+     GROUP
+  ------------------------------------------------------- */
+
+  .group-row td {
+    padding: 0;
+    background: #eef3f9;
+    border-bottom: 1px solid #dce4ed;
+  }
+
+  .group-header {
+    height: 34px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .group-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #15345c;
+  }
+
+  .group-title strong {
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.3px;
+  }
+
+  .group-title span {
+    font-size: 12px;
+    color: #8594a8;
+    font-weight: 500;
+  }
+
+  .group-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .grant-btn,
+  .revoke-btn {
+    height: 20px;
+    border-radius: 4px;
+    padding: 0 8px;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .grant-btn {
+    color: #00a767;
+    border: 1px solid #72ddb1;
+    background: #eafff5;
+  }
+
+  .revoke-btn {
+    color: #f04444;
+    border: 1px solid #ff8d8d;
+    background: #fff2f2;
+  }
+
+  /* -------------------------------------------------------
+     MODULE ROW
+  ------------------------------------------------------- */
+
+  .module-row {
+    height: 32px;
+  }
+
+  .module-row td {
+    border-bottom: 1px solid #e3e8ef;
+    background: #ffffff;
+  }
+
+  .module-row:last-child td {
+    border-bottom: 0;
+  }
+
+  .module-cell {
+    padding: 0 10px;
+  }
+
+  .module-info {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .module-info strong {
+    font-size: 12px;
+    color: #102c50;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .module-type {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 16px;
+    border-radius: 5px;
+    padding: 0 6px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .type-page {
+    color: #3169d7;
+    background: #e5efff;
+  }
+
+  .type-button {
+    color: #b57b00;
+    background: #fff1c9;
+  }
+
+  .type-data {
+    color: #1978aa;
+    background: #e0f4ff;
+  }
+
+  /* -------------------------------------------------------
+     PERMISSION
+  ------------------------------------------------------- */
+
+  .permission-cell {
+    text-align: center;
+    padding: 0 3px;
+  }
+
+  .permission-state {
+    border: 0;
+    min-width: 37px;
+    height: 19px;
+    border-radius: 5px;
+    font-size: 12px;
+    line-height: 19px;
+    padding: 0 7px;
+    font-weight: 900;
+    cursor: pointer;
+    transition:
+      transform 0.1s ease,
+      opacity 0.1s ease;
+  }
+
+  .permission-state:hover {
+    transform: scale(1.05);
+  }
+
+  .permission-state.permission-on {
+    color: #009f62;
+    background: #d4f8e8;
+  }
+
+  .permission-state.permission-off {
+    color: #f04444;
+    background: #ffe0e0;
+  }
+
+  .toggle-all-btn {
+    border: 1px solid #bdd0f7;
+    background: #ffffff;
+    color: #3267dc;
+    border-radius: 4px;
+    height: 19px;
+    padding: 0 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .toggle-all-btn:hover {
+    background: #edf3ff;
+  }
+
+  /* -------------------------------------------------------
+     RESPONSIVE
+  ------------------------------------------------------- */
+
+  @media (max-width: 768px) {
+    .permission-page {
+      padding: 8px;
+    }
+
+    .permission-card {
+      padding: 11px 7px;
+    }
+
+    .role-control-row {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .role-select {
+      width: 100%;
+    }
+
+    .permission-tabs {
+      overflow-x: auto;
+    }
+
+    .permission-tab {
+      flex-shrink: 0;
+    }
+
+    .region-list {
+      gap: 4px;
+    }
+
+    .permission-table {
+      min-width: 820px;
+    }
+  }
