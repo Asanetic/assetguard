@@ -1,0 +1,185 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Products API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/products/products": {
+            "get": {
+                "summary": "Get Products",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Products",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "product_name": {
+                                        "type": "string",
+                                        "description": "Product name"
+                                    },
+                                    "price_range": {
+                                        "type": "string",
+                                        "description": "Price range"
+                                    },
+                                    "unit_price": {
+                                        "type": "string",
+                                        "description": "Unit price"
+                                    },
+                                    "product_code": {
+                                        "type": "string",
+                                        "description": "Product code"
+                                    },
+                                    "category": {
+                                        "type": "string",
+                                        "description": "Category"
+                                    },
+                                    "product_description": {
+                                        "type": "string",
+                                        "description": "Product description"
+                                    },
+                                    "product_image": {
+                                        "type": "string",
+                                        "description": "Product image"
+                                    },
+                                    "discount_price": {
+                                        "type": "string",
+                                        "description": "Discount price"
+                                    },
+                                    "tax_percentage": {
+                                        "type": "string",
+                                        "description": "Tax percentage"
+                                    },
+                                    "currency_code": {
+                                        "type": "string",
+                                        "description": "Currency code"
+                                    },
+                                    "stock_quantity": {
+                                        "type": "string",
+                                        "description": "Stock quantity"
+                                    },
+                                    "product_status": {
+                                        "type": "string",
+                                        "description": "Product status"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Products",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "product_name": {
+                                        "type": "string",
+                                        "description": "Product name"
+                                    },
+                                    "price_range": {
+                                        "type": "string",
+                                        "description": "Price range"
+                                    },
+                                    "unit_price": {
+                                        "type": "string",
+                                        "description": "Unit price"
+                                    },
+                                    "product_code": {
+                                        "type": "string",
+                                        "description": "Product code"
+                                    },
+                                    "category": {
+                                        "type": "string",
+                                        "description": "Category"
+                                    },
+                                    "product_description": {
+                                        "type": "string",
+                                        "description": "Product description"
+                                    },
+                                    "product_image": {
+                                        "type": "string",
+                                        "description": "Product image"
+                                    },
+                                    "discount_price": {
+                                        "type": "string",
+                                        "description": "Discount price"
+                                    },
+                                    "tax_percentage": {
+                                        "type": "string",
+                                        "description": "Tax percentage"
+                                    },
+                                    "currency_code": {
+                                        "type": "string",
+                                        "description": "Currency code"
+                                    },
+                                    "stock_quantity": {
+                                        "type": "string",
+                                        "description": "Stock quantity"
+                                    },
+                                    "product_status": {
+                                        "type": "string",
+                                        "description": "Product status"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Products id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

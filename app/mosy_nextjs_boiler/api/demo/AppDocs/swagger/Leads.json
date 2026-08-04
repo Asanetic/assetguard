@@ -1,0 +1,257 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Leads API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/leads/leads": {
+            "get": {
+                "summary": "Get Leads",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Leads",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "lead_title": {
+                                        "type": "string",
+                                        "description": "Lead title"
+                                    },
+                                    "full_name": {
+                                        "type": "string",
+                                        "description": "Full name"
+                                    },
+                                    "business_name": {
+                                        "type": "string",
+                                        "description": "Business name"
+                                    },
+                                    "phone_number": {
+                                        "type": "string",
+                                        "description": "Phone number"
+                                    },
+                                    "alternative_phone_number": {
+                                        "type": "string",
+                                        "description": "Alternative phone number"
+                                    },
+                                    "email_address": {
+                                        "type": "string",
+                                        "description": "Email address"
+                                    },
+                                    "website_url": {
+                                        "type": "string",
+                                        "description": "Website url"
+                                    },
+                                    "industry_type": {
+                                        "type": "string",
+                                        "description": "Industry type"
+                                    },
+                                    "lead_source": {
+                                        "type": "string",
+                                        "description": "Lead source"
+                                    },
+                                    "lead_status": {
+                                        "type": "string",
+                                        "description": "Lead status"
+                                    },
+                                    "lead_temperature": {
+                                        "type": "string",
+                                        "description": "Lead temperature"
+                                    },
+                                    "assigned_sales_rep": {
+                                        "type": "string",
+                                        "description": "Assigned sales rep"
+                                    },
+                                    "estimated_deal_value": {
+                                        "type": "string",
+                                        "description": "Estimated deal value"
+                                    },
+                                    "expected_conversion_date": {
+                                        "type": "string",
+                                        "description": "Expected conversion date"
+                                    },
+                                    "country_name": {
+                                        "type": "string",
+                                        "description": "Country name"
+                                    },
+                                    "city_name": {
+                                        "type": "string",
+                                        "description": "City name"
+                                    },
+                                    "business_address": {
+                                        "type": "string",
+                                        "description": "Business address"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "description": "Notes"
+                                    },
+                                    "next_follow_up_date": {
+                                        "type": "string",
+                                        "description": "Next follow up date"
+                                    },
+                                    "last_contact_date": {
+                                        "type": "string",
+                                        "description": "Last contact date"
+                                    },
+                                    "profile_photo": {
+                                        "type": "string",
+                                        "description": "Profile photo"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Leads",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "lead_title": {
+                                        "type": "string",
+                                        "description": "Lead title"
+                                    },
+                                    "full_name": {
+                                        "type": "string",
+                                        "description": "Full name"
+                                    },
+                                    "business_name": {
+                                        "type": "string",
+                                        "description": "Business name"
+                                    },
+                                    "phone_number": {
+                                        "type": "string",
+                                        "description": "Phone number"
+                                    },
+                                    "alternative_phone_number": {
+                                        "type": "string",
+                                        "description": "Alternative phone number"
+                                    },
+                                    "email_address": {
+                                        "type": "string",
+                                        "description": "Email address"
+                                    },
+                                    "website_url": {
+                                        "type": "string",
+                                        "description": "Website url"
+                                    },
+                                    "industry_type": {
+                                        "type": "string",
+                                        "description": "Industry type"
+                                    },
+                                    "lead_source": {
+                                        "type": "string",
+                                        "description": "Lead source"
+                                    },
+                                    "lead_status": {
+                                        "type": "string",
+                                        "description": "Lead status"
+                                    },
+                                    "lead_temperature": {
+                                        "type": "string",
+                                        "description": "Lead temperature"
+                                    },
+                                    "assigned_sales_rep": {
+                                        "type": "string",
+                                        "description": "Assigned sales rep"
+                                    },
+                                    "estimated_deal_value": {
+                                        "type": "string",
+                                        "description": "Estimated deal value"
+                                    },
+                                    "expected_conversion_date": {
+                                        "type": "string",
+                                        "description": "Expected conversion date"
+                                    },
+                                    "country_name": {
+                                        "type": "string",
+                                        "description": "Country name"
+                                    },
+                                    "city_name": {
+                                        "type": "string",
+                                        "description": "City name"
+                                    },
+                                    "business_address": {
+                                        "type": "string",
+                                        "description": "Business address"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "description": "Notes"
+                                    },
+                                    "next_follow_up_date": {
+                                        "type": "string",
+                                        "description": "Next follow up date"
+                                    },
+                                    "last_contact_date": {
+                                        "type": "string",
+                                        "description": "Last contact date"
+                                    },
+                                    "profile_photo": {
+                                        "type": "string",
+                                        "description": "Profile photo"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Leads id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -2246,7 +2246,7 @@ html.menu-opened body {
 
 .page-wrapper {
   margin-left: 240px;
-  padding-top: 0px;
+  padding-top: 20px;
   position: relative;
   transition: all .4s ease
 }
@@ -4801,6 +4801,10 @@ table .actions .btn {
 
   .page-wrapper>.content {
     padding: .9375rem .9375rem 0
+  }
+  
+  .page-wrapper {  
+    padding-top: 70px;
   }
 
   .chat-window {

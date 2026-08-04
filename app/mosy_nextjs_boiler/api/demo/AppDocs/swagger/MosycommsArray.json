@@ -1,0 +1,424 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Mosycomms Array API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/mosycommsarray/mosycommsarray": {
+            "get": {
+                "summary": "Get Mosycomms Array",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Mosycomms Array",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "receiver_contacts": {
+                                        "type": "string",
+                                        "description": "Receiver contacts"
+                                    },
+                                    "reciver_names": {
+                                        "type": "string",
+                                        "description": "Reciver names"
+                                    },
+                                    "message_type": {
+                                        "type": "string",
+                                        "description": "Message type"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "message_date": {
+                                        "type": "string",
+                                        "description": "Message date"
+                                    },
+                                    "sent_state": {
+                                        "type": "string",
+                                        "description": "Sent state"
+                                    },
+                                    "msg_read_state": {
+                                        "type": "string",
+                                        "description": "Msg read state"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "message_label": {
+                                        "type": "string",
+                                        "description": "Message label"
+                                    },
+                                    "message": {
+                                        "type": "string",
+                                        "description": "Message"
+                                    },
+                                    "delvery_receipt": {
+                                        "type": "string",
+                                        "description": "Delvery receipt"
+                                    },
+                                    "sms_cost": {
+                                        "type": "string",
+                                        "description": "Sms cost"
+                                    },
+                                    "page_count": {
+                                        "type": "string",
+                                        "description": "Page count"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Mosycomms Array",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "receiver_contacts": {
+                                        "type": "string",
+                                        "description": "Receiver contacts"
+                                    },
+                                    "reciver_names": {
+                                        "type": "string",
+                                        "description": "Reciver names"
+                                    },
+                                    "message_type": {
+                                        "type": "string",
+                                        "description": "Message type"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "message_date": {
+                                        "type": "string",
+                                        "description": "Message date"
+                                    },
+                                    "sent_state": {
+                                        "type": "string",
+                                        "description": "Sent state"
+                                    },
+                                    "msg_read_state": {
+                                        "type": "string",
+                                        "description": "Msg read state"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "message_label": {
+                                        "type": "string",
+                                        "description": "Message label"
+                                    },
+                                    "message": {
+                                        "type": "string",
+                                        "description": "Message"
+                                    },
+                                    "delvery_receipt": {
+                                        "type": "string",
+                                        "description": "Delvery receipt"
+                                    },
+                                    "sms_cost": {
+                                        "type": "string",
+                                        "description": "Sms cost"
+                                    },
+                                    "page_count": {
+                                        "type": "string",
+                                        "description": "Page count"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Mosycomms Array id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/grupet/mosycommsarray/mosycommsarray": {
+            "get": {
+                "summary": "Get Mosycomms Array",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Mosycomms Array",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": []
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Mosycomms Array",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Mosycomms Array id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/mosycommsarray/mosycommsarray": {
+            "get": {
+                "summary": "Get Mosycomms Array",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Mosycomms Array",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "receiver_contacts": {
+                                        "type": "string",
+                                        "description": "Receiver contacts"
+                                    },
+                                    "reciver_names": {
+                                        "type": "string",
+                                        "description": "Reciver names"
+                                    },
+                                    "message_type": {
+                                        "type": "string",
+                                        "description": "Message type"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "message_date": {
+                                        "type": "string",
+                                        "description": "Message date"
+                                    },
+                                    "sent_state": {
+                                        "type": "string",
+                                        "description": "Sent state"
+                                    },
+                                    "msg_read_state": {
+                                        "type": "string",
+                                        "description": "Msg read state"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "message_label": {
+                                        "type": "string",
+                                        "description": "Message label"
+                                    },
+                                    "message": {
+                                        "type": "string",
+                                        "description": "Message"
+                                    },
+                                    "delvery_receipt": {
+                                        "type": "string",
+                                        "description": "Delvery receipt"
+                                    },
+                                    "sms_cost": {
+                                        "type": "string",
+                                        "description": "Sms cost"
+                                    },
+                                    "page_count": {
+                                        "type": "string",
+                                        "description": "Page count"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Mosycomms Array",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "receiver_contacts": {
+                                        "type": "string",
+                                        "description": "Receiver contacts"
+                                    },
+                                    "reciver_names": {
+                                        "type": "string",
+                                        "description": "Reciver names"
+                                    },
+                                    "message_type": {
+                                        "type": "string",
+                                        "description": "Message type"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "message_date": {
+                                        "type": "string",
+                                        "description": "Message date"
+                                    },
+                                    "sent_state": {
+                                        "type": "string",
+                                        "description": "Sent state"
+                                    },
+                                    "msg_read_state": {
+                                        "type": "string",
+                                        "description": "Msg read state"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "message_label": {
+                                        "type": "string",
+                                        "description": "Message label"
+                                    },
+                                    "message": {
+                                        "type": "string",
+                                        "description": "Message"
+                                    },
+                                    "delvery_receipt": {
+                                        "type": "string",
+                                        "description": "Delvery receipt"
+                                    },
+                                    "sms_cost": {
+                                        "type": "string",
+                                        "description": "Sms cost"
+                                    },
+                                    "page_count": {
+                                        "type": "string",
+                                        "description": "Page count"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Mosycomms Array id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,265 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Growth Tracker API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/growthtracker/growthtracker": {
+            "get": {
+                "summary": "Get Growth Tracker",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Growth Tracker",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "objective": {
+                                        "type": "string",
+                                        "description": "Objective"
+                                    },
+                                    "goal_value": {
+                                        "type": "string",
+                                        "description": "Goal value"
+                                    },
+                                    "goal_type": {
+                                        "type": "string",
+                                        "description": "Goal type"
+                                    },
+                                    "goal_status": {
+                                        "type": "string",
+                                        "description": "Goal status"
+                                    },
+                                    "duration": {
+                                        "type": "string",
+                                        "description": "Duration"
+                                    },
+                                    "goal_date": {
+                                        "type": "string",
+                                        "description": "Goal date"
+                                    },
+                                    "goal_month": {
+                                        "type": "string",
+                                        "description": "Goal month"
+                                    },
+                                    "objective_plan": {
+                                        "type": "string",
+                                        "description": "Objective plan"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Growth Tracker",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "objective": {
+                                        "type": "string",
+                                        "description": "Objective"
+                                    },
+                                    "goal_value": {
+                                        "type": "string",
+                                        "description": "Goal value"
+                                    },
+                                    "goal_type": {
+                                        "type": "string",
+                                        "description": "Goal type"
+                                    },
+                                    "goal_status": {
+                                        "type": "string",
+                                        "description": "Goal status"
+                                    },
+                                    "duration": {
+                                        "type": "string",
+                                        "description": "Duration"
+                                    },
+                                    "goal_date": {
+                                        "type": "string",
+                                        "description": "Goal date"
+                                    },
+                                    "goal_month": {
+                                        "type": "string",
+                                        "description": "Goal month"
+                                    },
+                                    "objective_plan": {
+                                        "type": "string",
+                                        "description": "Objective plan"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Growth Tracker id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/growthtracker/growthtracker": {
+            "get": {
+                "summary": "Get Growth Tracker",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Growth Tracker",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "objective": {
+                                        "type": "string",
+                                        "description": "Objective"
+                                    },
+                                    "goal_value": {
+                                        "type": "string",
+                                        "description": "Goal value"
+                                    },
+                                    "goal_type": {
+                                        "type": "string",
+                                        "description": "Goal type"
+                                    },
+                                    "goal_status": {
+                                        "type": "string",
+                                        "description": "Goal status"
+                                    },
+                                    "duration": {
+                                        "type": "string",
+                                        "description": "Duration"
+                                    },
+                                    "goal_date": {
+                                        "type": "string",
+                                        "description": "Goal date"
+                                    },
+                                    "goal_month": {
+                                        "type": "string",
+                                        "description": "Goal month"
+                                    },
+                                    "objective_plan": {
+                                        "type": "string",
+                                        "description": "Objective plan"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Growth Tracker",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "objective": {
+                                        "type": "string",
+                                        "description": "Objective"
+                                    },
+                                    "goal_value": {
+                                        "type": "string",
+                                        "description": "Goal value"
+                                    },
+                                    "goal_type": {
+                                        "type": "string",
+                                        "description": "Goal type"
+                                    },
+                                    "goal_status": {
+                                        "type": "string",
+                                        "description": "Goal status"
+                                    },
+                                    "duration": {
+                                        "type": "string",
+                                        "description": "Duration"
+                                    },
+                                    "goal_date": {
+                                        "type": "string",
+                                        "description": "Goal date"
+                                    },
+                                    "goal_month": {
+                                        "type": "string",
+                                        "description": "Goal month"
+                                    },
+                                    "objective_plan": {
+                                        "type": "string",
+                                        "description": "Objective plan"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Growth Tracker id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

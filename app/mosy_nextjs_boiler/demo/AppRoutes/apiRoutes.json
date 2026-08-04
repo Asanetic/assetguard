@@ -1,0 +1,180 @@
+{
+    "smartapi": {
+        "base": "/api/supercrm/smartapi"
+    },
+    "dashboard": {
+        "admin": "/api/supercrm/dashboard/admin"
+    },
+    "assetalarms": {
+        "base": "/api/assetguard/assetalarms/assetalarms",
+        "delete": "/api/assetguard/assetalarms/delete",
+        "import": "/api/assetguard/assetalarms/assetalarms/import"
+    },
+    "devicelist": {
+        "base": "/api/assetguard/devicelist/devicelist",
+        "delete": "/api/assetguard/devicelist/delete",
+        "import": "/api/assetguard/devicelist/devicelist/import"
+    },
+    "devicepings": {
+        "base": "/api/assetguard/devicepings/devicepings",
+        "delete": "/api/assetguard/devicepings/delete",
+        "import": "/api/assetguard/devicepings/devicepings/import"
+    },
+    "gpslogs": {
+        "base": "/api/assetguard/gpslogs/gpslogs",
+        "delete": "/api/assetguard/gpslogs/delete",
+        "import": "/api/assetguard/gpslogs/gpslogs/import"
+    },
+    "pagemanifest": {
+        "base": "/api/assetguard/pagemanifest/pagemanifest",
+        "delete": "/api/assetguard/pagemanifest/delete",
+        "import": "/api/assetguard/pagemanifest/pagemanifest/import"
+    },
+    "systemrolebundles": {
+        "base": "/api/assetguard/systemrolebundles/systemrolebundles",
+        "delete": "/api/assetguard/systemrolebundles/delete",
+        "import": "/api/assetguard/systemrolebundles/systemrolebundles/import"
+    },
+    "systemusers": {
+        "base": "/api/assetguard/systemusers/systemusers",
+        "delete": "/api/assetguard/systemusers/delete",
+        "import": "/api/assetguard/systemusers/systemusers/import"
+    },
+    "userbundlerolefunctions": {
+        "base": "/api/assetguard/userbundlerolefunctions/userbundlerolefunctions",
+        "delete": "/api/assetguard/userbundlerolefunctions/delete",
+        "import": "/api/assetguard/userbundlerolefunctions/userbundlerolefunctions/import"
+    },
+    "usermanifest": {
+        "base": "/api/assetguard/usermanifest/usermanifest",
+        "delete": "/api/assetguard/usermanifest/delete",
+        "import": "/api/assetguard/usermanifest/usermanifest/import"
+    },
+
+    "accesscontrol": {
+        "base": "/api/assetguard/accesscontrol/accesscontrol",
+        "delete": "/api/assetguard/accesscontrol/delete",
+        "import": "/api/assetguard/accesscontrol/accesscontrol/import"
+    },
+    "accessmatrix": {
+        "base": "/api/assetguard/accessmatrix/accessmatrix",
+        "delete": "/api/assetguard/accessmatrix/delete",
+        "import": "/api/assetguard/accessmatrix/accessmatrix/import"
+    },
+    "AppCore": {
+        "base": "/api/assetguard/AppCore/AppCore",
+        "delete": "/api/assetguard/AppCore/delete",
+        "import": "/api/assetguard/AppCore/AppCore/import"
+    },
+    "AppRoutes": {
+        "base": "/api/assetguard/AppRoutes/AppRoutes",
+        "delete": "/api/assetguard/AppRoutes/delete",
+        "import": "/api/assetguard/AppRoutes/AppRoutes/import"
+    },
+
+    "clusters": {
+        "base": "/api/assetguard/clusters/clusters",
+        "delete": "/api/assetguard/clusters/delete",
+        "import": "/api/assetguard/clusters/clusters/import"
+    },
+    "companies": {
+        "base": "/api/assetguard/companies/companies",
+        "delete": "/api/assetguard/companies/delete",
+        "import": "/api/assetguard/companies/companies/import"
+    },
+
+    "DataControl": {
+        "base": "/api/assetguard/DataControl/DataControl",
+        "delete": "/api/assetguard/DataControl/delete",
+        "import": "/api/assetguard/DataControl/DataControl/import"
+    },
+    "devicemap": {
+        "base": "/api/assetguard/devicemap/devicemap",
+        "delete": "/api/assetguard/devicemap/delete",
+        "import": "/api/assetguard/devicemap/devicemap/import"
+    },
+
+    "devices": {
+        "base": "/api/assetguard/devices/devices",
+        "delete": "/api/assetguard/devices/delete",
+        "import": "/api/assetguard/devices/devices/import"
+    },
+
+    "import": {
+        "base": "/api/assetguard/import/import",
+        "delete": "/api/assetguard/import/delete",
+        "import": "/api/assetguard/import/import/import"
+    },
+    "moduleControl": {
+        "base": "/api/assetguard/moduleControl/moduleControl",
+        "delete": "/api/assetguard/moduleControl/delete",
+        "import": "/api/assetguard/moduleControl/moduleControl/import"
+    },
+
+    "pendingapproval": {
+        "base": "/api/assetguard/pendingapproval/pendingapproval",
+        "delete": "/api/assetguard/pendingapproval/delete",
+        "import": "/api/assetguard/pendingapproval/pendingapproval/import"
+    },
+    "regionmaster": {
+        "base": "/api/assetguard/regionmaster/regionmaster",
+        "delete": "/api/assetguard/regionmaster/delete",
+        "import": "/api/assetguard/regionmaster/regionmaster/import"
+    },
+    "regions": {
+        "base": "/api/assetguard/regions/regions",
+        "delete": "/api/assetguard/regions/delete",
+        "import": "/api/assetguard/regions/regions/import"
+    },
+    "sitemap": {
+        "base": "/api/assetguard/sitemap/sitemap",
+        "delete": "/api/assetguard/sitemap/delete",
+        "import": "/api/assetguard/sitemap/sitemap/import"
+    },
+    "sitereports": {
+        "base": "/api/assetguard/sitereports/sitereports",
+        "delete": "/api/assetguard/sitereports/delete",
+        "import": "/api/assetguard/sitereports/sitereports/import"
+    },
+    "sites": {
+        "base": "/api/assetguard/sites/sites",
+        "delete": "/api/assetguard/sites/delete",
+        "import": "/api/assetguard/sites/sites/import"
+    },
+    "sitesreport": {
+        "base": "/api/assetguard/sitesreport/sitesreport",
+        "delete": "/api/assetguard/sitesreport/delete",
+        "import": "/api/assetguard/sitesreport/sitesreport/import"
+    },
+    "systemmodules": {
+        "base": "/api/assetguard/systemmodules/systemmodules",
+        "delete": "/api/assetguard/systemmodules/delete",
+        "import": "/api/assetguard/systemmodules/systemmodules/import"
+    },
+
+    "systemroles": {
+        "base": "/api/assetguard/systemroles/systemroles",
+        "delete": "/api/assetguard/systemroles/delete",
+        "import": "/api/assetguard/systemroles/systemroles/import"
+    },
+    "UiControl": {
+        "base": "/api/assetguard/UiControl/UiControl",
+        "delete": "/api/assetguard/UiControl/delete",
+        "import": "/api/assetguard/UiControl/UiControl/import"
+    },
+    "usersledger": {
+        "base": "/api/assetguard/usersledger/usersledger",
+        "delete": "/api/assetguard/usersledger/delete",
+        "import": "/api/assetguard/usersledger/usersledger/import"
+    },
+    "_mosy_module_1": {
+        "base": "/api/assetguard/_mosy_module_1/_mosy_module_1",
+        "delete": "/api/assetguard/_mosy_module_1/delete",
+        "import": "/api/assetguard/_mosy_module_1/_mosy_module_1/import"
+    },
+    "_mosy_module_v1": {
+        "base": "/api/assetguard/_mosy_module_v1/_mosy_module_v1",
+        "delete": "/api/assetguard/_mosy_module_v1/delete",
+        "import": "/api/assetguard/_mosy_module_v1/_mosy_module_v1/import"
+    }    
+}

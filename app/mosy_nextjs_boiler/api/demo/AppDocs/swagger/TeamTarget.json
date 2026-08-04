@@ -1,0 +1,201 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Team Target API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/teamtarget/teamtarget": {
+            "get": {
+                "summary": "Get Team Target",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Team Target",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "target_name": {
+                                        "type": "string",
+                                        "description": "Target name"
+                                    },
+                                    "target_value": {
+                                        "type": "string",
+                                        "description": "Target value"
+                                    },
+                                    "target_type": {
+                                        "type": "string",
+                                        "description": "Target type"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Team Target",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "target_name": {
+                                        "type": "string",
+                                        "description": "Target name"
+                                    },
+                                    "target_value": {
+                                        "type": "string",
+                                        "description": "Target value"
+                                    },
+                                    "target_type": {
+                                        "type": "string",
+                                        "description": "Target type"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Team Target id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/teamtarget/teamtarget": {
+            "get": {
+                "summary": "Get Team Target",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Team Target",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "target_name": {
+                                        "type": "string",
+                                        "description": "Target name"
+                                    },
+                                    "target_value": {
+                                        "type": "string",
+                                        "description": "Target value"
+                                    },
+                                    "target_type": {
+                                        "type": "string",
+                                        "description": "Target type"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Team Target",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "target_name": {
+                                        "type": "string",
+                                        "description": "Target name"
+                                    },
+                                    "target_value": {
+                                        "type": "string",
+                                        "description": "Target value"
+                                    },
+                                    "target_type": {
+                                        "type": "string",
+                                        "description": "Target type"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Team Target id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

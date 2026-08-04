@@ -1,0 +1,329 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Employees API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/employees/employees": {
+            "get": {
+                "summary": "Get Employees",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Employees",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "login_password": {
+                                        "type": "string",
+                                        "description": "Login password"
+                                    },
+                                    "position": {
+                                        "type": "string",
+                                        "description": "Position"
+                                    },
+                                    "employment_date": {
+                                        "type": "string",
+                                        "description": "Employment date"
+                                    },
+                                    "staff_number": {
+                                        "type": "string",
+                                        "description": "Staff number"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "user_gender": {
+                                        "type": "string",
+                                        "description": "User gender"
+                                    },
+                                    "department": {
+                                        "type": "string",
+                                        "description": "Department"
+                                    },
+                                    "job_group": {
+                                        "type": "string",
+                                        "description": "Job group"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Employees",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "login_password": {
+                                        "type": "string",
+                                        "description": "Login password"
+                                    },
+                                    "position": {
+                                        "type": "string",
+                                        "description": "Position"
+                                    },
+                                    "employment_date": {
+                                        "type": "string",
+                                        "description": "Employment date"
+                                    },
+                                    "staff_number": {
+                                        "type": "string",
+                                        "description": "Staff number"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "user_gender": {
+                                        "type": "string",
+                                        "description": "User gender"
+                                    },
+                                    "department": {
+                                        "type": "string",
+                                        "description": "Department"
+                                    },
+                                    "job_group": {
+                                        "type": "string",
+                                        "description": "Job group"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Employees id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/employees/employees": {
+            "get": {
+                "summary": "Get Employees",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Employees",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "login_password": {
+                                        "type": "string",
+                                        "description": "Login password"
+                                    },
+                                    "position": {
+                                        "type": "string",
+                                        "description": "Position"
+                                    },
+                                    "employment_date": {
+                                        "type": "string",
+                                        "description": "Employment date"
+                                    },
+                                    "staff_number": {
+                                        "type": "string",
+                                        "description": "Staff number"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "user_gender": {
+                                        "type": "string",
+                                        "description": "User gender"
+                                    },
+                                    "department": {
+                                        "type": "string",
+                                        "description": "Department"
+                                    },
+                                    "job_group": {
+                                        "type": "string",
+                                        "description": "Job group"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Employees",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "login_password": {
+                                        "type": "string",
+                                        "description": "Login password"
+                                    },
+                                    "position": {
+                                        "type": "string",
+                                        "description": "Position"
+                                    },
+                                    "employment_date": {
+                                        "type": "string",
+                                        "description": "Employment date"
+                                    },
+                                    "staff_number": {
+                                        "type": "string",
+                                        "description": "Staff number"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "user_gender": {
+                                        "type": "string",
+                                        "description": "User gender"
+                                    },
+                                    "department": {
+                                        "type": "string",
+                                        "description": "Department"
+                                    },
+                                    "job_group": {
+                                        "type": "string",
+                                        "description": "Job group"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Employees id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,161 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Crm Activities API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/bloomcrm/crmactivities/crmactivities": {
+            "get": {
+                "summary": "Get Crm Activities",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Crm Activities",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "activity_type": {
+                                        "type": "string",
+                                        "description": "Activity type"
+                                    },
+                                    "activity_title": {
+                                        "type": "string",
+                                        "description": "Activity title"
+                                    },
+                                    "activity_description": {
+                                        "type": "string",
+                                        "description": "Activity description"
+                                    },
+                                    "related_contact_id": {
+                                        "type": "string",
+                                        "description": "Related contact id"
+                                    },
+                                    "related_company_id": {
+                                        "type": "string",
+                                        "description": "Related company id"
+                                    },
+                                    "related_deal_id": {
+                                        "type": "string",
+                                        "description": "Related deal id"
+                                    },
+                                    "related_task_id": {
+                                        "type": "string",
+                                        "description": "Related task id"
+                                    },
+                                    "activity_channel": {
+                                        "type": "string",
+                                        "description": "Activity channel"
+                                    },
+                                    "performed_by": {
+                                        "type": "string",
+                                        "description": "Performed by"
+                                    },
+                                    "date_performed": {
+                                        "type": "string",
+                                        "description": "Date performed"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Crm Activities",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "activity_type": {
+                                        "type": "string",
+                                        "description": "Activity type"
+                                    },
+                                    "activity_title": {
+                                        "type": "string",
+                                        "description": "Activity title"
+                                    },
+                                    "activity_description": {
+                                        "type": "string",
+                                        "description": "Activity description"
+                                    },
+                                    "related_contact_id": {
+                                        "type": "string",
+                                        "description": "Related contact id"
+                                    },
+                                    "related_company_id": {
+                                        "type": "string",
+                                        "description": "Related company id"
+                                    },
+                                    "related_deal_id": {
+                                        "type": "string",
+                                        "description": "Related deal id"
+                                    },
+                                    "related_task_id": {
+                                        "type": "string",
+                                        "description": "Related task id"
+                                    },
+                                    "activity_channel": {
+                                        "type": "string",
+                                        "description": "Activity channel"
+                                    },
+                                    "performed_by": {
+                                        "type": "string",
+                                        "description": "Performed by"
+                                    },
+                                    "date_performed": {
+                                        "type": "string",
+                                        "description": "Date performed"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Crm Activities id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

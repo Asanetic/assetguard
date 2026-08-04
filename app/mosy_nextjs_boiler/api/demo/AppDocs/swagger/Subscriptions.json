@@ -1,0 +1,345 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Subscriptions API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/grupet/subscriptions/subscriptions": {
+            "get": {
+                "summary": "Get Subscriptions",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Subscriptions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "pricing_id": {
+                                        "type": "string",
+                                        "description": "Pricing id"
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "description": "Start date"
+                                    },
+                                    "next_billing_date": {
+                                        "type": "string",
+                                        "description": "Next billing date"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "description": "End date"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "billing_cycle": {
+                                        "type": "string",
+                                        "description": "Billing cycle"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "currency": {
+                                        "type": "string",
+                                        "description": "Currency"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "subscription_name": {
+                                        "type": "string",
+                                        "description": "Subscription name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Subscriptions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "pricing_id": {
+                                        "type": "string",
+                                        "description": "Pricing id"
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "description": "Start date"
+                                    },
+                                    "next_billing_date": {
+                                        "type": "string",
+                                        "description": "Next billing date"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "description": "End date"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "billing_cycle": {
+                                        "type": "string",
+                                        "description": "Billing cycle"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "currency": {
+                                        "type": "string",
+                                        "description": "Currency"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "subscription_name": {
+                                        "type": "string",
+                                        "description": "Subscription name"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Subscriptions id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomnovabill/subscriptions/subscriptions": {
+            "get": {
+                "summary": "Get Subscriptions",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Subscriptions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "pricing_id": {
+                                        "type": "string",
+                                        "description": "Pricing id"
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "description": "Start date"
+                                    },
+                                    "next_billing_date": {
+                                        "type": "string",
+                                        "description": "Next billing date"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "description": "End date"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "billing_cycle": {
+                                        "type": "string",
+                                        "description": "Billing cycle"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "currency": {
+                                        "type": "string",
+                                        "description": "Currency"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "subscription_name": {
+                                        "type": "string",
+                                        "description": "Subscription name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Subscriptions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_id": {
+                                        "type": "string",
+                                        "description": "Account id"
+                                    },
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "pricing_id": {
+                                        "type": "string",
+                                        "description": "Pricing id"
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "description": "Start date"
+                                    },
+                                    "next_billing_date": {
+                                        "type": "string",
+                                        "description": "Next billing date"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "description": "End date"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "billing_cycle": {
+                                        "type": "string",
+                                        "description": "Billing cycle"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "currency": {
+                                        "type": "string",
+                                        "description": "Currency"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "subscription_name": {
+                                        "type": "string",
+                                        "description": "Subscription name"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Subscriptions id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,22 @@
+.elforge_mosy_channel_btn_v1{
+    height:70px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+    border-radius:16px;
+    font-size:15px;
+    font-weight:600;
+    transition:all .25s ease;
+    box-shadow:0 4px 15px rgba(0,0,0,.08);
+}
+
+.elforge_mosy_channel_btn_v1 i{
+    font-size:20px;
+    flex-shrink:0;
+}
+
+.elforge_mosy_channel_btn_v1:hover{
+    transform:translateY(-2px);
+    box-shadow:0 10px 25px rgba(0,0,0,.12);
+}

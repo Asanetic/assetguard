@@ -11,41 +11,15 @@
    color variants, so there's only ONE color to keep in sync with your
    theme, not four.
 */
-
-.etc-card {
-    --etc-ink: #0b1220;
-    --etc-body: #1e293b;
-    --etc-muted: #64748b;
-    --etc-line: #dfe3ea;
-    --etc-surface: #f8fafc;
-  
-    --etc-primary: #2371b2;
-    --etc-primary-contrast: #ffffff;
-  
-    --etc-success: #0d7a6c;
-    --etc-warning: #b45309;
-    --etc-danger: #b91c1c;
-    --etc-radius: 10px;
-  
-    background: #ffffff;
-    border: 1px solid var(--etc-line);
-    border-radius: 14px;
-    overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
-      "Helvetica Neue", Arial, sans-serif;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-  }
   
   /* ---------------------------------------------------------------- */
   /* Header                                                            */
   /* ---------------------------------------------------------------- */
   
   .etc-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
+    /* Layout (stacking heading vs. toolbar) now comes from the
+       row/col-12 col-lg-4 / col-lg-8 markup in SmartGrid.jsx — this
+       rule only owns padding + the hairline underneath. */
     padding: 1.4rem 1.6rem 1.15rem;
     border-bottom: 1px solid var(--etc-line);
   }
@@ -69,11 +43,8 @@
   }
   
   .etc-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    /* No layout rules here anymore — col-12 col-lg-8 on the wrapping
+       div in SmartGrid.jsx handles width/stacking. */
   }
   
   /* ---------------------------------------------------------------- */
@@ -81,9 +52,21 @@
   /* ---------------------------------------------------------------- */
   
   .etc-search-wrap {
+    /* No longer a Bootstrap column — sized directly here so it stops
+       eating half the toolbar's width on desktop, freeing room for the
+       Refresh/filter buttons to sit on the same line. Full width on
+       phones/tablets (stacked above the buttons), fixed compact width
+       from the lg breakpoint up (matches SmartGrid.jsx's col-lg switch
+       on .etc-toolbar). */
     position: relative;
-    flex: 1 1 260px;
-    min-width: 220px;
+    width: 100%;
+  }
+  
+  @media (min-width: 992px) {
+    .etc-search-wrap {
+      width: 260px;
+      flex: 0 0 auto;
+    }
   }
   
   .etc-search-icon-btn {
@@ -148,7 +131,7 @@
     font-size: 0.78rem;
     font-weight: 700;
     color: var(--etc-primary-contrast);
-    background: var(--etc-primary);
+    background: var(--etc-primary-gradient, linear-gradient(135deg, var(--etc-primary), color-mix(in srgb, var(--etc-primary) 75%, #14043a)));
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -174,10 +157,10 @@
   /* ---------------------------------------------------------------- */
   
   .etc-btn-group {
-    display: flex;
-    align-items: center;
+    /* display/wrap now come from the `d-flex flex-wrap` utility classes
+       on the div in SmartGrid.jsx — this just keeps the gap between
+       buttons. */
     gap: 0.4rem;
-    flex-wrap: wrap;
   }
   
   .etc-btn {
@@ -334,24 +317,24 @@
     font-weight: 600;
   }
   
-  .etc-row {
+  .etc-table .etc-row {
     border-top: 1px solid var(--etc-line);
     transition: background-color 0.12s ease;
   }
   
-  .etc-row:first-child {
+  .etc-table .etc-row:first-child {
     border-top: none;
   }
   
-  .etc-row:hover td {
+  .etc-table .etc-row:hover td {
     background-color: var(--etc-surface);
   }
   
-  .etc-row:hover td:first-child {
+  .etc-table .etc-row:hover td:first-child {
     box-shadow: inset 3px 0 0 var(--etc-primary);
   }
   
-  .etc-tfoot-row td {
+  .etc-table .etc-tfoot-row td {
     padding: 0.8rem 1.15rem;
     background-color: var(--etc-surface);
     border-top: 2px solid var(--etc-line);
@@ -473,17 +456,6 @@
   /* Responsive                                                         */
   /* ---------------------------------------------------------------- */
   
-  @media (max-width: 900px) {
-    .etc-header {
-      flex-direction: column;
-      align-items: stretch;
-    }
-  
-    .etc-toolbar {
-      justify-content: flex-start;
-    }
-  }
-  
   @media (max-width: 640px) {
     .etc-header {
       padding: 1.1rem 1.1rem 0.9rem;
@@ -491,20 +463,6 @@
   
     .etc-body {
       padding: 1rem 1.1rem 1.25rem;
-    }
-  
-    .etc-toolbar {
-      width: 100%;
-    }
-  
-    .etc-search-wrap {
-      flex: 1 1 100%;
-      order: 1;
-    }
-  
-    .etc-btn-group {
-      width: 100%;
-      order: 2;
     }
   
     .etc-btn-group .etc-btn:not(.etc-btn-icon) {
@@ -534,14 +492,22 @@
       white-space: nowrap;
     }
   
-    .etc-row {
+    /* .etc-row / .etc-tfoot-row are also used, unscoped, by the LIVE
+       .etc-table-data structure in datamanager.css — without the
+       .etc-table-wrap ancestor prefix here, these rules leak onto that
+       live table too (that's what was cramming the footer cells into
+       little stacked boxes while the data rows above stayed in normal
+       horizontal-scroll layout). Every selector below is deliberately
+       scoped to .etc-table-wrap so this file's card-stacking behavior
+       stays contained to ITS OWN table markup only. */
+    .etc-table-wrap .etc-row {
       border: 1px solid var(--etc-line);
       border-radius: 10px;
       margin-bottom: 0.75rem;
       box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     }
   
-    .etc-row:hover td:first-child {
+    .etc-table-wrap .etc-row:hover td:first-child {
       box-shadow: none;
     }
   
@@ -579,30 +545,24 @@
       display: block;
     }
   
-    .etc-tfoot-row {
+    .etc-table-wrap .etc-tfoot-row {
       display: block;
       border: 1px solid var(--etc-line);
       border-radius: 10px;
       margin-top: 0.25rem;
     }
   
-    .etc-tfoot-row td {
+    .etc-table-wrap .etc-tfoot-row td {
       display: flex;
-      justify-content: space-between;
+      align-items: center;
+      justify-content: flex-end;
+      min-height: 2.2rem;
       padding: 0.65rem 0.9rem;
       border-top: 1px solid var(--etc-line);
     }
   
-    .etc-tfoot-row td:first-child {
+    .etc-table-wrap .etc-tfoot-row td:first-child {
       border-top: none;
-    }
-  
-    .etc-tfoot-row td::before {
-      content: attr(data-label);
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--etc-muted);
     }
   
     .etc-pagination-wrap {
@@ -614,3 +574,147 @@
       padding: 0 0.7rem;
     }
   }
+/* ---------------------------------------------------------------- */
+/* Reference-match refinements — rounded pill toolbar on mobile      */
+/* (search bar, Refresh / primary CTA row, Print List / Export pair) */
+/* ---------------------------------------------------------------- */
+
+.etc-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.etc-quick-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.etc-btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.05s ease, filter 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.etc-btn-pill:active {
+  transform: translateY(1px);
+}
+
+.etc-btn-pill:focus-visible {
+  outline: 2px solid var(--etc-primary);
+  outline-offset: 2px;
+}
+
+/* "Print List" — purple outline pill, purple icon + text */
+.etc-btn-pill-primary {
+  background: #ffffff;
+  border-color: var(--etc-primary);
+  color: var(--etc-primary);
+}
+
+.etc-btn-pill-primary:hover {
+  background: color-mix(in srgb, var(--etc-primary) 8%, #ffffff);
+}
+
+/* "Export to Excel" — neutral outline pill, green excel icon, dark text */
+.etc-btn-pill-success {
+  background: #ffffff;
+  border-color: var(--etc-line);
+  color: var(--etc-ink);
+}
+
+.etc-btn-pill-success i {
+  color: #1d8a3e;
+}
+
+.etc-btn-pill-success:hover {
+  border-color: #1d8a3e;
+}
+
+@media (max-width: 640px) {
+  /* Rounded, shadowed search bar with pill "Go" button — matches the
+     reference's floating search field instead of the flatter desktop one. */
+  .etc-search-input {
+    border-radius: 14px;
+    padding: 0.85rem 4.8rem 0.85rem 3rem;
+    font-size: 0.95rem;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+  }
+
+  .etc-search-icon-btn {
+    left: 0.5rem;
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.95rem;
+  }
+
+  .etc-search-go-btn {
+    right: 0.35rem;
+    top: 0.35rem;
+    bottom: 0.35rem;
+    padding: 0 1.1rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    background: var(--etc-primary-gradient, linear-gradient(135deg, var(--etc-primary), color-mix(in srgb, var(--etc-primary) 75%, #14043a)));
+  }
+
+  /* Refresh + primary CTA (e.g. "Upload new build") sit side by side,
+     each a rounded, shadowed pill-ish button — not stacked. */
+  .etc-btn-group {
+    flex-wrap: nowrap;
+    gap: 0.7rem;
+  }
+
+  .etc-btn-group .etc-btn {
+    flex: 1 1 0;
+    padding: 0.85rem 0.8rem;
+    border-radius: 14px;
+    font-size: 0.85rem;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+  }
+
+  .etc-btn-group .etc-btn-primary {
+    background: var(--etc-primary-gradient, linear-gradient(135deg, var(--etc-primary), color-mix(in srgb, var(--etc-primary) 70%, #14043a)));
+    border-color: transparent;
+    color: var(--etc-primary-contrast);
+    /* box-shadow: 0 10px 22px color-mix(in srgb, var(--etc-primary) 35%, transparent); */
+  }
+
+  /* Print List / Export to Excel become full-width-split pills instead
+     of left-aligned auto-width badges. */
+  .etc-btn-pill {
+    /* flex: 1 1 0; */
+  }
+
+  /* Schema.actions row — sits below Refresh/primary, buttons wrap
+     side by side at their own content width instead of stretching. */
+  .etc-btn-row {
+    flex: 1 1 100%;
+    order: 3;
+    margin-top: 0.6rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .etc-btn-row .etc-btn {
+    flex: 0 1 auto;
+    width: auto;
+    padding: 0.55rem 0.85rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    box-shadow: none;
+  }
+}

@@ -1,0 +1,146 @@
+.lux_tasks_dashboard{
+    background:"#FFF";
+    min-height:100vh;
+    padding:40px;
+    font-family:system-ui;
+    }
+    
+    
+    /* header */
+    
+    .lux_header_title{
+    font-weight:700;
+    font-size:26px;
+    color:#1c1f2a;
+    letter-spacing:0.5px;
+    }
+    
+    
+    /* buttons */
+    
+    .lux_btn{
+    border-radius:12px;
+    padding:10px 18px;
+    font-weight:600;
+    transition:all .25s ease;
+    }
+    
+    .lux_btn_primary{
+    background:linear-gradient(135deg,#5561ff,#7b83ff);
+    border:none;
+    color:white;
+    box-shadow:0 8px 20px rgba(90,100,255,.25);
+    }
+
+    
+    .lux_btn_light{
+    background:white;
+    border:1px solid #e3e6ef;
+    box-shadow:0 4px 10px rgba(0,0,0,.05);
+    }
+    
+    .lux_btn_light:hover{
+    background:#f8f9fc;
+    }
+    
+    
+    /* inputs */
+    
+    .lux_input{
+    border-radius:12px;
+    border:1px solid #e3e6ef;
+    padding:12px;
+    box-shadow:0 3px 8px rgba(0,0,0,.04);
+    }
+    
+    .lux_select{
+    border-radius:12px;
+    border:1px solid #e3e6ef;
+    padding:12px;
+    }
+    
+    
+    /* category buttons */
+    
+    .lux_category{
+    border-radius:20px;
+    padding:8px 16px;
+    font-size:13px;
+    background:white;
+    border:1px solid #e5e7f0;
+    box-shadow:0 4px 10px rgba(0,0,0,.04);
+    transition:.25s;
+    }
+    
+    .lux_category:hover{
+    background:#5561ff;
+    color:white;
+    border-color:#5561ff;
+    }
+    
+    
+    /* task cards */
+    
+    .lux_task_card{
+    
+    background:white;
+    border-radius:16px;
+    padding:22px;
+    
+    border:1px solid #eef0f6;
+    
+    box-shadow:
+    0 4px 12px rgba(0,0,0,.04),
+    0 12px 30px rgba(0,0,0,.05);
+    
+    transition:all .3s ease;
+    }
+    
+    .lux_task_card:hover{
+    
+    /*transform:translateY(-3px);*/
+    
+    box-shadow:
+    0 10px 25px rgba(0,0,0,.07),
+    0 18px 40px rgba(0,0,0,.08);
+    
+    }
+    
+    
+    /* title */
+    
+    .lux_task_title{
+    font-weight:600;
+    font-size:15px;
+    color:#1d2333;
+    }
+    
+    
+    /* tag */
+    
+    .lux_tag{
+    margin-left:10px;
+    padding:5px 10px;
+    font-size:11px;
+    border-radius:12px;
+    background:#f1f3ff;
+    color:#5561ff;
+    font-weight:600;
+    }
+    
+    
+    /* description */
+    
+    .lux_task_desc{
+    color:#6b7280;
+    font-size:13px;
+    margin-top:4px;
+    }
+    
+    
+    /* time */
+    
+    .lux_task_time{
+    font-size:12px;
+    color:#8b8fa5;
+    }

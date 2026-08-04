@@ -1,0 +1,177 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Smart Message Templates API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/smartmessagetemplates/smartmessagetemplates": {
+            "get": {
+                "summary": "Get Smart Message Templates",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Smart Message Templates",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "template_name": {
+                                        "type": "string",
+                                        "description": "Template name"
+                                    },
+                                    "template_code": {
+                                        "type": "string",
+                                        "description": "Template code"
+                                    },
+                                    "template_category": {
+                                        "type": "string",
+                                        "description": "Template category"
+                                    },
+                                    "message_channel": {
+                                        "type": "string",
+                                        "description": "Message channel"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "message_content": {
+                                        "type": "string",
+                                        "description": "Message content"
+                                    },
+                                    "template_status": {
+                                        "type": "string",
+                                        "description": "Template status"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "last_updated_by": {
+                                        "type": "string",
+                                        "description": "Last updated by"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "updated_on": {
+                                        "type": "string",
+                                        "description": "Updated on"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Smart Message Templates",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "template_name": {
+                                        "type": "string",
+                                        "description": "Template name"
+                                    },
+                                    "template_code": {
+                                        "type": "string",
+                                        "description": "Template code"
+                                    },
+                                    "template_category": {
+                                        "type": "string",
+                                        "description": "Template category"
+                                    },
+                                    "message_channel": {
+                                        "type": "string",
+                                        "description": "Message channel"
+                                    },
+                                    "subject": {
+                                        "type": "string",
+                                        "description": "Subject"
+                                    },
+                                    "message_content": {
+                                        "type": "string",
+                                        "description": "Message content"
+                                    },
+                                    "template_status": {
+                                        "type": "string",
+                                        "description": "Template status"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "last_updated_by": {
+                                        "type": "string",
+                                        "description": "Last updated by"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "updated_on": {
+                                        "type": "string",
+                                        "description": "Updated on"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Smart Message Templates id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

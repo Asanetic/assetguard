@@ -1,0 +1,201 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Event Log API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/eventlog/eventlog": {
+            "get": {
+                "summary": "Get Event Log",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Event Log",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "event_link": {
+                                        "type": "string",
+                                        "description": "Event link"
+                                    },
+                                    "event_type": {
+                                        "type": "string",
+                                        "description": "Event type"
+                                    },
+                                    "event_date": {
+                                        "type": "string",
+                                        "description": "Event date"
+                                    },
+                                    "event_descr": {
+                                        "type": "string",
+                                        "description": "Event descr"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Event Log",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "event_link": {
+                                        "type": "string",
+                                        "description": "Event link"
+                                    },
+                                    "event_type": {
+                                        "type": "string",
+                                        "description": "Event type"
+                                    },
+                                    "event_date": {
+                                        "type": "string",
+                                        "description": "Event date"
+                                    },
+                                    "event_descr": {
+                                        "type": "string",
+                                        "description": "Event descr"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Event Log id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/eventlog/eventlog": {
+            "get": {
+                "summary": "Get Event Log",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Event Log",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "event_link": {
+                                        "type": "string",
+                                        "description": "Event link"
+                                    },
+                                    "event_type": {
+                                        "type": "string",
+                                        "description": "Event type"
+                                    },
+                                    "event_date": {
+                                        "type": "string",
+                                        "description": "Event date"
+                                    },
+                                    "event_descr": {
+                                        "type": "string",
+                                        "description": "Event descr"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Event Log",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "event_link": {
+                                        "type": "string",
+                                        "description": "Event link"
+                                    },
+                                    "event_type": {
+                                        "type": "string",
+                                        "description": "Event type"
+                                    },
+                                    "event_date": {
+                                        "type": "string",
+                                        "description": "Event date"
+                                    },
+                                    "event_descr": {
+                                        "type": "string",
+                                        "description": "Event descr"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Event Log id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

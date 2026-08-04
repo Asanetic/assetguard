@@ -1,0 +1,425 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Requisition Items API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/requisitionitems/requisitionitems": {
+            "get": {
+                "summary": "Get Requisition Items",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Requisition Items",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "rate": {
+                                        "type": "string",
+                                        "description": "Rate"
+                                    },
+                                    "tax": {
+                                        "type": "string",
+                                        "description": "Tax"
+                                    },
+                                    "discount": {
+                                        "type": "string",
+                                        "description": "Discount"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "account_context": {
+                                        "type": "string",
+                                        "description": "Account context"
+                                    },
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "item_key": {
+                                        "type": "string",
+                                        "description": "Item key"
+                                    },
+                                    "stock_type": {
+                                        "type": "string",
+                                        "description": "Stock type"
+                                    },
+                                    "invoice_edit_key": {
+                                        "type": "string",
+                                        "description": "Invoice edit key"
+                                    },
+                                    "selling_price": {
+                                        "type": "string",
+                                        "description": "Selling price"
+                                    },
+                                    "sale_state": {
+                                        "type": "string",
+                                        "description": "Sale state"
+                                    },
+                                    "remaining_qty": {
+                                        "type": "string",
+                                        "description": "Remaining qty"
+                                    },
+                                    "add_to_stock": {
+                                        "type": "string",
+                                        "description": "Add to stock"
+                                    },
+                                    "item_remark": {
+                                        "type": "string",
+                                        "description": "Item remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Requisition Items",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "rate": {
+                                        "type": "string",
+                                        "description": "Rate"
+                                    },
+                                    "tax": {
+                                        "type": "string",
+                                        "description": "Tax"
+                                    },
+                                    "discount": {
+                                        "type": "string",
+                                        "description": "Discount"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "account_context": {
+                                        "type": "string",
+                                        "description": "Account context"
+                                    },
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "item_key": {
+                                        "type": "string",
+                                        "description": "Item key"
+                                    },
+                                    "stock_type": {
+                                        "type": "string",
+                                        "description": "Stock type"
+                                    },
+                                    "invoice_edit_key": {
+                                        "type": "string",
+                                        "description": "Invoice edit key"
+                                    },
+                                    "selling_price": {
+                                        "type": "string",
+                                        "description": "Selling price"
+                                    },
+                                    "sale_state": {
+                                        "type": "string",
+                                        "description": "Sale state"
+                                    },
+                                    "remaining_qty": {
+                                        "type": "string",
+                                        "description": "Remaining qty"
+                                    },
+                                    "add_to_stock": {
+                                        "type": "string",
+                                        "description": "Add to stock"
+                                    },
+                                    "item_remark": {
+                                        "type": "string",
+                                        "description": "Item remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Requisition Items id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/requisitionitems/requisitionitems": {
+            "get": {
+                "summary": "Get Requisition Items",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Requisition Items",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "rate": {
+                                        "type": "string",
+                                        "description": "Rate"
+                                    },
+                                    "tax": {
+                                        "type": "string",
+                                        "description": "Tax"
+                                    },
+                                    "discount": {
+                                        "type": "string",
+                                        "description": "Discount"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "account_context": {
+                                        "type": "string",
+                                        "description": "Account context"
+                                    },
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "item_key": {
+                                        "type": "string",
+                                        "description": "Item key"
+                                    },
+                                    "stock_type": {
+                                        "type": "string",
+                                        "description": "Stock type"
+                                    },
+                                    "invoice_edit_key": {
+                                        "type": "string",
+                                        "description": "Invoice edit key"
+                                    },
+                                    "selling_price": {
+                                        "type": "string",
+                                        "description": "Selling price"
+                                    },
+                                    "sale_state": {
+                                        "type": "string",
+                                        "description": "Sale state"
+                                    },
+                                    "remaining_qty": {
+                                        "type": "string",
+                                        "description": "Remaining qty"
+                                    },
+                                    "add_to_stock": {
+                                        "type": "string",
+                                        "description": "Add to stock"
+                                    },
+                                    "item_remark": {
+                                        "type": "string",
+                                        "description": "Item remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Requisition Items",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "rate": {
+                                        "type": "string",
+                                        "description": "Rate"
+                                    },
+                                    "tax": {
+                                        "type": "string",
+                                        "description": "Tax"
+                                    },
+                                    "discount": {
+                                        "type": "string",
+                                        "description": "Discount"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "account_context": {
+                                        "type": "string",
+                                        "description": "Account context"
+                                    },
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "item_key": {
+                                        "type": "string",
+                                        "description": "Item key"
+                                    },
+                                    "stock_type": {
+                                        "type": "string",
+                                        "description": "Stock type"
+                                    },
+                                    "invoice_edit_key": {
+                                        "type": "string",
+                                        "description": "Invoice edit key"
+                                    },
+                                    "selling_price": {
+                                        "type": "string",
+                                        "description": "Selling price"
+                                    },
+                                    "sale_state": {
+                                        "type": "string",
+                                        "description": "Sale state"
+                                    },
+                                    "remaining_qty": {
+                                        "type": "string",
+                                        "description": "Remaining qty"
+                                    },
+                                    "add_to_stock": {
+                                        "type": "string",
+                                        "description": "Add to stock"
+                                    },
+                                    "item_remark": {
+                                        "type": "string",
+                                        "description": "Item remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Requisition Items id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

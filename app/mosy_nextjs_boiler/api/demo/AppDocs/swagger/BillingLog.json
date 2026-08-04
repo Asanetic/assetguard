@@ -1,0 +1,328 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Billing Log API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/billinglog/billinglog": {
+            "get": {
+                "summary": "Get Billing Log",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Billing Log",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "transaction_ref": {
+                                        "type": "string",
+                                        "description": "Transaction ref"
+                                    },
+                                    "trx_type": {
+                                        "type": "string",
+                                        "description": "Trx type"
+                                    },
+                                    "trx_time": {
+                                        "type": "string",
+                                        "description": "Trx time"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "trx_source": {
+                                        "type": "string",
+                                        "description": "Trx source"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "message": {
+                                        "type": "string",
+                                        "description": "Message"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Billing Log",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "transaction_ref": {
+                                        "type": "string",
+                                        "description": "Transaction ref"
+                                    },
+                                    "trx_type": {
+                                        "type": "string",
+                                        "description": "Trx type"
+                                    },
+                                    "trx_time": {
+                                        "type": "string",
+                                        "description": "Trx time"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "trx_source": {
+                                        "type": "string",
+                                        "description": "Trx source"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "message": {
+                                        "type": "string",
+                                        "description": "Message"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Billing Log id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/grupet/billinglog/billinglog": {
+            "get": {
+                "summary": "Get Billing Log",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Billing Log",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": []
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Billing Log",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Billing Log id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/billinglog/billinglog": {
+            "get": {
+                "summary": "Get Billing Log",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Billing Log",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "transaction_ref": {
+                                        "type": "string",
+                                        "description": "Transaction ref"
+                                    },
+                                    "trx_type": {
+                                        "type": "string",
+                                        "description": "Trx type"
+                                    },
+                                    "trx_time": {
+                                        "type": "string",
+                                        "description": "Trx time"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "trx_source": {
+                                        "type": "string",
+                                        "description": "Trx source"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "message": {
+                                        "type": "string",
+                                        "description": "Message"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Billing Log",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "transaction_ref": {
+                                        "type": "string",
+                                        "description": "Transaction ref"
+                                    },
+                                    "trx_type": {
+                                        "type": "string",
+                                        "description": "Trx type"
+                                    },
+                                    "trx_time": {
+                                        "type": "string",
+                                        "description": "Trx time"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "trx_source": {
+                                        "type": "string",
+                                        "description": "Trx source"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "message": {
+                                        "type": "string",
+                                        "description": "Message"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Billing Log id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

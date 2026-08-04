@@ -157,37 +157,14 @@
    make the grid feel considered rather than default.
 */
 
-.etc-card {
-  --etc-ink: #0f172a;
-  --etc-body: #47536b;
-  --etc-muted: #94a0b3;
-  --etc-line: #e7eaf0;
-  --etc-surface: #f8fafc;
-  --etc-accent: #14315D;
-  --etc-accent-dark: #14315D;
-  --etc-accent-soft: #e6f5f2;
-  --etc-danger: #b91c1c;
-  --etc-radius: 10px;
-
-  background: #ffffff;
-  border: 1px solid var(--etc-line);
-  border-radius: 14px;
-  overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-}
-
 /* ---------------------------------------------------------------- */
 /* Header                                                            */
 /* ---------------------------------------------------------------- */
 
 .etc-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  /* Layout (stacking heading vs. toolbar) now comes from the
+     row/col-12 col-lg-4 / col-lg-8 markup in SmartGrid.jsx — this
+     rule only owns padding + the hairline underneath. */
   padding: 1.35rem 1.5rem 1.1rem;
   border-bottom: 1px solid var(--etc-line);
 }
@@ -211,10 +188,8 @@
 }
 
 .etc-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
+  /* No layout rules here anymore — col-12 col-lg-8 on the wrapping
+     div in SmartGrid.jsx handles width/stacking. */
 }
 
 /* ---------------------------------------------------------------- */
@@ -222,9 +197,10 @@
 /* ---------------------------------------------------------------- */
 
 .etc-search-wrap {
+  /* Bootstrap col (col-12 col-sm-6 col-md-5) now owns width/flex-basis;
+     this stays relative purely so the icon/go buttons can absolutely
+     position inside it. */
   position: relative;
-  flex: 1 1 230px;
-  min-width: 190px;
 }
 
 .etc-search-icon-btn {
@@ -291,13 +267,13 @@
 /* ---------------------------------------------------------------- */
 
 .etc-btn-group {
-  display: flex;
+  /* display: flex; */
   align-items: center;
   gap: 0.4rem;
 }
 
 .etc-btn {
-  display: inline-flex;
+  /* display: inline-flex; */
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
@@ -345,18 +321,66 @@
   transform: rotate(180deg);
 }
 
-.etc-btn-primary,
-.etc-btn-primary.etc-btn {
-  background: var(--etc-accent);
-  border-color: var(--etc-accent);
-  color: #ffffff;
-}
+
 
 .etc-btn-primary:hover {
   background: var(--etc-accent-dark);
   border-color: var(--etc-accent-dark);
   color: #ffffff;
 }
+
+/* ---- "More" popover — same >4-buttons-collapse pattern as
+   DynamicForm.jsx's dyn-more-wrap/panel/item, just under the etc-
+   namespace so it matches the rest of this file's look. ---- */
+.etc-more-wrap { position: relative; }
+.etc-more-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  max-width: min(260px, 90vw);
+  background: #fff;
+  border: 1px solid var(--etc-line);
+  border-radius: var(--etc-radius);
+  box-shadow: 0 16px 32px -8px rgba(22, 24, 31, 0.22), 0 2px 8px rgba(22, 24, 31, 0.08);
+  padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  z-index: 30;
+}
+.etc-more-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--etc-body, var(--etc-ink));
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.12s ease;
+}
+.etc-more-item:hover { background: var(--etc-surface); }
+.etc-more-item:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* colorClass on an action collapsed into "More" — drop the button's
+   border (boxed border looks wrong on a flat list row); soft tint
+   background left as a subtle color cue, doesn't fight
+   .etc-more-item:hover (higher specificity, still wins on hover). */
+.etc-more-item.dyn-btn-accent-amber  { border-color: transparent; color: #b45309; }
+.etc-more-item.dyn-btn-accent-green  { border-color: transparent; color: #047857; }
+.etc-more-item.dyn-btn-accent-purple { border-color: transparent; color: #6d28d9; }
+.etc-more-item.dyn-btn-accent-pink   { border-color: transparent; color: #be185d; }
+.etc-more-item.dyn-btn-accent-red    { border-color: transparent; color: #b91c1c; }
+.etc-more-item.dyn-btn-accent-yellow { border-color: transparent; color: #a16207; }
+.etc-more-item.dyn-btn-accent-blue   { border-color: transparent; color: #1d4ed8; }
+.etc-more-item.dyn-btn-accent-teal   { border-color: transparent; color: #0f766e; }
 
 .etc-btn-sm {
   padding: 0.35rem 0.7rem;
@@ -387,7 +411,7 @@
 }
 
 .etc-table-data thead th {
-  background-color: #14315D;
+  background-color: var(--etc-primary);
   border-bottom: 1px solid var(--etc-line);
   padding: 0.7rem 1.1rem;
   text-align: left;
@@ -552,25 +576,111 @@
   background-color: #94a3b8;
 }
 
+/* .print-badge{
+  background-color: #6C328F ;
+  color:#000
+} */
+
 /* ---------------------------------------------------------------- */
 /* Responsive                                                         */
 /* ---------------------------------------------------------------- */
 
 @media (max-width: 640px) {
   .etc-header {
-    flex-direction: column;
-    align-items: stretch;
+    padding: 1.1rem 1.1rem 0.9rem;
   }
 
-  .etc-toolbar {
-    justify-content: stretch;
-  }
-
-  .etc-search-wrap {
-    flex: 1 1 100%;
+  .etc-body {
+    padding: 1rem 1.1rem 1.25rem;
   }
 
   .etc-btn-group {
-    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .etc-btn-group .etc-btn:not(.etc-btn-icon) {
+    flex: 1 1 auto;
+  }
+
+  .etc-more-panel { right: -121px; left: auto; width: 100%; max-width: none; }
+
+  
+  /* Print List / Export to Excel — these render as raw Bootstrap
+     .badge buttons, not .etc-btn, which is why they look like two
+     mismatched pills instead of a clean row. Stack them full-width
+     to match everything else. */
+  .etc-body > button.badge {
+    display: inline-block;
+    text-align: center;
+  }
+
+  /* ---- Bootstrap-style horizontal scroll (not stacked cards): keep
+     real column widths, let the wrapper scroll sideways instead. ---- */
+  .etc-table-data-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .etc-table-data {
+    min-width: 640px; /* forces the scrollbar instead of crushing columns/images — bump this up if you add more visible columns */
+  }
+
+  .etc-pagination-wrap {
+    justify-content: center;
+  }
+
+  .etc-search-go-btn {
+    font-size: 0.72rem;
+    padding: 0 0.7rem;
+  }
+}
+
+@media (max-width: 640px) {
+
+  .etc-btn-group {
+    /* display: flex; */
+    /* flex-direction: column; */
+    width: 100%;
+    gap: 0.5rem;
+  }
+  .etc-btn-group .etc-btn {
+    /* width: 100%; */
+  }
+  /* Colored CTA actions (schema actions / grid profile actions like
+     "New Fuel Item") float above the plain Refresh button — matches
+     the reference: primary action first, Refresh underneath it. */
+  .etc-btn-group .etc-btn-primary,
+  .etc-btn-group .etc-btn-success,
+  .etc-btn-group .etc-btn-warning,
+  .etc-btn-group .etc-btn-danger {
+    order: -1;
+  }
+
+  /* Print List / Export to Excel sit side-by-side as a pair, not
+     stacked full-width. */
+  .etc-quick-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .etc-quick-actions > button.badge {
+    flex: 1 1 0;
+    width: auto;
+    margin: 0 !important;
+    text-align: center;
+  }
+
+  .etc-table-data-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .etc-table-data {
+    min-width: 640px;
+  }
+
+  .etc-pagination-wrap {
+    justify-content: center;
   }
 }

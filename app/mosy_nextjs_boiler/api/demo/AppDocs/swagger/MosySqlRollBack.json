@@ -1,0 +1,633 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Mosy Sql Roll Back API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/mosysqlrollback/mosysqlrollback": {
+            "get": {
+                "summary": "Get Mosy Sql Roll Back",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Mosy Sql Roll Back",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "table_name": {
+                                        "type": "string",
+                                        "description": "Table name"
+                                    },
+                                    "roll_type": {
+                                        "type": "string",
+                                        "description": "Roll type"
+                                    },
+                                    "where_str": {
+                                        "type": "string",
+                                        "description": "Where str"
+                                    },
+                                    "roll_timestamp": {
+                                        "type": "string",
+                                        "description": "Roll timestamp"
+                                    },
+                                    "value_entries": {
+                                        "type": "string",
+                                        "description": "Value entries"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Mosy Sql Roll Back",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "table_name": {
+                                        "type": "string",
+                                        "description": "Table name"
+                                    },
+                                    "roll_type": {
+                                        "type": "string",
+                                        "description": "Roll type"
+                                    },
+                                    "where_str": {
+                                        "type": "string",
+                                        "description": "Where str"
+                                    },
+                                    "roll_timestamp": {
+                                        "type": "string",
+                                        "description": "Roll timestamp"
+                                    },
+                                    "value_entries": {
+                                        "type": "string",
+                                        "description": "Value entries"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Mosy Sql Roll Back id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/grupet/mosysqlrollback/mosysqlrollback": {
+            "get": {
+                "summary": "Get Mosy Sql Roll Back",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Mosy Sql Roll Back",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "table_name": {
+                                        "type": "string",
+                                        "description": "Table name"
+                                    },
+                                    "roll_type": {
+                                        "type": "string",
+                                        "description": "Roll type"
+                                    },
+                                    "where_str": {
+                                        "type": "string",
+                                        "description": "Where str"
+                                    },
+                                    "roll_timestamp": {
+                                        "type": "string",
+                                        "description": "Roll timestamp"
+                                    },
+                                    "value_entries": {
+                                        "type": "string",
+                                        "description": "Value entries"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Mosy Sql Roll Back",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "table_name": {
+                                        "type": "string",
+                                        "description": "Table name"
+                                    },
+                                    "roll_type": {
+                                        "type": "string",
+                                        "description": "Roll type"
+                                    },
+                                    "where_str": {
+                                        "type": "string",
+                                        "description": "Where str"
+                                    },
+                                    "roll_timestamp": {
+                                        "type": "string",
+                                        "description": "Roll timestamp"
+                                    },
+                                    "value_entries": {
+                                        "type": "string",
+                                        "description": "Value entries"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Mosy Sql Roll Back id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/mosysqlrollback/mosysqlrollback": {
+            "get": {
+                "summary": "Get Mosy Sql Roll Back",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Mosy Sql Roll Back",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "table_name": {
+                                        "type": "string",
+                                        "description": "Table name"
+                                    },
+                                    "roll_type": {
+                                        "type": "string",
+                                        "description": "Roll type"
+                                    },
+                                    "where_str": {
+                                        "type": "string",
+                                        "description": "Where str"
+                                    },
+                                    "roll_timestamp": {
+                                        "type": "string",
+                                        "description": "Roll timestamp"
+                                    },
+                                    "value_entries": {
+                                        "type": "string",
+                                        "description": "Value entries"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Mosy Sql Roll Back",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "table_name": {
+                                        "type": "string",
+                                        "description": "Table name"
+                                    },
+                                    "roll_type": {
+                                        "type": "string",
+                                        "description": "Roll type"
+                                    },
+                                    "where_str": {
+                                        "type": "string",
+                                        "description": "Where str"
+                                    },
+                                    "roll_timestamp": {
+                                        "type": "string",
+                                        "description": "Roll timestamp"
+                                    },
+                                    "value_entries": {
+                                        "type": "string",
+                                        "description": "Value entries"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Mosy Sql Roll Back id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomcrm/mosysqlrollback/mosysqlrollback": {
+            "get": {
+                "summary": "Get Mosy Sql Roll Back",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Mosy Sql Roll Back",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "table_name": {
+                                        "type": "string",
+                                        "description": "Table name"
+                                    },
+                                    "roll_type": {
+                                        "type": "string",
+                                        "description": "Roll type"
+                                    },
+                                    "where_str": {
+                                        "type": "string",
+                                        "description": "Where str"
+                                    },
+                                    "roll_timestamp": {
+                                        "type": "string",
+                                        "description": "Roll timestamp"
+                                    },
+                                    "value_entries": {
+                                        "type": "string",
+                                        "description": "Value entries"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Mosy Sql Roll Back",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "table_name": {
+                                        "type": "string",
+                                        "description": "Table name"
+                                    },
+                                    "roll_type": {
+                                        "type": "string",
+                                        "description": "Roll type"
+                                    },
+                                    "where_str": {
+                                        "type": "string",
+                                        "description": "Where str"
+                                    },
+                                    "roll_timestamp": {
+                                        "type": "string",
+                                        "description": "Roll timestamp"
+                                    },
+                                    "value_entries": {
+                                        "type": "string",
+                                        "description": "Value entries"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Mosy Sql Roll Back id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomnovabill/mosysqlrollback/mosysqlrollback": {
+            "get": {
+                "summary": "Get Mosy Sql Roll Back",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Mosy Sql Roll Back",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "table_name": {
+                                        "type": "string",
+                                        "description": "Table name"
+                                    },
+                                    "roll_type": {
+                                        "type": "string",
+                                        "description": "Roll type"
+                                    },
+                                    "where_str": {
+                                        "type": "string",
+                                        "description": "Where str"
+                                    },
+                                    "roll_timestamp": {
+                                        "type": "string",
+                                        "description": "Roll timestamp"
+                                    },
+                                    "value_entries": {
+                                        "type": "string",
+                                        "description": "Value entries"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Mosy Sql Roll Back",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "table_name": {
+                                        "type": "string",
+                                        "description": "Table name"
+                                    },
+                                    "roll_type": {
+                                        "type": "string",
+                                        "description": "Roll type"
+                                    },
+                                    "where_str": {
+                                        "type": "string",
+                                        "description": "Where str"
+                                    },
+                                    "roll_timestamp": {
+                                        "type": "string",
+                                        "description": "Roll timestamp"
+                                    },
+                                    "value_entries": {
+                                        "type": "string",
+                                        "description": "Value entries"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Mosy Sql Roll Back id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/supercrm/mosysqlrollback/mosysqlrollback": {
+            "get": {
+                "summary": "Get Mosy Sql Roll Back",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Mosy Sql Roll Back",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "table_name": {
+                                        "type": "string",
+                                        "description": "Table name"
+                                    },
+                                    "roll_type": {
+                                        "type": "string",
+                                        "description": "Roll type"
+                                    },
+                                    "where_str": {
+                                        "type": "string",
+                                        "description": "Where str"
+                                    },
+                                    "roll_timestamp": {
+                                        "type": "string",
+                                        "description": "Roll timestamp"
+                                    },
+                                    "value_entries": {
+                                        "type": "string",
+                                        "description": "Value entries"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Mosy Sql Roll Back",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "table_name": {
+                                        "type": "string",
+                                        "description": "Table name"
+                                    },
+                                    "roll_type": {
+                                        "type": "string",
+                                        "description": "Roll type"
+                                    },
+                                    "where_str": {
+                                        "type": "string",
+                                        "description": "Where str"
+                                    },
+                                    "roll_timestamp": {
+                                        "type": "string",
+                                        "description": "Roll timestamp"
+                                    },
+                                    "value_entries": {
+                                        "type": "string",
+                                        "description": "Value entries"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Mosy Sql Roll Back id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

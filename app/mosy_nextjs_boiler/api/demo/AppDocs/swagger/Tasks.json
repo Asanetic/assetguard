@@ -1,0 +1,177 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Tasks API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/tasks/tasks": {
+            "get": {
+                "summary": "Get Tasks",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Tasks",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "task_title": {
+                                        "type": "string",
+                                        "description": "Task title"
+                                    },
+                                    "task_description": {
+                                        "type": "string",
+                                        "description": "Task description"
+                                    },
+                                    "task_type": {
+                                        "type": "string",
+                                        "description": "Task type"
+                                    },
+                                    "task_priority": {
+                                        "type": "string",
+                                        "description": "Task priority"
+                                    },
+                                    "task_status": {
+                                        "type": "string",
+                                        "description": "Task status"
+                                    },
+                                    "assigned_sales_rep": {
+                                        "type": "string",
+                                        "description": "Assigned sales rep"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "deal_id": {
+                                        "type": "string",
+                                        "description": "Deal id"
+                                    },
+                                    "due_date": {
+                                        "type": "string",
+                                        "description": "Due date"
+                                    },
+                                    "completed_on": {
+                                        "type": "string",
+                                        "description": "Completed on"
+                                    },
+                                    "task_notes": {
+                                        "type": "string",
+                                        "description": "Task notes"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Tasks",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "task_title": {
+                                        "type": "string",
+                                        "description": "Task title"
+                                    },
+                                    "task_description": {
+                                        "type": "string",
+                                        "description": "Task description"
+                                    },
+                                    "task_type": {
+                                        "type": "string",
+                                        "description": "Task type"
+                                    },
+                                    "task_priority": {
+                                        "type": "string",
+                                        "description": "Task priority"
+                                    },
+                                    "task_status": {
+                                        "type": "string",
+                                        "description": "Task status"
+                                    },
+                                    "assigned_sales_rep": {
+                                        "type": "string",
+                                        "description": "Assigned sales rep"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "deal_id": {
+                                        "type": "string",
+                                        "description": "Deal id"
+                                    },
+                                    "due_date": {
+                                        "type": "string",
+                                        "description": "Due date"
+                                    },
+                                    "completed_on": {
+                                        "type": "string",
+                                        "description": "Completed on"
+                                    },
+                                    "task_notes": {
+                                        "type": "string",
+                                        "description": "Task notes"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Tasks id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

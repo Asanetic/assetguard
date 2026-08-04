@@ -1,0 +1,185 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Account Urls API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/accounturls/accounturls": {
+            "get": {
+                "summary": "Get Account Urls",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Account Urls",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "url_name": {
+                                        "type": "string",
+                                        "description": "Url name"
+                                    },
+                                    "url": {
+                                        "type": "string",
+                                        "description": "Url"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Account Urls",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "url_name": {
+                                        "type": "string",
+                                        "description": "Url name"
+                                    },
+                                    "url": {
+                                        "type": "string",
+                                        "description": "Url"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Account Urls id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/accounturls/accounturls": {
+            "get": {
+                "summary": "Get Account Urls",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Account Urls",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "url_name": {
+                                        "type": "string",
+                                        "description": "Url name"
+                                    },
+                                    "url": {
+                                        "type": "string",
+                                        "description": "Url"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Account Urls",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "url_name": {
+                                        "type": "string",
+                                        "description": "Url name"
+                                    },
+                                    "url": {
+                                        "type": "string",
+                                        "description": "Url"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Account Urls id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -6,6 +6,7 @@
 
 import MainPurposePills from './uiControl/MainPurposePills'; // adjust path to match where this file actually sits relative to schema.js
 
+
 export const CompaniesSchema = {
   entity: 'companies',              // DB table name; also drives default role names
                                      // (view_companies / manage_companies) and apiBase

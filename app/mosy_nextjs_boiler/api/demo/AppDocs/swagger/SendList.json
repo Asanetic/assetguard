@@ -1,0 +1,361 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Send List API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/sendlist/sendlist": {
+            "get": {
+                "summary": "Get Send List",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Send List",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "send_list_name": {
+                                        "type": "string",
+                                        "description": "Send list name"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "contact_id": {
+                                        "type": "string",
+                                        "description": "Contact id"
+                                    },
+                                    "contact_names": {
+                                        "type": "string",
+                                        "description": "Contact names"
+                                    },
+                                    "mobile": {
+                                        "type": "string",
+                                        "description": "Mobile"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "ref_no": {
+                                        "type": "string",
+                                        "description": "Ref no"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "active_state": {
+                                        "type": "string",
+                                        "description": "Active state"
+                                    },
+                                    "service_id": {
+                                        "type": "string",
+                                        "description": "Service id"
+                                    },
+                                    "service_name": {
+                                        "type": "string",
+                                        "description": "Service name"
+                                    },
+                                    "entry_context": {
+                                        "type": "string",
+                                        "description": "Entry context"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Send List",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "send_list_name": {
+                                        "type": "string",
+                                        "description": "Send list name"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "contact_id": {
+                                        "type": "string",
+                                        "description": "Contact id"
+                                    },
+                                    "contact_names": {
+                                        "type": "string",
+                                        "description": "Contact names"
+                                    },
+                                    "mobile": {
+                                        "type": "string",
+                                        "description": "Mobile"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "ref_no": {
+                                        "type": "string",
+                                        "description": "Ref no"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "active_state": {
+                                        "type": "string",
+                                        "description": "Active state"
+                                    },
+                                    "service_id": {
+                                        "type": "string",
+                                        "description": "Service id"
+                                    },
+                                    "service_name": {
+                                        "type": "string",
+                                        "description": "Service name"
+                                    },
+                                    "entry_context": {
+                                        "type": "string",
+                                        "description": "Entry context"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Send List id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/sendlist/sendlist": {
+            "get": {
+                "summary": "Get Send List",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Send List",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "send_list_name": {
+                                        "type": "string",
+                                        "description": "Send list name"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "contact_id": {
+                                        "type": "string",
+                                        "description": "Contact id"
+                                    },
+                                    "contact_names": {
+                                        "type": "string",
+                                        "description": "Contact names"
+                                    },
+                                    "mobile": {
+                                        "type": "string",
+                                        "description": "Mobile"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "ref_no": {
+                                        "type": "string",
+                                        "description": "Ref no"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "active_state": {
+                                        "type": "string",
+                                        "description": "Active state"
+                                    },
+                                    "service_id": {
+                                        "type": "string",
+                                        "description": "Service id"
+                                    },
+                                    "service_name": {
+                                        "type": "string",
+                                        "description": "Service name"
+                                    },
+                                    "entry_context": {
+                                        "type": "string",
+                                        "description": "Entry context"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Send List",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "send_list_name": {
+                                        "type": "string",
+                                        "description": "Send list name"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "contact_id": {
+                                        "type": "string",
+                                        "description": "Contact id"
+                                    },
+                                    "contact_names": {
+                                        "type": "string",
+                                        "description": "Contact names"
+                                    },
+                                    "mobile": {
+                                        "type": "string",
+                                        "description": "Mobile"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "ref_no": {
+                                        "type": "string",
+                                        "description": "Ref no"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Description"
+                                    },
+                                    "active_state": {
+                                        "type": "string",
+                                        "description": "Active state"
+                                    },
+                                    "service_id": {
+                                        "type": "string",
+                                        "description": "Service id"
+                                    },
+                                    "service_name": {
+                                        "type": "string",
+                                        "description": "Service name"
+                                    },
+                                    "entry_context": {
+                                        "type": "string",
+                                        "description": "Entry context"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Send List id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

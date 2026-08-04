@@ -1,0 +1,537 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Requisitions API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/requisitions/requisitions": {
+            "get": {
+                "summary": "Get Requisitions",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Requisitions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "invoice_no": {
+                                        "type": "string",
+                                        "description": "Invoice no"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_due": {
+                                        "type": "string",
+                                        "description": "Date due"
+                                    },
+                                    "paid_status": {
+                                        "type": "string",
+                                        "description": "Paid status"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "invoice_stage": {
+                                        "type": "string",
+                                        "description": "Invoice stage"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "paid_on": {
+                                        "type": "string",
+                                        "description": "Paid on"
+                                    },
+                                    "supplier_id": {
+                                        "type": "string",
+                                        "description": "Supplier id"
+                                    },
+                                    "invoice_type": {
+                                        "type": "string",
+                                        "description": "Invoice type"
+                                    },
+                                    "account_affect": {
+                                        "type": "string",
+                                        "description": "Account affect"
+                                    },
+                                    "inv_no_int": {
+                                        "type": "string",
+                                        "description": "Inv no int"
+                                    },
+                                    "invoice_key": {
+                                        "type": "string",
+                                        "description": "Invoice key"
+                                    },
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "client_tel": {
+                                        "type": "string",
+                                        "description": "Client tel"
+                                    },
+                                    "client_email": {
+                                        "type": "string",
+                                        "description": "Client email"
+                                    },
+                                    "requested_by": {
+                                        "type": "string",
+                                        "description": "Requested by"
+                                    },
+                                    "approval_status": {
+                                        "type": "string",
+                                        "description": "Approval status"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "payment_ref": {
+                                        "type": "string",
+                                        "description": "Payment ref"
+                                    },
+                                    "payment_date": {
+                                        "type": "string",
+                                        "description": "Payment date"
+                                    },
+                                    "receipt_file": {
+                                        "type": "string",
+                                        "description": "Receipt file"
+                                    },
+                                    "vendor": {
+                                        "type": "string",
+                                        "description": "Vendor"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Requisitions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "invoice_no": {
+                                        "type": "string",
+                                        "description": "Invoice no"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_due": {
+                                        "type": "string",
+                                        "description": "Date due"
+                                    },
+                                    "paid_status": {
+                                        "type": "string",
+                                        "description": "Paid status"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "invoice_stage": {
+                                        "type": "string",
+                                        "description": "Invoice stage"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "paid_on": {
+                                        "type": "string",
+                                        "description": "Paid on"
+                                    },
+                                    "supplier_id": {
+                                        "type": "string",
+                                        "description": "Supplier id"
+                                    },
+                                    "invoice_type": {
+                                        "type": "string",
+                                        "description": "Invoice type"
+                                    },
+                                    "account_affect": {
+                                        "type": "string",
+                                        "description": "Account affect"
+                                    },
+                                    "inv_no_int": {
+                                        "type": "string",
+                                        "description": "Inv no int"
+                                    },
+                                    "invoice_key": {
+                                        "type": "string",
+                                        "description": "Invoice key"
+                                    },
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "client_tel": {
+                                        "type": "string",
+                                        "description": "Client tel"
+                                    },
+                                    "client_email": {
+                                        "type": "string",
+                                        "description": "Client email"
+                                    },
+                                    "requested_by": {
+                                        "type": "string",
+                                        "description": "Requested by"
+                                    },
+                                    "approval_status": {
+                                        "type": "string",
+                                        "description": "Approval status"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "payment_ref": {
+                                        "type": "string",
+                                        "description": "Payment ref"
+                                    },
+                                    "payment_date": {
+                                        "type": "string",
+                                        "description": "Payment date"
+                                    },
+                                    "receipt_file": {
+                                        "type": "string",
+                                        "description": "Receipt file"
+                                    },
+                                    "vendor": {
+                                        "type": "string",
+                                        "description": "Vendor"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Requisitions id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/requisitions/requisitions": {
+            "get": {
+                "summary": "Get Requisitions",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Requisitions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "invoice_no": {
+                                        "type": "string",
+                                        "description": "Invoice no"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_due": {
+                                        "type": "string",
+                                        "description": "Date due"
+                                    },
+                                    "paid_status": {
+                                        "type": "string",
+                                        "description": "Paid status"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "invoice_stage": {
+                                        "type": "string",
+                                        "description": "Invoice stage"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "paid_on": {
+                                        "type": "string",
+                                        "description": "Paid on"
+                                    },
+                                    "supplier_id": {
+                                        "type": "string",
+                                        "description": "Supplier id"
+                                    },
+                                    "invoice_type": {
+                                        "type": "string",
+                                        "description": "Invoice type"
+                                    },
+                                    "account_affect": {
+                                        "type": "string",
+                                        "description": "Account affect"
+                                    },
+                                    "inv_no_int": {
+                                        "type": "string",
+                                        "description": "Inv no int"
+                                    },
+                                    "invoice_key": {
+                                        "type": "string",
+                                        "description": "Invoice key"
+                                    },
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "client_tel": {
+                                        "type": "string",
+                                        "description": "Client tel"
+                                    },
+                                    "client_email": {
+                                        "type": "string",
+                                        "description": "Client email"
+                                    },
+                                    "requested_by": {
+                                        "type": "string",
+                                        "description": "Requested by"
+                                    },
+                                    "approval_status": {
+                                        "type": "string",
+                                        "description": "Approval status"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "payment_ref": {
+                                        "type": "string",
+                                        "description": "Payment ref"
+                                    },
+                                    "payment_date": {
+                                        "type": "string",
+                                        "description": "Payment date"
+                                    },
+                                    "receipt_file": {
+                                        "type": "string",
+                                        "description": "Receipt file"
+                                    },
+                                    "vendor": {
+                                        "type": "string",
+                                        "description": "Vendor"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Requisitions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "invoice_no": {
+                                        "type": "string",
+                                        "description": "Invoice no"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_due": {
+                                        "type": "string",
+                                        "description": "Date due"
+                                    },
+                                    "paid_status": {
+                                        "type": "string",
+                                        "description": "Paid status"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "invoice_stage": {
+                                        "type": "string",
+                                        "description": "Invoice stage"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "paid_on": {
+                                        "type": "string",
+                                        "description": "Paid on"
+                                    },
+                                    "supplier_id": {
+                                        "type": "string",
+                                        "description": "Supplier id"
+                                    },
+                                    "invoice_type": {
+                                        "type": "string",
+                                        "description": "Invoice type"
+                                    },
+                                    "account_affect": {
+                                        "type": "string",
+                                        "description": "Account affect"
+                                    },
+                                    "inv_no_int": {
+                                        "type": "string",
+                                        "description": "Inv no int"
+                                    },
+                                    "invoice_key": {
+                                        "type": "string",
+                                        "description": "Invoice key"
+                                    },
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "client_tel": {
+                                        "type": "string",
+                                        "description": "Client tel"
+                                    },
+                                    "client_email": {
+                                        "type": "string",
+                                        "description": "Client email"
+                                    },
+                                    "requested_by": {
+                                        "type": "string",
+                                        "description": "Requested by"
+                                    },
+                                    "approval_status": {
+                                        "type": "string",
+                                        "description": "Approval status"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "payment_ref": {
+                                        "type": "string",
+                                        "description": "Payment ref"
+                                    },
+                                    "payment_date": {
+                                        "type": "string",
+                                        "description": "Payment date"
+                                    },
+                                    "receipt_file": {
+                                        "type": "string",
+                                        "description": "Receipt file"
+                                    },
+                                    "vendor": {
+                                        "type": "string",
+                                        "description": "Vendor"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Requisitions id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

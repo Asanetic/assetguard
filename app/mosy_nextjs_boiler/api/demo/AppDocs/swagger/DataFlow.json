@@ -1,0 +1,281 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Data Flow API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/dataflow/dataflow": {
+            "get": {
+                "summary": "Get Data Flow",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Data Flow",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "entry_date": {
+                                        "type": "string",
+                                        "description": "Entry date"
+                                    },
+                                    "sequence_name": {
+                                        "type": "string",
+                                        "description": "Sequence name"
+                                    },
+                                    "sequence_id": {
+                                        "type": "string",
+                                        "description": "Sequence id"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "sequence_required": {
+                                        "type": "string",
+                                        "description": "Sequence required"
+                                    },
+                                    "sequence_number": {
+                                        "type": "string",
+                                        "description": "Sequence number"
+                                    },
+                                    "log_message": {
+                                        "type": "string",
+                                        "description": "Log message"
+                                    },
+                                    "parent_event": {
+                                        "type": "string",
+                                        "description": "Parent event"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Data Flow",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "entry_date": {
+                                        "type": "string",
+                                        "description": "Entry date"
+                                    },
+                                    "sequence_name": {
+                                        "type": "string",
+                                        "description": "Sequence name"
+                                    },
+                                    "sequence_id": {
+                                        "type": "string",
+                                        "description": "Sequence id"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "sequence_required": {
+                                        "type": "string",
+                                        "description": "Sequence required"
+                                    },
+                                    "sequence_number": {
+                                        "type": "string",
+                                        "description": "Sequence number"
+                                    },
+                                    "log_message": {
+                                        "type": "string",
+                                        "description": "Log message"
+                                    },
+                                    "parent_event": {
+                                        "type": "string",
+                                        "description": "Parent event"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Data Flow id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/dataflow/dataflow": {
+            "get": {
+                "summary": "Get Data Flow",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Data Flow",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "entry_date": {
+                                        "type": "string",
+                                        "description": "Entry date"
+                                    },
+                                    "sequence_name": {
+                                        "type": "string",
+                                        "description": "Sequence name"
+                                    },
+                                    "sequence_id": {
+                                        "type": "string",
+                                        "description": "Sequence id"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "sequence_required": {
+                                        "type": "string",
+                                        "description": "Sequence required"
+                                    },
+                                    "sequence_number": {
+                                        "type": "string",
+                                        "description": "Sequence number"
+                                    },
+                                    "log_message": {
+                                        "type": "string",
+                                        "description": "Log message"
+                                    },
+                                    "parent_event": {
+                                        "type": "string",
+                                        "description": "Parent event"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Data Flow",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "entry_date": {
+                                        "type": "string",
+                                        "description": "Entry date"
+                                    },
+                                    "sequence_name": {
+                                        "type": "string",
+                                        "description": "Sequence name"
+                                    },
+                                    "sequence_id": {
+                                        "type": "string",
+                                        "description": "Sequence id"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "sequence_required": {
+                                        "type": "string",
+                                        "description": "Sequence required"
+                                    },
+                                    "sequence_number": {
+                                        "type": "string",
+                                        "description": "Sequence number"
+                                    },
+                                    "log_message": {
+                                        "type": "string",
+                                        "description": "Log message"
+                                    },
+                                    "parent_event": {
+                                        "type": "string",
+                                        "description": "Parent event"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Data Flow id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

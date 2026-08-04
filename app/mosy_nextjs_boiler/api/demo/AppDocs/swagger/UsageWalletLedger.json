@@ -1,0 +1,249 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Usage Wallet Ledger API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/grupet/usagewalletledger/usagewalletledger": {
+            "get": {
+                "summary": "Get Usage Wallet Ledger",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Usage Wallet Ledger",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "wallet_id": {
+                                        "type": "string",
+                                        "description": "Wallet id"
+                                    },
+                                    "direction": {
+                                        "type": "string",
+                                        "description": "Direction"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "reason": {
+                                        "type": "string",
+                                        "description": "Reason"
+                                    },
+                                    "reference_type": {
+                                        "type": "string",
+                                        "description": "Reference type"
+                                    },
+                                    "reference_id": {
+                                        "type": "string",
+                                        "description": "Reference id"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Usage Wallet Ledger",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "wallet_id": {
+                                        "type": "string",
+                                        "description": "Wallet id"
+                                    },
+                                    "direction": {
+                                        "type": "string",
+                                        "description": "Direction"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "reason": {
+                                        "type": "string",
+                                        "description": "Reason"
+                                    },
+                                    "reference_type": {
+                                        "type": "string",
+                                        "description": "Reference type"
+                                    },
+                                    "reference_id": {
+                                        "type": "string",
+                                        "description": "Reference id"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Usage Wallet Ledger id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomnovabill/usagewalletledger/usagewalletledger": {
+            "get": {
+                "summary": "Get Usage Wallet Ledger",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Usage Wallet Ledger",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "wallet_id": {
+                                        "type": "string",
+                                        "description": "Wallet id"
+                                    },
+                                    "direction": {
+                                        "type": "string",
+                                        "description": "Direction"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "reason": {
+                                        "type": "string",
+                                        "description": "Reason"
+                                    },
+                                    "reference_type": {
+                                        "type": "string",
+                                        "description": "Reference type"
+                                    },
+                                    "reference_id": {
+                                        "type": "string",
+                                        "description": "Reference id"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Usage Wallet Ledger",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "wallet_id": {
+                                        "type": "string",
+                                        "description": "Wallet id"
+                                    },
+                                    "direction": {
+                                        "type": "string",
+                                        "description": "Direction"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "reason": {
+                                        "type": "string",
+                                        "description": "Reason"
+                                    },
+                                    "reference_type": {
+                                        "type": "string",
+                                        "description": "Reference type"
+                                    },
+                                    "reference_id": {
+                                        "type": "string",
+                                        "description": "Reference id"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Usage Wallet Ledger id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

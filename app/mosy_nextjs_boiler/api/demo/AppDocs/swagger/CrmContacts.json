@@ -1,0 +1,233 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Crm Contacts API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/bloomcrm/crmcontacts/crmcontacts": {
+            "get": {
+                "summary": "Get Crm Contacts",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Crm Contacts",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "contact_name": {
+                                        "type": "string",
+                                        "description": "Contact name"
+                                    },
+                                    "first_name": {
+                                        "type": "string",
+                                        "description": "First name"
+                                    },
+                                    "last_name": {
+                                        "type": "string",
+                                        "description": "Last name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "description": "Phone"
+                                    },
+                                    "alt_phone": {
+                                        "type": "string",
+                                        "description": "Alt phone"
+                                    },
+                                    "company_id": {
+                                        "type": "string",
+                                        "description": "Company id"
+                                    },
+                                    "job_title": {
+                                        "type": "string",
+                                        "description": "Job title"
+                                    },
+                                    "lead_source": {
+                                        "type": "string",
+                                        "description": "Lead source"
+                                    },
+                                    "contact_status": {
+                                        "type": "string",
+                                        "description": "Contact status"
+                                    },
+                                    "country": {
+                                        "type": "string",
+                                        "description": "Country"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "description": "City"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "description": "Address"
+                                    },
+                                    "profile_photo": {
+                                        "type": "string",
+                                        "description": "Profile photo"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "description": "Notes"
+                                    },
+                                    "assigned_user_id": {
+                                        "type": "string",
+                                        "description": "Assigned user id"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_updated": {
+                                        "type": "string",
+                                        "description": "Date updated"
+                                    },
+                                    "lead_id": {
+                                        "type": "string",
+                                        "description": "Lead id"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Crm Contacts",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "contact_name": {
+                                        "type": "string",
+                                        "description": "Contact name"
+                                    },
+                                    "first_name": {
+                                        "type": "string",
+                                        "description": "First name"
+                                    },
+                                    "last_name": {
+                                        "type": "string",
+                                        "description": "Last name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "description": "Phone"
+                                    },
+                                    "alt_phone": {
+                                        "type": "string",
+                                        "description": "Alt phone"
+                                    },
+                                    "company_id": {
+                                        "type": "string",
+                                        "description": "Company id"
+                                    },
+                                    "job_title": {
+                                        "type": "string",
+                                        "description": "Job title"
+                                    },
+                                    "lead_source": {
+                                        "type": "string",
+                                        "description": "Lead source"
+                                    },
+                                    "contact_status": {
+                                        "type": "string",
+                                        "description": "Contact status"
+                                    },
+                                    "country": {
+                                        "type": "string",
+                                        "description": "Country"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "description": "City"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "description": "Address"
+                                    },
+                                    "profile_photo": {
+                                        "type": "string",
+                                        "description": "Profile photo"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "description": "Notes"
+                                    },
+                                    "assigned_user_id": {
+                                        "type": "string",
+                                        "description": "Assigned user id"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_updated": {
+                                        "type": "string",
+                                        "description": "Date updated"
+                                    },
+                                    "lead_id": {
+                                        "type": "string",
+                                        "description": "Lead id"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Crm Contacts id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

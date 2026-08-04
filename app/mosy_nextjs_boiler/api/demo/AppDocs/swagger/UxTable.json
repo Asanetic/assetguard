@@ -1,0 +1,217 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Ux Table API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/uxtable/uxtable": {
+            "get": {
+                "summary": "Get Ux Table",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Ux Table",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "ux_key": {
+                                        "type": "string",
+                                        "description": "Ux key"
+                                    },
+                                    "ux_value": {
+                                        "type": "string",
+                                        "description": "Ux value"
+                                    },
+                                    "ux_type": {
+                                        "type": "string",
+                                        "description": "Ux type"
+                                    },
+                                    "ux_state": {
+                                        "type": "string",
+                                        "description": "Ux state"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Ux Table",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "ux_key": {
+                                        "type": "string",
+                                        "description": "Ux key"
+                                    },
+                                    "ux_value": {
+                                        "type": "string",
+                                        "description": "Ux value"
+                                    },
+                                    "ux_type": {
+                                        "type": "string",
+                                        "description": "Ux type"
+                                    },
+                                    "ux_state": {
+                                        "type": "string",
+                                        "description": "Ux state"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Ux Table id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/uxtable/uxtable": {
+            "get": {
+                "summary": "Get Ux Table",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Ux Table",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "ux_key": {
+                                        "type": "string",
+                                        "description": "Ux key"
+                                    },
+                                    "ux_value": {
+                                        "type": "string",
+                                        "description": "Ux value"
+                                    },
+                                    "ux_type": {
+                                        "type": "string",
+                                        "description": "Ux type"
+                                    },
+                                    "ux_state": {
+                                        "type": "string",
+                                        "description": "Ux state"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Ux Table",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "ux_key": {
+                                        "type": "string",
+                                        "description": "Ux key"
+                                    },
+                                    "ux_value": {
+                                        "type": "string",
+                                        "description": "Ux value"
+                                    },
+                                    "ux_type": {
+                                        "type": "string",
+                                        "description": "Ux type"
+                                    },
+                                    "ux_state": {
+                                        "type": "string",
+                                        "description": "Ux state"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Ux Table id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

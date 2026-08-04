@@ -1,0 +1,313 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Admins API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/admins/admins": {
+            "get": {
+                "summary": "Get Admins",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Admins",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "login_password": {
+                                        "type": "string",
+                                        "description": "Login password"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "regdate": {
+                                        "type": "string",
+                                        "description": "Regdate"
+                                    },
+                                    "user_no": {
+                                        "type": "string",
+                                        "description": "User no"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "user_gender": {
+                                        "type": "string",
+                                        "description": "User gender"
+                                    },
+                                    "last_seen": {
+                                        "type": "string",
+                                        "description": "Last seen"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Admins",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "login_password": {
+                                        "type": "string",
+                                        "description": "Login password"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "regdate": {
+                                        "type": "string",
+                                        "description": "Regdate"
+                                    },
+                                    "user_no": {
+                                        "type": "string",
+                                        "description": "User no"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "user_gender": {
+                                        "type": "string",
+                                        "description": "User gender"
+                                    },
+                                    "last_seen": {
+                                        "type": "string",
+                                        "description": "Last seen"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Admins id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/admins/admins": {
+            "get": {
+                "summary": "Get Admins",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Admins",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "login_password": {
+                                        "type": "string",
+                                        "description": "Login password"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "regdate": {
+                                        "type": "string",
+                                        "description": "Regdate"
+                                    },
+                                    "user_no": {
+                                        "type": "string",
+                                        "description": "User no"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "user_gender": {
+                                        "type": "string",
+                                        "description": "User gender"
+                                    },
+                                    "last_seen": {
+                                        "type": "string",
+                                        "description": "Last seen"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Admins",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "login_password": {
+                                        "type": "string",
+                                        "description": "Login password"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "regdate": {
+                                        "type": "string",
+                                        "description": "Regdate"
+                                    },
+                                    "user_no": {
+                                        "type": "string",
+                                        "description": "User no"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "user_gender": {
+                                        "type": "string",
+                                        "description": "User gender"
+                                    },
+                                    "last_seen": {
+                                        "type": "string",
+                                        "description": "Last seen"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Admins id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

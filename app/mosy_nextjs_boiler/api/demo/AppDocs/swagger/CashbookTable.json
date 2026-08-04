@@ -1,0 +1,281 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Cashbook Table API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/cashbooktable/cashbooktable": {
+            "get": {
+                "summary": "Get Cashbook Table",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Cashbook Table",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "source_table": {
+                                        "type": "string",
+                                        "description": "Source table"
+                                    },
+                                    "dr_amt": {
+                                        "type": "string",
+                                        "description": "Dr amt"
+                                    },
+                                    "cr_amt": {
+                                        "type": "string",
+                                        "description": "Cr amt"
+                                    },
+                                    "dr_particulars": {
+                                        "type": "string",
+                                        "description": "Dr particulars"
+                                    },
+                                    "cr_particulars": {
+                                        "type": "string",
+                                        "description": "Cr particulars"
+                                    },
+                                    "dr_acc_id": {
+                                        "type": "string",
+                                        "description": "Dr acc id"
+                                    },
+                                    "cr_acc_id": {
+                                        "type": "string",
+                                        "description": "Cr acc id"
+                                    },
+                                    "transaction_tag": {
+                                        "type": "string",
+                                        "description": "Transaction tag"
+                                    },
+                                    "transaction_date": {
+                                        "type": "string",
+                                        "description": "Transaction date"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Cashbook Table",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "source_table": {
+                                        "type": "string",
+                                        "description": "Source table"
+                                    },
+                                    "dr_amt": {
+                                        "type": "string",
+                                        "description": "Dr amt"
+                                    },
+                                    "cr_amt": {
+                                        "type": "string",
+                                        "description": "Cr amt"
+                                    },
+                                    "dr_particulars": {
+                                        "type": "string",
+                                        "description": "Dr particulars"
+                                    },
+                                    "cr_particulars": {
+                                        "type": "string",
+                                        "description": "Cr particulars"
+                                    },
+                                    "dr_acc_id": {
+                                        "type": "string",
+                                        "description": "Dr acc id"
+                                    },
+                                    "cr_acc_id": {
+                                        "type": "string",
+                                        "description": "Cr acc id"
+                                    },
+                                    "transaction_tag": {
+                                        "type": "string",
+                                        "description": "Transaction tag"
+                                    },
+                                    "transaction_date": {
+                                        "type": "string",
+                                        "description": "Transaction date"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Cashbook Table id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/cashbooktable/cashbooktable": {
+            "get": {
+                "summary": "Get Cashbook Table",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Cashbook Table",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "source_table": {
+                                        "type": "string",
+                                        "description": "Source table"
+                                    },
+                                    "dr_amt": {
+                                        "type": "string",
+                                        "description": "Dr amt"
+                                    },
+                                    "cr_amt": {
+                                        "type": "string",
+                                        "description": "Cr amt"
+                                    },
+                                    "dr_particulars": {
+                                        "type": "string",
+                                        "description": "Dr particulars"
+                                    },
+                                    "cr_particulars": {
+                                        "type": "string",
+                                        "description": "Cr particulars"
+                                    },
+                                    "dr_acc_id": {
+                                        "type": "string",
+                                        "description": "Dr acc id"
+                                    },
+                                    "cr_acc_id": {
+                                        "type": "string",
+                                        "description": "Cr acc id"
+                                    },
+                                    "transaction_tag": {
+                                        "type": "string",
+                                        "description": "Transaction tag"
+                                    },
+                                    "transaction_date": {
+                                        "type": "string",
+                                        "description": "Transaction date"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Cashbook Table",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "source_table": {
+                                        "type": "string",
+                                        "description": "Source table"
+                                    },
+                                    "dr_amt": {
+                                        "type": "string",
+                                        "description": "Dr amt"
+                                    },
+                                    "cr_amt": {
+                                        "type": "string",
+                                        "description": "Cr amt"
+                                    },
+                                    "dr_particulars": {
+                                        "type": "string",
+                                        "description": "Dr particulars"
+                                    },
+                                    "cr_particulars": {
+                                        "type": "string",
+                                        "description": "Cr particulars"
+                                    },
+                                    "dr_acc_id": {
+                                        "type": "string",
+                                        "description": "Dr acc id"
+                                    },
+                                    "cr_acc_id": {
+                                        "type": "string",
+                                        "description": "Cr acc id"
+                                    },
+                                    "transaction_tag": {
+                                        "type": "string",
+                                        "description": "Transaction tag"
+                                    },
+                                    "transaction_date": {
+                                        "type": "string",
+                                        "description": "Transaction date"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Cashbook Table id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

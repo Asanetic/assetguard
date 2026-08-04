@@ -10,6 +10,12 @@ const defaultLogo = defaultLogoAsset.src || defaultLogoAsset; // Next.js static 
 // "dyn-input" class, which FormLayout.jsx styles to match the target look
 // (rounded-lg, thin gray border, gray placeholder). Swapping the visual
 // theme means editing the CSS in FormLayout.jsx — never these components.
+export function HiddenInput() {
+  return null;
+}
+HiddenInput.selfLabeled = true; // no <label> wrapper
+HiddenInput.hiddenField = true; // tells FieldRenderer to skip the grid cell entirely
+
 
 export function TextInput({ field, value, setValue, readOnly }) {
   const inputType = field.type === 'number' || field.type === 'money' ? 'number'
@@ -234,7 +240,7 @@ export function ImageInput({ field, value, setValue, readOnly, schema }) {
       {!readOnly && (
         <label className="dyn-upload-btn">
           <i className="fa fa-upload"></i> {isFile ? 'Change File' : 'Choose File'}
-          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+          <input type="file"  style={{ display: 'none' }} onChange={handleFileChange} />
         </label>
       )}
     </div>
@@ -252,4 +258,5 @@ export const FIELD_COMPONENTS = {
   liveSearch: LiveSearchInput,
   richtext: RichTextInput,
   image: ImageInput,
+  hidden: HiddenInput,
 };

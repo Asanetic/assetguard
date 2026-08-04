@@ -1,0 +1,208 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Invoice Items API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/grupet/invoiceitems/invoiceitems": {
+            "get": {
+                "summary": "Get Invoice Items",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Invoice Items",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": []
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Invoice Items",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Invoice Items id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/supercrm/invoiceitems/invoiceitems": {
+            "get": {
+                "summary": "Get Invoice Items",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Invoice Items",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "invoice_item_name": {
+                                        "type": "string",
+                                        "description": "Invoice item name"
+                                    },
+                                    "item_quantity": {
+                                        "type": "string",
+                                        "description": "Item quantity"
+                                    },
+                                    "item_unit_price": {
+                                        "type": "string",
+                                        "description": "Item unit price"
+                                    },
+                                    "item_total_amount": {
+                                        "type": "string",
+                                        "description": "Item total amount"
+                                    },
+                                    "item_description": {
+                                        "type": "string",
+                                        "description": "Item description"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Invoice Items",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "invoice_item_name": {
+                                        "type": "string",
+                                        "description": "Invoice item name"
+                                    },
+                                    "item_quantity": {
+                                        "type": "string",
+                                        "description": "Item quantity"
+                                    },
+                                    "item_unit_price": {
+                                        "type": "string",
+                                        "description": "Item unit price"
+                                    },
+                                    "item_total_amount": {
+                                        "type": "string",
+                                        "description": "Item total amount"
+                                    },
+                                    "item_description": {
+                                        "type": "string",
+                                        "description": "Item description"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Invoice Items id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

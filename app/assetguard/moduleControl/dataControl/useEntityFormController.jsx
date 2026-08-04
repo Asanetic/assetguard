@@ -3,10 +3,51 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useEntityController } from './useEntityController';
 import { useFormEngine } from '../UiControl/FormEngine';
-import { MosyAlertCard, MosyNotify, closeMosyModal } from '../../../MosyUtils/ActionModals';
+import { MosyAlertCard, MosyNotify, MosySnackWidget, closeMosyModal } from '../../../MosyUtils/ActionModals';
 // UI-only role gate — same convention as CompaniesGrid.jsx/EntityRowActionsMenu.jsx
 import { mosyACTRLHasRole } from '../../../auth/authAccesControl';
 import { runRegisteredAction, normalizeActionResult } from '../logicControl/actionsRegistry'; // export normalizeActionResult from EntityDataEngine.js, re-export or import directly — your call
+import { mosySnackWidgetManager } from '../../../MosyUtils/MosySnackWidget';
+import { closeMosyCard } from '../../../components/MosyCard';
+
+// Resolves which field plays which VISUAL role for template rendering —
+// independent from `schema.sections` (which drives the default
+// DynamicForm's grid-of-inputs layout). Wildly different profile
+// templates (video profile, email reading pane, product page, blog post)
+// don't share a layout shape, but they DO share the same small vocabulary
+// of "what goes where" slots: one hero media field, one title, one body,
+// one price, one author, one meta/date. Optional schema.templateRoles
+// overrides win on a per-key basis; anything not overridden falls back to
+// the same type/flag inference CardListGrid already uses for cards, so
+// this works with ZERO schema changes on existing modules — set
+// schema.templateRoles only where the inference guesses wrong.
+//
+//   schema.templateRoles: {
+//     hero: 'cover_image',   // or a video-type field for a video profile
+//     title: 'product_name',
+//     body: 'description',
+//     price: 'unit_price',
+//     author: 'sold_by',
+//     meta: 'created_at',
+//   }
+function resolveTemplateRoles(schema) {
+  const explicit = schema.templateRoles || {};
+  const byKey = Object.fromEntries(schema.fields.map((f) => [f.key, f]));
+  const find = (predicate) => schema.fields.find(predicate);
+
+  const hero = explicit.hero ? byKey[explicit.hero] : find((f) => f.type === 'image' || f.type === 'video');
+  const title = explicit.title ? byKey[explicit.title] : (find((f) => f.title) || schema.fields.find((f) => !f.system));
+  const body = explicit.body
+    ? byKey[explicit.body]
+    : find((f) => f.type === 'textarea' && f.key !== title?.key);
+  const price = explicit.price ? byKey[explicit.price] : find((f) => f.type === 'money');
+  const meta = explicit.meta ? byKey[explicit.meta] : find((f) => f.type === 'datetime');
+  const author = explicit.author
+    ? byKey[explicit.author]
+    : find((f) => /author|created_by|sold_by|posted_by|sender/i.test(f.key));
+
+  return { hero, title, body, price, meta, author };
+}
 
 // useEntityFormController — the ONE place profile/form behavior lives.
 // Mirrors useEntityGridController: any UI template (DynamicForm, a modal,
@@ -24,7 +65,15 @@ import { runRegisteredAction, normalizeActionResult } from '../logicControl/acti
 //
 // Swap schema.profileActions and the SAME template renders a totally
 // different button set — no template edits needed.
-export function useEntityFormController(schema, moduleActions, { id, onDone, redirectOnDelete } = {}) {
+
+// export function useEntityFormController(schema, moduleActions, { id, onDone, redirectOnDelete } = {}) {
+// signature — drop syncUrl, keep initialValues
+export function useEntityFormController(
+  schema,
+  moduleActions,
+  { id, onDone, redirectOnDelete, initialValues } = {}
+) {
+
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -35,8 +84,17 @@ export function useEntityFormController(schema, moduleActions, { id, onDone, red
 
   useEffect(() => {
     let cancelled = false;
-    if (!id) { setRecord(null); setFetching(false); return; }
-
+    // if (!id) { setRecord(null); setFetching(false); return; }
+    if (!id) {
+      // Create mode: seed from initialValues if given (e.g. contact_id +
+      // its liveSearch label pulled from a Client row via "Add Deal") —
+      // same seeding path an EDITED record uses, just synthetic instead
+      // of fetched. FormFields' LiveSearchInput reads row?.[labelKey]
+      // straight off this, no _tbl_col_col prefixing needed anymore.
+      setRecord(initialValues && Object.keys(initialValues).length ? initialValues : null);
+      setFetching(false);
+      return;
+    }
     setFetching(true);
     setFetchError(null);
     c.getOne(id)
@@ -139,10 +197,11 @@ export function useEntityFormController(schema, moduleActions, { id, onDone, red
       // form kept showing the just-cloned data but `id` still pointed at
       // the ORIGINAL record, so the next Save silently overwrote the
       // original instead of the clone.
+
       const freshToken = typeof window !== 'undefined' ? window.btoa(String(result.id)) : String(result.id);
       const fresh = await c.getOne(freshToken);
       if (fresh) setRecord(fresh);
-
+      
       const dataNodeParam = `${schema.entity}_dataNode`;
       const params = new URLSearchParams(searchParams.toString());
       if (params.get(dataNodeParam) !== freshToken) {
@@ -152,9 +211,10 @@ export function useEntityFormController(schema, moduleActions, { id, onDone, red
 
       onDone?.();
     }
-
     return result;
   }, [record, form.values, schema, c, onDone, pathname, searchParams, router]);
+
+
 
   // ---- Resolved action buttons — schema.profileActions drives this.
   // Each entry is one of:
@@ -191,11 +251,14 @@ export function useEntityFormController(schema, moduleActions, { id, onDone, red
         }
         if (a.key === 'clone') {
           return cloneRecord().then((result) => {
-            MosyNotify({
-              message: result?.message || (result?.ok ? 'Record cloned successfully' : 'Failed to clone record'),
-              icon: result?.ok ? 'check-circle' : 'times-circle',
-              iconColor: result?.ok ? 'text-success' : 'text-danger',
-            });
+            // MosyNotify({
+            //   message: result?.message || (result?.ok ? 'Record cloned successfully' : 'Failed to clone record'),
+            //   icon: result?.ok ? 'check-circle' : 'times-circle',
+            //   iconColor: result?.ok ? 'text-success' : 'text-danger',
+            // });
+            mosySnackWidgetManager({ content: result?.message || (result?.ok ? 'Record cloned successfully' : 'Failed to clone record'), duration: result?.ok ? 2500 : 4000, type: result?.ok ? 'success' : 'error' });
+            ///closeMosyModal(notifyId)
+            //closeMosyCard();            
           });
         }
         if (a.navigateTo) {
@@ -219,9 +282,94 @@ export function useEntityFormController(schema, moduleActions, { id, onDone, red
       },
     }));
 
+  // ---- The ONE submit entry point every template calls: form.submit().
+  // Owns the full sequence — validate, mutate, notify (sending -> success/
+  // error), and sync the URL's ${entity}_dataNode token after a create so
+  // refresh/back-button/share-link all resolve to the right record. This
+  // used to live in DynamicForm.jsx's own doSubmit — moved here so a
+  // brand-new template (video profile, product page, whatever) gets
+  // identical behavior from one call, no MosyNotify/router/searchParams
+  // imports needed in the template itself.
+  const submit = async () => {
+    const notifyId = 'modal1';
+
+    MosyNotify({
+      message: 'Sending request...',
+      icon: 'spinner',
+      id: notifyId,
+    });
+
+    try {
+      // form.submit(handleSubmit) runs validate() first — returns false
+      // (no request sent) on client-side validation failure, otherwise
+      // resolves to whatever handleSubmit returns ({ ok, message, id }).
+      const result = await form.submit(handleSubmit);
+
+      if (result === false) {
+        MosyNotify({
+          message: 'Please fix the highlighted fields.',
+          icon: 'exclamation-circle',
+          iconColor: 'danger',
+          id: notifyId,
+          addTimer: true,
+          duration: 3000,
+        });
+        return result;
+      }
+
+      const ok = result?.ok ?? true;
+      const message = ok
+        ? (isEditing ? 'Record saved successfully.' : 'Record added successfully.')
+        : (result?.message || 'Something went wrong. Please try again.');
+
+      // Same job the legacy TasksRequestHandler flow did with
+      // mosyUpdateUrlParam('tasks_dataNode', token) — router.push (NOT
+      // replace) is the one proven to correctly re-run the profile page's
+      // searchParams.get(...) -> flip isEditing -> resolve the real
+      // Update/Delete/Clone action set, matching
+      // Entityroweventinterpreter.jsx's own select-branch navigation.
+      //if (ok && result?.id !== undefined && result?.id !== null) {
+      if (ok && result?.id !== undefined && result?.id !== null) {
+
+        const dataNodeParam = `${schema.entity}_dataNode`;
+        const token = typeof window !== 'undefined' ? window.btoa(String(result.id)) : String(result.id);
+         const params = new URLSearchParams(searchParams.toString());
+        if (params.get(dataNodeParam) !== token) {
+          params.set(dataNodeParam, token);
+          router.push(`${pathname}?${params.toString()}`, { scroll: false });
+        }
+      }
+
+      // MosyNotify({
+      //   message,
+      //   icon: ok ? 'check-circle' : 'times-circle',
+      //   iconColor: ok ? 'success' : 'danger',
+      //   id: notifyId,
+      //   addTimer: true,
+      //   duration: ok ? 2500 : 4000,
+      // });
+
+      mosySnackWidgetManager({ content: message, duration: ok ? 2500 : 4000, type: ok ? 'success' : 'error' });
+      ///closeMosyModal(notifyId)
+      closeMosyCard(notifyId);
+
+      return result;
+    } catch (err) {
+      MosyNotify({
+        message: err?.message || 'Something went wrong. Please try again.',
+        icon: 'times-circle',
+        iconColor: 'danger',
+        id: notifyId,
+        addTimer: true,
+        duration: 4000,
+      });
+      return { ok: false, message: err?.message };
+    }
+  };
+
   return {
     ...form,
-    submit: () => form.submit(handleSubmit),
+    submit,
     isEditing,
     fetching,
     fetchError,
@@ -233,5 +381,6 @@ export function useEntityFormController(schema, moduleActions, { id, onDone, red
     runAction,
     cloneRecord,
     actions,
+    roles: resolveTemplateRoles(schema),
   };
 }

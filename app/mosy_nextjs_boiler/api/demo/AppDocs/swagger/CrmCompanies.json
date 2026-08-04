@@ -1,0 +1,217 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Crm Companies API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/bloomcrm/crmcompanies/crmcompanies": {
+            "get": {
+                "summary": "Get Crm Companies",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Crm Companies",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "company_name": {
+                                        "type": "string",
+                                        "description": "Company name"
+                                    },
+                                    "industry": {
+                                        "type": "string",
+                                        "description": "Industry"
+                                    },
+                                    "company_email": {
+                                        "type": "string",
+                                        "description": "Company email"
+                                    },
+                                    "company_phone": {
+                                        "type": "string",
+                                        "description": "Company phone"
+                                    },
+                                    "website": {
+                                        "type": "string",
+                                        "description": "Website"
+                                    },
+                                    "kra_pin": {
+                                        "type": "string",
+                                        "description": "Kra pin"
+                                    },
+                                    "tax_number": {
+                                        "type": "string",
+                                        "description": "Tax number"
+                                    },
+                                    "country": {
+                                        "type": "string",
+                                        "description": "Country"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "description": "City"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "description": "Address"
+                                    },
+                                    "company_logo": {
+                                        "type": "string",
+                                        "description": "Company logo"
+                                    },
+                                    "company_size": {
+                                        "type": "string",
+                                        "description": "Company size"
+                                    },
+                                    "annual_revenue": {
+                                        "type": "string",
+                                        "description": "Annual revenue"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "description": "Notes"
+                                    },
+                                    "assigned_user_id": {
+                                        "type": "string",
+                                        "description": "Assigned user id"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_updated": {
+                                        "type": "string",
+                                        "description": "Date updated"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Crm Companies",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "company_name": {
+                                        "type": "string",
+                                        "description": "Company name"
+                                    },
+                                    "industry": {
+                                        "type": "string",
+                                        "description": "Industry"
+                                    },
+                                    "company_email": {
+                                        "type": "string",
+                                        "description": "Company email"
+                                    },
+                                    "company_phone": {
+                                        "type": "string",
+                                        "description": "Company phone"
+                                    },
+                                    "website": {
+                                        "type": "string",
+                                        "description": "Website"
+                                    },
+                                    "kra_pin": {
+                                        "type": "string",
+                                        "description": "Kra pin"
+                                    },
+                                    "tax_number": {
+                                        "type": "string",
+                                        "description": "Tax number"
+                                    },
+                                    "country": {
+                                        "type": "string",
+                                        "description": "Country"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "description": "City"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "description": "Address"
+                                    },
+                                    "company_logo": {
+                                        "type": "string",
+                                        "description": "Company logo"
+                                    },
+                                    "company_size": {
+                                        "type": "string",
+                                        "description": "Company size"
+                                    },
+                                    "annual_revenue": {
+                                        "type": "string",
+                                        "description": "Annual revenue"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "description": "Notes"
+                                    },
+                                    "assigned_user_id": {
+                                        "type": "string",
+                                        "description": "Assigned user id"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_updated": {
+                                        "type": "string",
+                                        "description": "Date updated"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Crm Companies id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

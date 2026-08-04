@@ -7,19 +7,19 @@ const commonRoot = ""; // Update this path if needed
 
 const mosyThemeConfigs = {
   // App Identity
-  mosyAppName: "Asset Guard",
-  mosySystemName: "assetguardv1",
+  mosyAppName: "Super ERP",
+  mosySystemName: "supercrmv7",
   mosyAppLogo: logo.src,
   mosyAppLogoStyle: {
     width: "auto",
-    height: "50px",
+    height: "70px",
   },
 
   // Color Scheme
   themeName: "Mosy",
-  btnBg: "#2371B2",
+  btnBg: "#14315D",
   btnTxt: "#fff",
-  ctnBg: "#fff",
+  ctnBg: "#FCFCFC",
   ctnTxt: "#000",
   bodyColor: "#fff",//"rgba(247, 244, 244, 0.9)",
   bodyTxt: "#000",
@@ -27,7 +27,7 @@ const mosyThemeConfigs = {
   navbarBorderColor: "#ccc",
   navbarBorderSize: "1",
   navShadowClass: "shadow-sm",
-  genBorderColor: "#2371B2",
+  genBorderColor: "#ccc",
   genBorderSize: "1",
   wildColor: "",
   skinPlasma: "rgba(255, 255, 255, 0.0)",
@@ -37,7 +37,7 @@ const mosyThemeConfigs = {
 
   // Gradient and Sidebar
   btnFirstColor: "#000000",
-  btnSecondColor: "#2371B2",
+  btnSecondColor: "#14315D",
   get sideBarBg() {
     return `linear-gradient(225deg, ${this.btnFirstColor}, ${this.btnSecondColor})`;
     //return this.btnBg;

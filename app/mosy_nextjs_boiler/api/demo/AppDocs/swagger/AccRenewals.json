@@ -1,0 +1,425 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Acc Renewals API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/accrenewals/accrenewals": {
+            "get": {
+                "summary": "Get Acc Renewals",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Acc Renewals",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "mobile_no": {
+                                        "type": "string",
+                                        "description": "Mobile no"
+                                    },
+                                    "credits_available": {
+                                        "type": "string",
+                                        "description": "Credits available"
+                                    },
+                                    "package_name": {
+                                        "type": "string",
+                                        "description": "Package name"
+                                    },
+                                    "package_amount": {
+                                        "type": "string",
+                                        "description": "Package amount"
+                                    },
+                                    "credits_deducted": {
+                                        "type": "string",
+                                        "description": "Credits deducted"
+                                    },
+                                    "new_credit_balance": {
+                                        "type": "string",
+                                        "description": "New credit balance"
+                                    },
+                                    "next_expiry_date": {
+                                        "type": "string",
+                                        "description": "Next expiry date"
+                                    },
+                                    "activated_on": {
+                                        "type": "string",
+                                        "description": "Activated on"
+                                    },
+                                    "activated_by": {
+                                        "type": "string",
+                                        "description": "Activated by"
+                                    },
+                                    "renid": {
+                                        "type": "string",
+                                        "description": "Renid"
+                                    },
+                                    "client_type": {
+                                        "type": "string",
+                                        "description": "Client type"
+                                    },
+                                    "invoice_signature": {
+                                        "type": "string",
+                                        "description": "Invoice signature"
+                                    },
+                                    "client_names": {
+                                        "type": "string",
+                                        "description": "Client names"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "last_expiry_date": {
+                                        "type": "string",
+                                        "description": "Last expiry date"
+                                    },
+                                    "old_balance": {
+                                        "type": "string",
+                                        "description": "Old balance"
+                                    },
+                                    "disconnection_message": {
+                                        "type": "string",
+                                        "description": "Disconnection message"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Acc Renewals",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "mobile_no": {
+                                        "type": "string",
+                                        "description": "Mobile no"
+                                    },
+                                    "credits_available": {
+                                        "type": "string",
+                                        "description": "Credits available"
+                                    },
+                                    "package_name": {
+                                        "type": "string",
+                                        "description": "Package name"
+                                    },
+                                    "package_amount": {
+                                        "type": "string",
+                                        "description": "Package amount"
+                                    },
+                                    "credits_deducted": {
+                                        "type": "string",
+                                        "description": "Credits deducted"
+                                    },
+                                    "new_credit_balance": {
+                                        "type": "string",
+                                        "description": "New credit balance"
+                                    },
+                                    "next_expiry_date": {
+                                        "type": "string",
+                                        "description": "Next expiry date"
+                                    },
+                                    "activated_on": {
+                                        "type": "string",
+                                        "description": "Activated on"
+                                    },
+                                    "activated_by": {
+                                        "type": "string",
+                                        "description": "Activated by"
+                                    },
+                                    "renid": {
+                                        "type": "string",
+                                        "description": "Renid"
+                                    },
+                                    "client_type": {
+                                        "type": "string",
+                                        "description": "Client type"
+                                    },
+                                    "invoice_signature": {
+                                        "type": "string",
+                                        "description": "Invoice signature"
+                                    },
+                                    "client_names": {
+                                        "type": "string",
+                                        "description": "Client names"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "last_expiry_date": {
+                                        "type": "string",
+                                        "description": "Last expiry date"
+                                    },
+                                    "old_balance": {
+                                        "type": "string",
+                                        "description": "Old balance"
+                                    },
+                                    "disconnection_message": {
+                                        "type": "string",
+                                        "description": "Disconnection message"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Acc Renewals id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/accrenewals/accrenewals": {
+            "get": {
+                "summary": "Get Acc Renewals",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Acc Renewals",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "mobile_no": {
+                                        "type": "string",
+                                        "description": "Mobile no"
+                                    },
+                                    "credits_available": {
+                                        "type": "string",
+                                        "description": "Credits available"
+                                    },
+                                    "package_name": {
+                                        "type": "string",
+                                        "description": "Package name"
+                                    },
+                                    "package_amount": {
+                                        "type": "string",
+                                        "description": "Package amount"
+                                    },
+                                    "credits_deducted": {
+                                        "type": "string",
+                                        "description": "Credits deducted"
+                                    },
+                                    "new_credit_balance": {
+                                        "type": "string",
+                                        "description": "New credit balance"
+                                    },
+                                    "next_expiry_date": {
+                                        "type": "string",
+                                        "description": "Next expiry date"
+                                    },
+                                    "activated_on": {
+                                        "type": "string",
+                                        "description": "Activated on"
+                                    },
+                                    "activated_by": {
+                                        "type": "string",
+                                        "description": "Activated by"
+                                    },
+                                    "renid": {
+                                        "type": "string",
+                                        "description": "Renid"
+                                    },
+                                    "client_type": {
+                                        "type": "string",
+                                        "description": "Client type"
+                                    },
+                                    "invoice_signature": {
+                                        "type": "string",
+                                        "description": "Invoice signature"
+                                    },
+                                    "client_names": {
+                                        "type": "string",
+                                        "description": "Client names"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "last_expiry_date": {
+                                        "type": "string",
+                                        "description": "Last expiry date"
+                                    },
+                                    "old_balance": {
+                                        "type": "string",
+                                        "description": "Old balance"
+                                    },
+                                    "disconnection_message": {
+                                        "type": "string",
+                                        "description": "Disconnection message"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Acc Renewals",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "account_name": {
+                                        "type": "string",
+                                        "description": "Account name"
+                                    },
+                                    "mobile_no": {
+                                        "type": "string",
+                                        "description": "Mobile no"
+                                    },
+                                    "credits_available": {
+                                        "type": "string",
+                                        "description": "Credits available"
+                                    },
+                                    "package_name": {
+                                        "type": "string",
+                                        "description": "Package name"
+                                    },
+                                    "package_amount": {
+                                        "type": "string",
+                                        "description": "Package amount"
+                                    },
+                                    "credits_deducted": {
+                                        "type": "string",
+                                        "description": "Credits deducted"
+                                    },
+                                    "new_credit_balance": {
+                                        "type": "string",
+                                        "description": "New credit balance"
+                                    },
+                                    "next_expiry_date": {
+                                        "type": "string",
+                                        "description": "Next expiry date"
+                                    },
+                                    "activated_on": {
+                                        "type": "string",
+                                        "description": "Activated on"
+                                    },
+                                    "activated_by": {
+                                        "type": "string",
+                                        "description": "Activated by"
+                                    },
+                                    "renid": {
+                                        "type": "string",
+                                        "description": "Renid"
+                                    },
+                                    "client_type": {
+                                        "type": "string",
+                                        "description": "Client type"
+                                    },
+                                    "invoice_signature": {
+                                        "type": "string",
+                                        "description": "Invoice signature"
+                                    },
+                                    "client_names": {
+                                        "type": "string",
+                                        "description": "Client names"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "last_expiry_date": {
+                                        "type": "string",
+                                        "description": "Last expiry date"
+                                    },
+                                    "old_balance": {
+                                        "type": "string",
+                                        "description": "Old balance"
+                                    },
+                                    "disconnection_message": {
+                                        "type": "string",
+                                        "description": "Disconnection message"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Acc Renewals id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

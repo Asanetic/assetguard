@@ -1,0 +1,201 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Usage Meters API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/grupet/usagemeters/usagemeters": {
+            "get": {
+                "summary": "Get Usage Meters",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Usage Meters",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "meter_code": {
+                                        "type": "string",
+                                        "description": "Meter code"
+                                    },
+                                    "unit_name": {
+                                        "type": "string",
+                                        "description": "Unit name"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Usage Meters",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "meter_code": {
+                                        "type": "string",
+                                        "description": "Meter code"
+                                    },
+                                    "unit_name": {
+                                        "type": "string",
+                                        "description": "Unit name"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Usage Meters id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomnovabill/usagemeters/usagemeters": {
+            "get": {
+                "summary": "Get Usage Meters",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Usage Meters",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "meter_code": {
+                                        "type": "string",
+                                        "description": "Meter code"
+                                    },
+                                    "unit_name": {
+                                        "type": "string",
+                                        "description": "Unit name"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Usage Meters",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "asset_id": {
+                                        "type": "string",
+                                        "description": "Asset id"
+                                    },
+                                    "meter_code": {
+                                        "type": "string",
+                                        "description": "Meter code"
+                                    },
+                                    "unit_name": {
+                                        "type": "string",
+                                        "description": "Unit name"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Usage Meters id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

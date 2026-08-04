@@ -1,0 +1,321 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Sites API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/assetguard/sites/sites": {
+            "get": {
+                "summary": "Get Sites",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Sites",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "site_name": {
+                                        "type": "string",
+                                        "description": "Site name"
+                                    },
+                                    "site_code": {
+                                        "type": "string",
+                                        "description": "Site code"
+                                    },
+                                    "country": {
+                                        "type": "string",
+                                        "description": "Country"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "description": "City"
+                                    },
+                                    "county": {
+                                        "type": "string",
+                                        "description": "County"
+                                    },
+                                    "town": {
+                                        "type": "string",
+                                        "description": "Town"
+                                    },
+                                    "latitude": {
+                                        "type": "string",
+                                        "description": "Latitude"
+                                    },
+                                    "longitude": {
+                                        "type": "string",
+                                        "description": "Longitude"
+                                    },
+                                    "location_address": {
+                                        "type": "string",
+                                        "description": "Location address"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "manager": {
+                                        "type": "string",
+                                        "description": "Manager"
+                                    },
+                                    "manager_mobile": {
+                                        "type": "string",
+                                        "description": "Manager mobile"
+                                    },
+                                    "manager_email": {
+                                        "type": "string",
+                                        "description": "Manager email"
+                                    },
+                                    "contact_person": {
+                                        "type": "string",
+                                        "description": "Contact person"
+                                    },
+                                    "contact_person_mobile": {
+                                        "type": "string",
+                                        "description": "Contact person mobile"
+                                    },
+                                    "contact_person_email": {
+                                        "type": "string",
+                                        "description": "Contact person email"
+                                    },
+                                    "company_security_manager": {
+                                        "type": "string",
+                                        "description": "Company security manager"
+                                    },
+                                    "company_security_contacts": {
+                                        "type": "string",
+                                        "description": "Company security contacts"
+                                    },
+                                    "vendor_contact_person": {
+                                        "type": "string",
+                                        "description": "Vendor contact person"
+                                    },
+                                    "vendor_contacts": {
+                                        "type": "string",
+                                        "description": "Vendor contacts"
+                                    },
+                                    "response_team_contact_person": {
+                                        "type": "string",
+                                        "description": "Response team contact person"
+                                    },
+                                    "response_team_contacts": {
+                                        "type": "string",
+                                        "description": "Response team contacts"
+                                    },
+                                    "crew_commander_contact_person": {
+                                        "type": "string",
+                                        "description": "Crew commander contact person"
+                                    },
+                                    "crew_commander_contacts": {
+                                        "type": "string",
+                                        "description": "Crew commander contacts"
+                                    },
+                                    "vehicle_registration_number": {
+                                        "type": "string",
+                                        "description": "Vehicle registration number"
+                                    },
+                                    "alternate_phone_number": {
+                                        "type": "string",
+                                        "description": "Alternate phone number"
+                                    },
+                                    "vendor": {
+                                        "type": "string",
+                                        "description": "Vendor"
+                                    },
+                                    "management_company": {
+                                        "type": "string",
+                                        "description": "Management company"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Sites",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "site_name": {
+                                        "type": "string",
+                                        "description": "Site name"
+                                    },
+                                    "site_code": {
+                                        "type": "string",
+                                        "description": "Site code"
+                                    },
+                                    "country": {
+                                        "type": "string",
+                                        "description": "Country"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "description": "City"
+                                    },
+                                    "county": {
+                                        "type": "string",
+                                        "description": "County"
+                                    },
+                                    "town": {
+                                        "type": "string",
+                                        "description": "Town"
+                                    },
+                                    "latitude": {
+                                        "type": "string",
+                                        "description": "Latitude"
+                                    },
+                                    "longitude": {
+                                        "type": "string",
+                                        "description": "Longitude"
+                                    },
+                                    "location_address": {
+                                        "type": "string",
+                                        "description": "Location address"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "manager": {
+                                        "type": "string",
+                                        "description": "Manager"
+                                    },
+                                    "manager_mobile": {
+                                        "type": "string",
+                                        "description": "Manager mobile"
+                                    },
+                                    "manager_email": {
+                                        "type": "string",
+                                        "description": "Manager email"
+                                    },
+                                    "contact_person": {
+                                        "type": "string",
+                                        "description": "Contact person"
+                                    },
+                                    "contact_person_mobile": {
+                                        "type": "string",
+                                        "description": "Contact person mobile"
+                                    },
+                                    "contact_person_email": {
+                                        "type": "string",
+                                        "description": "Contact person email"
+                                    },
+                                    "company_security_manager": {
+                                        "type": "string",
+                                        "description": "Company security manager"
+                                    },
+                                    "company_security_contacts": {
+                                        "type": "string",
+                                        "description": "Company security contacts"
+                                    },
+                                    "vendor_contact_person": {
+                                        "type": "string",
+                                        "description": "Vendor contact person"
+                                    },
+                                    "vendor_contacts": {
+                                        "type": "string",
+                                        "description": "Vendor contacts"
+                                    },
+                                    "response_team_contact_person": {
+                                        "type": "string",
+                                        "description": "Response team contact person"
+                                    },
+                                    "response_team_contacts": {
+                                        "type": "string",
+                                        "description": "Response team contacts"
+                                    },
+                                    "crew_commander_contact_person": {
+                                        "type": "string",
+                                        "description": "Crew commander contact person"
+                                    },
+                                    "crew_commander_contacts": {
+                                        "type": "string",
+                                        "description": "Crew commander contacts"
+                                    },
+                                    "vehicle_registration_number": {
+                                        "type": "string",
+                                        "description": "Vehicle registration number"
+                                    },
+                                    "alternate_phone_number": {
+                                        "type": "string",
+                                        "description": "Alternate phone number"
+                                    },
+                                    "vendor": {
+                                        "type": "string",
+                                        "description": "Vendor"
+                                    },
+                                    "management_company": {
+                                        "type": "string",
+                                        "description": "Management company"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Sites id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

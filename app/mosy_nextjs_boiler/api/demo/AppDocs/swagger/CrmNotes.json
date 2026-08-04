@@ -1,0 +1,153 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Crm Notes API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/bloomcrm/crmnotes/crmnotes": {
+            "get": {
+                "summary": "Get Crm Notes",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Crm Notes",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "note_title": {
+                                        "type": "string",
+                                        "description": "Note title"
+                                    },
+                                    "note_content": {
+                                        "type": "string",
+                                        "description": "Note content"
+                                    },
+                                    "related_contact_id": {
+                                        "type": "string",
+                                        "description": "Related contact id"
+                                    },
+                                    "related_company_id": {
+                                        "type": "string",
+                                        "description": "Related company id"
+                                    },
+                                    "related_deal_id": {
+                                        "type": "string",
+                                        "description": "Related deal id"
+                                    },
+                                    "visibility_type": {
+                                        "type": "string",
+                                        "description": "Visibility type"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_updated": {
+                                        "type": "string",
+                                        "description": "Date updated"
+                                    },
+                                    "related_lead_id": {
+                                        "type": "string",
+                                        "description": "Related lead id"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Crm Notes",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "note_title": {
+                                        "type": "string",
+                                        "description": "Note title"
+                                    },
+                                    "note_content": {
+                                        "type": "string",
+                                        "description": "Note content"
+                                    },
+                                    "related_contact_id": {
+                                        "type": "string",
+                                        "description": "Related contact id"
+                                    },
+                                    "related_company_id": {
+                                        "type": "string",
+                                        "description": "Related company id"
+                                    },
+                                    "related_deal_id": {
+                                        "type": "string",
+                                        "description": "Related deal id"
+                                    },
+                                    "visibility_type": {
+                                        "type": "string",
+                                        "description": "Visibility type"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_updated": {
+                                        "type": "string",
+                                        "description": "Date updated"
+                                    },
+                                    "related_lead_id": {
+                                        "type": "string",
+                                        "description": "Related lead id"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Crm Notes id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

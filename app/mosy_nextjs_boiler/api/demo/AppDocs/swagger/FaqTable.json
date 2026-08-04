@@ -1,0 +1,185 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Faq Table API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/faqtable/faqtable": {
+            "get": {
+                "summary": "Get Faq Table",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Faq Table",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "faq_subject": {
+                                        "type": "string",
+                                        "description": "Faq subject"
+                                    },
+                                    "faq_details": {
+                                        "type": "string",
+                                        "description": "Faq details"
+                                    },
+                                    "faq_tag": {
+                                        "type": "string",
+                                        "description": "Faq tag"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Faq Table",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "faq_subject": {
+                                        "type": "string",
+                                        "description": "Faq subject"
+                                    },
+                                    "faq_details": {
+                                        "type": "string",
+                                        "description": "Faq details"
+                                    },
+                                    "faq_tag": {
+                                        "type": "string",
+                                        "description": "Faq tag"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Faq Table id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/faqtable/faqtable": {
+            "get": {
+                "summary": "Get Faq Table",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Faq Table",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "faq_subject": {
+                                        "type": "string",
+                                        "description": "Faq subject"
+                                    },
+                                    "faq_details": {
+                                        "type": "string",
+                                        "description": "Faq details"
+                                    },
+                                    "faq_tag": {
+                                        "type": "string",
+                                        "description": "Faq tag"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Faq Table",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "faq_subject": {
+                                        "type": "string",
+                                        "description": "Faq subject"
+                                    },
+                                    "faq_details": {
+                                        "type": "string",
+                                        "description": "Faq details"
+                                    },
+                                    "faq_tag": {
+                                        "type": "string",
+                                        "description": "Faq tag"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Faq Table id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

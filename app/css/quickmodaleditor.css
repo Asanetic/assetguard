@@ -1,0 +1,148 @@
+.qem-scope {
+    display: flex;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .qem-card {
+    position: relative;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid var(--dyn-line);
+    border-radius: 20px;
+    /* box-shadow:
+      0 1px 2px rgba(22, 24, 31, 0.04),
+      0 32px 64px -24px rgba(22, 24, 31, 0.35),
+      0 0 0 1px rgba(22, 24, 31, 0.02); */
+    padding: 2.25rem 2.5rem 2rem;
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+    transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .qem-entered .qem-card { opacity: 1; transform: translateY(0) scale(1); }
+
+  .qem-close {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--dyn-line);
+    border-radius: 50%;
+    background: #fff;
+    color: var(--dyn-muted);
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  }
+  .qem-close:hover { color: var(--dyn-ink); border-color: #d8d3c4; background: var(--dyn-surface); transform: rotate(90deg); }
+
+  .qem-header { padding-right: 2rem; }
+  .qem-eyebrow {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--dyn-accent);
+    margin-bottom: 0.5rem;
+  }
+  .qem-title {
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--dyn-ink);
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+    margin: 0;
+  }
+
+  .qem-divider {
+    height: 1px;
+    margin: 1.1rem 0 1.75rem;
+    background: linear-gradient(
+      90deg,
+      var(--dyn-accent) 0%,
+      color-mix(in srgb, var(--dyn-accent) 25%, var(--dyn-line)) 14%,
+      var(--dyn-line) 32%,
+      var(--dyn-line) 100%
+    );
+  }
+
+  .qem-body { margin-bottom: 0.5rem; }
+
+  /* Slightly roomier than the full-page form — a modal has fewer fields
+     competing for attention, so give each one more breathing room. */
+  .qem-body .dyn-field { margin-bottom: 0.35rem; }
+  .qem-body .dyn-input {
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    border-radius: 10px;
+  }
+  .qem-body .dyn-label { font-size: 0.82rem; margin-bottom: 0.5rem; }
+
+  .qem-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--dyn-line);
+  }
+
+  .qem-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: 118px;
+    padding: 0.7rem 1.4rem;
+    font-size: 0.86rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.15s ease, border-color 0.15s ease,
+      color 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
+  }
+  .qem-btn:active { transform: translateY(1px); }
+  .qem-btn:focus-visible { outline: 2px solid var(--dyn-accent); outline-offset: 2px; }
+  .qem-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .qem-btn-ghost {
+    background: #fff;
+    border-color: var(--dyn-line);
+    color: var(--dyn-body);
+  }
+  .qem-btn-ghost:hover { background: var(--dyn-surface); border-color: #d8d3c4; color: var(--dyn-ink); }
+
+  /* Primary — deep navy body, brass hairline glow on hover instead of a
+     flat color swap. This is the one button in the modal allowed to feel
+     "expensive." */
+
+  .qem-btn-primary:hover {
+    background: color-mix(in srgb, var(--dyn-primary) 88%, black);
+    box-shadow: 0 1px 2px rgba(22, 24, 31, 0.1), 0 14px 28px -10px rgba(6, 39, 66, 0.65),
+      0 0 0 1px color-mix(in srgb, var(--dyn-accent) 55%, transparent);
+  }
+
+  .qem-btn-danger {
+    background: #fff;
+    border-color: var(--dyn-danger);
+    color: var(--dyn-danger);
+  }
+  .qem-btn-danger:hover { background: var(--dyn-danger); color: #fff; }
+
+  .qem-snack-anchor { position: fixed; top: 0; left: 0; right: 0; z-index: 60; }
+
+  @media (max-width: 640px) {
+    .qem-card { max-width: 100%; border-radius: 16px; padding: 1.75rem 1.5rem 1.5rem; }
+    .qem-footer { flex-direction: column-reverse; }
+    .qem-footer .qem-btn { width: 100%; }
+    .qem-close { top: 1rem; right: 1rem; }
+  }

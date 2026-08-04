@@ -1,0 +1,441 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Inventory History API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/inventoryhistory/inventoryhistory": {
+            "get": {
+                "summary": "Get Inventory History",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Inventory History",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "stock_type": {
+                                        "type": "string",
+                                        "description": "Stock type"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "purchase_price": {
+                                        "type": "string",
+                                        "description": "Purchase price"
+                                    },
+                                    "selling_price": {
+                                        "type": "string",
+                                        "description": "Selling price"
+                                    },
+                                    "authorised_by": {
+                                        "type": "string",
+                                        "description": "Authorised by"
+                                    },
+                                    "supplier": {
+                                        "type": "string",
+                                        "description": "Supplier"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "inventory_date": {
+                                        "type": "string",
+                                        "description": "Inventory date"
+                                    },
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "invoice_edit_key": {
+                                        "type": "string",
+                                        "description": "Invoice edit key"
+                                    },
+                                    "transfer_type": {
+                                        "type": "string",
+                                        "description": "Transfer type"
+                                    },
+                                    "staff_id": {
+                                        "type": "string",
+                                        "description": "Staff id"
+                                    },
+                                    "price_invoice": {
+                                        "type": "string",
+                                        "description": "Price invoice"
+                                    },
+                                    "inventory_item": {
+                                        "type": "string",
+                                        "description": "Inventory item"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "item_location": {
+                                        "type": "string",
+                                        "description": "Item location"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Inventory History",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "stock_type": {
+                                        "type": "string",
+                                        "description": "Stock type"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "purchase_price": {
+                                        "type": "string",
+                                        "description": "Purchase price"
+                                    },
+                                    "selling_price": {
+                                        "type": "string",
+                                        "description": "Selling price"
+                                    },
+                                    "authorised_by": {
+                                        "type": "string",
+                                        "description": "Authorised by"
+                                    },
+                                    "supplier": {
+                                        "type": "string",
+                                        "description": "Supplier"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "inventory_date": {
+                                        "type": "string",
+                                        "description": "Inventory date"
+                                    },
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "invoice_edit_key": {
+                                        "type": "string",
+                                        "description": "Invoice edit key"
+                                    },
+                                    "transfer_type": {
+                                        "type": "string",
+                                        "description": "Transfer type"
+                                    },
+                                    "staff_id": {
+                                        "type": "string",
+                                        "description": "Staff id"
+                                    },
+                                    "price_invoice": {
+                                        "type": "string",
+                                        "description": "Price invoice"
+                                    },
+                                    "inventory_item": {
+                                        "type": "string",
+                                        "description": "Inventory item"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "item_location": {
+                                        "type": "string",
+                                        "description": "Item location"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Inventory History id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/inventoryhistory/inventoryhistory": {
+            "get": {
+                "summary": "Get Inventory History",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Inventory History",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "stock_type": {
+                                        "type": "string",
+                                        "description": "Stock type"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "purchase_price": {
+                                        "type": "string",
+                                        "description": "Purchase price"
+                                    },
+                                    "selling_price": {
+                                        "type": "string",
+                                        "description": "Selling price"
+                                    },
+                                    "authorised_by": {
+                                        "type": "string",
+                                        "description": "Authorised by"
+                                    },
+                                    "supplier": {
+                                        "type": "string",
+                                        "description": "Supplier"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "inventory_date": {
+                                        "type": "string",
+                                        "description": "Inventory date"
+                                    },
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "invoice_edit_key": {
+                                        "type": "string",
+                                        "description": "Invoice edit key"
+                                    },
+                                    "transfer_type": {
+                                        "type": "string",
+                                        "description": "Transfer type"
+                                    },
+                                    "staff_id": {
+                                        "type": "string",
+                                        "description": "Staff id"
+                                    },
+                                    "price_invoice": {
+                                        "type": "string",
+                                        "description": "Price invoice"
+                                    },
+                                    "inventory_item": {
+                                        "type": "string",
+                                        "description": "Inventory item"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "item_location": {
+                                        "type": "string",
+                                        "description": "Item location"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Inventory History",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "item_id": {
+                                        "type": "string",
+                                        "description": "Item id"
+                                    },
+                                    "item_name": {
+                                        "type": "string",
+                                        "description": "Item name"
+                                    },
+                                    "stock_type": {
+                                        "type": "string",
+                                        "description": "Stock type"
+                                    },
+                                    "quantity": {
+                                        "type": "string",
+                                        "description": "Quantity"
+                                    },
+                                    "purchase_price": {
+                                        "type": "string",
+                                        "description": "Purchase price"
+                                    },
+                                    "selling_price": {
+                                        "type": "string",
+                                        "description": "Selling price"
+                                    },
+                                    "authorised_by": {
+                                        "type": "string",
+                                        "description": "Authorised by"
+                                    },
+                                    "supplier": {
+                                        "type": "string",
+                                        "description": "Supplier"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "inventory_date": {
+                                        "type": "string",
+                                        "description": "Inventory date"
+                                    },
+                                    "invoice_id": {
+                                        "type": "string",
+                                        "description": "Invoice id"
+                                    },
+                                    "invoice_edit_key": {
+                                        "type": "string",
+                                        "description": "Invoice edit key"
+                                    },
+                                    "transfer_type": {
+                                        "type": "string",
+                                        "description": "Transfer type"
+                                    },
+                                    "staff_id": {
+                                        "type": "string",
+                                        "description": "Staff id"
+                                    },
+                                    "price_invoice": {
+                                        "type": "string",
+                                        "description": "Price invoice"
+                                    },
+                                    "inventory_item": {
+                                        "type": "string",
+                                        "description": "Inventory item"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "item_location": {
+                                        "type": "string",
+                                        "description": "Item location"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Inventory History id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,121 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Nudge Card Templates API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/bloomcrm/nudgecardtemplates/nudgecardtemplates": {
+            "get": {
+                "summary": "Get Nudge Card Templates",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Nudge Card Templates",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "template_name": {
+                                        "type": "string",
+                                        "description": "Template name"
+                                    },
+                                    "template_type": {
+                                        "type": "string",
+                                        "description": "Template type"
+                                    },
+                                    "html_content": {
+                                        "type": "string",
+                                        "description": "Html content"
+                                    },
+                                    "css_content": {
+                                        "type": "string",
+                                        "description": "Css content"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Nudge Card Templates",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "template_name": {
+                                        "type": "string",
+                                        "description": "Template name"
+                                    },
+                                    "template_type": {
+                                        "type": "string",
+                                        "description": "Template type"
+                                    },
+                                    "html_content": {
+                                        "type": "string",
+                                        "description": "Html content"
+                                    },
+                                    "css_content": {
+                                        "type": "string",
+                                        "description": "Css content"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Nudge Card Templates id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

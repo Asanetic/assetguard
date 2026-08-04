@@ -1,0 +1,576 @@
+:root {
+    --lux-bg: #ffffff;
+    --lux-soft: #f6f7f9;
+    --lux-border: #e5e7eb;
+    --lux-text: #1f2937;
+    --lux-muted: #6b7280;
+    --lux-accent: #9a7b4f; /* muted gold */
+  }
+
+  .data-manager-container {
+    padding: 24px;
+    background: #f2f3f5;
+  }
+
+  .data-manager-section {
+    background: var(--lux-bg);
+    border-radius: 16px;
+    padding: 22px;
+    margin-bottom: 32px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.06);
+  }
+
+  .data-section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: var(--lux-text);
+  }
+
+  .data-section-title i {
+    color: var(--lux-accent);
+    font-size: 16px;
+  }
+
+  .data-manager-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+  }
+
+  .data-card {
+    background: var(--lux-soft);
+    border-radius: 14px;
+    padding: 18px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .data-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
+  }
+
+  .data-card h5 {
+    margin-bottom: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--lux-text);
+  }
+
+  .data-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .data-action-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--lux-text);
+    background: var(--lux-bg);
+    border: 1px solid var(--lux-border);
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .data-action-link i {
+    font-size: 11px;
+    color: var(--lux-muted);
+  }
+
+  .data-action-link:hover {
+    border-color: var(--lux-accent);
+    color: var(--lux-accent);
+  }
+
+  .data-action-link:hover i {
+    color: var(--lux-accent);
+  }
+
+
+
+  .mosy_archive_note_wrapper{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+    padding:5px;
+}
+
+.mosy_archive_note_inputs{
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+}
+
+.mosy_archive_note_input{
+    border:none !important;
+    border-radius:16px !important;
+    padding:14px !important;
+    background:#f7f7f8 !important;
+    box-shadow:
+        inset 0 1px 2px rgba(0,0,0,0.04),
+        0 4px 14px rgba(0,0,0,0.03);
+    resize:none;
+}
+
+.mosy_archive_note_input:focus{
+    box-shadow:
+        0 0 0 4px rgba(0,0,0,0.04),
+        0 10px 25px rgba(0,0,0,0.06) !important;
+    background:#fff !important;
+}
+
+.mosy_archive_note_footer{
+    display:flex;
+    justify-content:flex-end;
+}
+
+.mosy_archive_note_btn{
+    border:none !important;
+    padding:12px 22px !important;
+    border-radius:14px !important;
+    background:#111 !important;
+    color:#fff !important;
+    font-weight:600 !important;
+    transition:all 0.2s ease;
+    box-shadow:
+        0 10px 20px rgba(0,0,0,0.08);
+}
+
+.mosy_archive_note_btn:hover{
+    transform:translateY(-2px);
+    opacity:0.95;
+}
+
+/* EntityTableCard.css
+   Premium styling layer for TestGrid (and any grid built on the same
+   markup shape). Bootstrap still supplies layout resets — this file
+   owns color, type, spacing, and the small interaction details that
+   make the grid feel considered rather than default.
+*/
+
+.etc-card {
+  --etc-ink: #0f172a;
+  --etc-body: #47536b;
+  --etc-muted: #94a0b3;
+  --etc-line: #e7eaf0;
+  --etc-surface: #f8fafc;
+  --etc-accent: #14315D;
+  --etc-accent-dark: #14315D;
+  --etc-accent-soft: #e6f5f2;
+  --etc-danger: #b91c1c;
+  --etc-radius: 10px;
+
+  background: #ffffff;
+  border: 1px solid var(--etc-line);
+  border-radius: 14px;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* ---------------------------------------------------------------- */
+/* Header                                                            */
+/* ---------------------------------------------------------------- */
+
+.etc-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.35rem 1.5rem 1.1rem;
+  border-bottom: 1px solid var(--etc-line);
+}
+
+.etc-heading {
+  min-width: 0;
+}
+
+.etc-title {
+  margin: 0 0 0.2rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--etc-ink);
+}
+
+.etc-description {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--etc-muted);
+}
+
+.etc-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------------- */
+/* Search                                                             */
+/* ---------------------------------------------------------------- */
+
+.etc-search-wrap {
+  position: relative;
+  flex: 1 1 230px;
+  min-width: 190px;
+}
+
+.etc-search-icon-btn {
+  position: absolute;
+  left: 0.1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.1rem;
+  height: 2.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  color: var(--etc-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.etc-search-icon-btn:hover {
+  color: var(--etc-accent);
+}
+
+.etc-search-icon-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--etc-accent-soft);
+}
+
+.etc-search-input {
+  width: 100%;
+  padding: 0.55rem 0.85rem 0.55rem 2.25rem;
+  font-size: 0.83rem;
+  color: var(--etc-ink);
+  background: #ffffff;
+  border: 1px solid var(--etc-line);
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.etc-search-input::placeholder {
+  color: var(--etc-muted);
+}
+
+.etc-search-input:focus {
+  outline: none;
+  border-color: var(--etc-accent);
+  box-shadow: 0 0 0 3px var(--etc-accent-soft);
+}
+
+.etc-filter-select {
+  width: auto;
+  min-width: 150px;
+  border-radius: 8px;
+  border: 1px solid var(--etc-line);
+  font-size: 0.83rem;
+  color: var(--etc-ink);
+  padding: 0.5rem 0.75rem;
+}
+
+/* ---------------------------------------------------------------- */
+/* Buttons                                                            */
+/* ---------------------------------------------------------------- */
+
+.etc-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.etc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--etc-body);
+  background: #ffffff;
+  border: 1px solid var(--etc-line);
+  border-radius: 8px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease, transform 0.05s ease;
+}
+
+.etc-btn:hover {
+  background: var(--etc-surface);
+  border-color: #d7dde6;
+  color: var(--etc-ink);
+}
+
+.etc-btn:active {
+  transform: translateY(1px);
+}
+
+.etc-btn:focus-visible {
+  outline: none;
+  border-color: var(--etc-accent);
+  box-shadow: 0 0 0 3px var(--etc-accent-soft);
+}
+
+.etc-btn-icon {
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border-radius: 8px;
+}
+
+.etc-btn-icon i {
+  transition: transform 0.35s ease;
+}
+
+.etc-btn-icon:active i {
+  transform: rotate(180deg);
+}
+
+.etc-btn-primary,
+.etc-btn-primary.etc-btn {
+  background: var(--etc-accent);
+  border-color: var(--etc-accent);
+  color: #ffffff;
+}
+
+.etc-btn-primary:hover {
+  background: var(--etc-accent-dark);
+  border-color: var(--etc-accent-dark);
+  color: #ffffff;
+}
+
+.etc-btn-sm {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.74rem;
+  border-radius: 7px;
+}
+
+/* ---------------------------------------------------------------- */
+/* Table                                                              */
+/* ---------------------------------------------------------------- */
+
+.etc-body {
+  padding: 1.15rem 1.5rem 1.4rem;
+}
+
+.etc-table-data-wrap {
+  border: 1px solid var(--etc-line);
+  border-radius: var(--etc-radius);
+  overflow: hidden;
+}
+
+.etc-table-data {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.etc-table-data thead th {
+  background-color: #14315D;
+  border-bottom: 1px solid var(--etc-line);
+  padding: 0.7rem 1.1rem;
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #fff;
+  white-space: nowrap;
+}
+
+
+.etc-th-right {
+  text-align: right !important;
+}
+
+.etc-table-data tbody td {
+  padding: 0.8rem 1.1rem;
+  color: var(--etc-body);
+  vertical-align: middle;
+  box-shadow: inset 3px 0 0 transparent;
+  transition: box-shadow 0.15s ease, background-color 0.12s ease;
+}
+
+.etc-table-data tbody td:first-child {
+  color: var(--etc-ink);
+  font-weight: 600;
+}
+
+.etc-row {
+  border-top: 1px solid var(--etc-line);
+  transition: background-color 0.12s ease;
+}
+
+.etc-row:first-child {
+  border-top: none;
+}
+
+.etc-row:hover td {
+  background-color: var(--etc-surface);
+}
+
+.etc-row:hover td:first-child {
+  box-shadow: inset 3px 0 0 var(--etc-accent);
+}
+
+.etc-tfoot-row td {
+  padding: 0.75rem 1.1rem;
+  background-color: var(--etc-surface);
+  border-top: 2px solid var(--etc-line);
+  font-weight: 700;
+  color: var(--etc-ink);
+}
+
+/* ---- States: loading / error / empty ---- */
+
+.etc-state {
+  padding: 3rem 1rem;
+  text-align: center;
+  font-size: 0.83rem;
+}
+
+.etc-state-loading {
+  color: var(--etc-muted);
+}
+
+.etc-state-error {
+  color: var(--etc-danger);
+}
+
+.etc-state-empty {
+  color: var(--etc-muted);
+}
+
+.etc-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 0.4rem;
+  vertical-align: -2px;
+  border: 2px solid var(--etc-line);
+  border-top-color: var(--etc-accent);
+  border-radius: 50%;
+  animation: etc-spin 0.7s linear infinite;
+}
+
+@keyframes etc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* Pagination                                                         */
+/* ---------------------------------------------------------------- */
+
+.etc-pagination-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+/* Disabled pager buttons — reuses your existing .medium_btn/.border_set look */
+.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- */
+/* Badges (kept for EntityRowOptions / status columns)                */
+/* ---------------------------------------------------------------- */
+
+.etc-subtitle {
+  font-size: 0.75rem;
+  color: var(--etc-muted);
+}
+
+.etc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  font-weight: 600;
+  font-size: 0.72rem;
+  border-radius: 999px;
+}
+
+.etc-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.etc-badge-green {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+.etc-badge-red {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+.etc-badge-amber {
+  background-color: #fffbeb;
+  color: #b45309;
+}
+.etc-badge-slate {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+.etc-badge-dot-green {
+  background-color: #10b981;
+}
+.etc-badge-dot-red {
+  background-color: #ef4444;
+}
+.etc-badge-dot-amber {
+  background-color: #f59e0b;
+}
+.etc-badge-dot-slate {
+  background-color: #94a3b8;
+}
+
+/* ---------------------------------------------------------------- */
+/* Responsive                                                         */
+/* ---------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  .etc-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .etc-toolbar {
+    justify-content: stretch;
+  }
+
+  .etc-search-wrap {
+    flex: 1 1 100%;
+  }
+
+  .etc-btn-group {
+    justify-content: flex-end;
+  }
+}

@@ -1,0 +1,169 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Crm Message Templates API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/bloomcrm/crmmessagetemplates/crmmessagetemplates": {
+            "get": {
+                "summary": "Get Crm Message Templates",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Crm Message Templates",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "template_name": {
+                                        "type": "string",
+                                        "description": "Template name"
+                                    },
+                                    "template_type": {
+                                        "type": "string",
+                                        "description": "Template type"
+                                    },
+                                    "template_channel": {
+                                        "type": "string",
+                                        "description": "Template channel"
+                                    },
+                                    "template_subject": {
+                                        "type": "string",
+                                        "description": "Template subject"
+                                    },
+                                    "template_body": {
+                                        "type": "string",
+                                        "description": "Template body"
+                                    },
+                                    "template_variables": {
+                                        "type": "string",
+                                        "description": "Template variables"
+                                    },
+                                    "template_category": {
+                                        "type": "string",
+                                        "description": "Template category"
+                                    },
+                                    "template_status": {
+                                        "type": "string",
+                                        "description": "Template status"
+                                    },
+                                    "is_default_template": {
+                                        "type": "string",
+                                        "description": "Is default template"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_updated": {
+                                        "type": "string",
+                                        "description": "Date updated"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Crm Message Templates",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "template_name": {
+                                        "type": "string",
+                                        "description": "Template name"
+                                    },
+                                    "template_type": {
+                                        "type": "string",
+                                        "description": "Template type"
+                                    },
+                                    "template_channel": {
+                                        "type": "string",
+                                        "description": "Template channel"
+                                    },
+                                    "template_subject": {
+                                        "type": "string",
+                                        "description": "Template subject"
+                                    },
+                                    "template_body": {
+                                        "type": "string",
+                                        "description": "Template body"
+                                    },
+                                    "template_variables": {
+                                        "type": "string",
+                                        "description": "Template variables"
+                                    },
+                                    "template_category": {
+                                        "type": "string",
+                                        "description": "Template category"
+                                    },
+                                    "template_status": {
+                                        "type": "string",
+                                        "description": "Template status"
+                                    },
+                                    "is_default_template": {
+                                        "type": "string",
+                                        "description": "Is default template"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_updated": {
+                                        "type": "string",
+                                        "description": "Date updated"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Crm Message Templates id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

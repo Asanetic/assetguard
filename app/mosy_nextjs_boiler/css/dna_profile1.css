@@ -1,0 +1,164 @@
+.elforge_userprofile_template_v1_wrapper {
+  background: #ffffff;
+  min-height: 100vh;
+}
+
+/* Avatar */
+.elforge_userprofile_template_v1_avatarWrap {
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: #f1f1f1;
+  border: #d4d4d4 2px solid;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.elforge_userprofile_template_v1_avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: #f97316 2px solid;
+}
+
+.elforge_userprofile_template_v1_avatarAction {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f97316;
+  color: #fff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Success */
+.elforge_userprofile_template_v1_successWrap {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.elforge_userprofile_template_v1_successIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: #fff;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Inputs */
+.elforge_userprofile_template_v1_textarea {
+  min-height: 90px;
+  resize: none;
+}
+
+.elforge_userprofile_template_v1_eye {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+/* Footer */
+.elforge_userprofile_template_v1_footer {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #eef1f6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Toggle */
+.elforge_userprofile_template_v1_toggleWrap {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.elforge_userprofile_template_v1_toggle {
+  width: 42px;
+  height: 22px;
+  background: #f97316;
+  border-radius: 20px;
+  position: relative;
+}
+
+.elforge_userprofile_template_v1_toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 22px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+}
+
+/* Submit */
+.elforge_userprofile_template_v1_submitBtn {
+  background: #f97316;
+  border: none;
+  color: #fff;
+  padding: 8px 22px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.elforge_userprofile_template_v1_rounded_border_avatar {
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  border: 10px solid #e0e0e0 !important;
+  padding: 9px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Profile Nodes */
+.elforge_userprofile_template_v1_profile_nodes {
+  margin-top: 20px;
+}
+
+.elforge_userprofile_template_v1_profile_node {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #eee;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: all .25s ease;
+}
+
+.elforge_userprofile_template_v1_profile_node:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+}
+
+.elforge_userprofile_template_v1_node_label {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #888;
+  letter-spacing: .5px;
+}
+
+.elforge_userprofile_template_v1_node_value {
+  font-weight: 600;
+  font-size: 14px;
+  color: #222;
+}

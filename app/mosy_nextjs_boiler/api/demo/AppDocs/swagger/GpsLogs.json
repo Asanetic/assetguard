@@ -1,0 +1,177 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Gps Logs API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/assetguard/gpslogs/gpslogs": {
+            "get": {
+                "summary": "Get Gps Logs",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Gps Logs",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "log_type": {
+                                        "type": "string",
+                                        "description": "Log type"
+                                    },
+                                    "site_name": {
+                                        "type": "string",
+                                        "description": "Site name"
+                                    },
+                                    "device_id": {
+                                        "type": "string",
+                                        "description": "Device id"
+                                    },
+                                    "battery_level": {
+                                        "type": "string",
+                                        "description": "Battery level"
+                                    },
+                                    "latitude": {
+                                        "type": "string",
+                                        "description": "Latitude"
+                                    },
+                                    "longitude": {
+                                        "type": "string",
+                                        "description": "Longitude"
+                                    },
+                                    "log_details": {
+                                        "type": "string",
+                                        "description": "Log details"
+                                    },
+                                    "speed": {
+                                        "type": "string",
+                                        "description": "Speed"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "timestamp": {
+                                        "type": "string",
+                                        "description": "Timestamp"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Gps Logs",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "log_type": {
+                                        "type": "string",
+                                        "description": "Log type"
+                                    },
+                                    "site_name": {
+                                        "type": "string",
+                                        "description": "Site name"
+                                    },
+                                    "device_id": {
+                                        "type": "string",
+                                        "description": "Device id"
+                                    },
+                                    "battery_level": {
+                                        "type": "string",
+                                        "description": "Battery level"
+                                    },
+                                    "latitude": {
+                                        "type": "string",
+                                        "description": "Latitude"
+                                    },
+                                    "longitude": {
+                                        "type": "string",
+                                        "description": "Longitude"
+                                    },
+                                    "log_details": {
+                                        "type": "string",
+                                        "description": "Log details"
+                                    },
+                                    "speed": {
+                                        "type": "string",
+                                        "description": "Speed"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "timestamp": {
+                                        "type": "string",
+                                        "description": "Timestamp"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Gps Logs id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

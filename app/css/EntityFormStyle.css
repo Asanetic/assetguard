@@ -1,0 +1,427 @@
+/* ---- Page header: eyebrow + title on the left, profileActions on the
+     right, one shared row so a page never needs its own separate title
+     element. A single brass hairline underneath is the one accent color
+     in the whole system — everything else stays quiet on purpose. ---- */
+     .dyn-page-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1.25rem 2rem;
+        padding: 0.5rem 0 0;
+      }
+      .dyn-page-header-text { min-width: 0; }
+      .dyn-eyebrow {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--dyn-accent);
+        margin-bottom: 0.4rem;
+      }
+      .dyn-page-title {
+        font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+        font-size: 1.55rem;
+        font-weight: 600;
+        color: var(--dyn-ink);
+        letter-spacing: 0.01em;
+        line-height: 1.25;
+        margin: 0;
+      }
+      .dyn-header-divider {
+        height: 1px;
+        margin: 1.4rem 0 2.25rem;
+        background: linear-gradient(
+          90deg,
+          var(--dyn-accent) 0%,
+          color-mix(in srgb, var(--dyn-accent) 25%, var(--dyn-line)) 12%,
+          var(--dyn-line) 30%,
+          var(--dyn-line) 100%
+        );
+      }
+    
+      /* ---- Toolbar: schema.profileActions buttons. Plain flex — no
+         Bootstrap row/utility classes mixed in, so nothing here fights an
+         ancestor's spacing rules. ---- */
+      .dyn-toolbar-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        /* gap: 0.6rem; */
+      }
+    
+      .dyn-more-wrap { position: relative; }
+      .dyn-more-panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        min-width: 200px;
+        max-width: min(260px, 90vw);
+        background: #fff;
+        border: 1px solid var(--dyn-line);
+        border-radius: var(--dyn-radius);
+        box-shadow: 0 16px 32px -8px rgba(22, 24, 31, 0.22), 0 2px 8px rgba(22, 24, 31, 0.08);
+        padding: 0.4rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        z-index: 30;
+      }
+      .dyn-more-item {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        width: 100%;
+        padding: 0.55rem 0.7rem;
+        border: none;
+        background: transparent;
+        border-radius: 7px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--dyn-body);
+        text-align: left;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background-color 0.12s ease;
+      }
+      .dyn-more-item:hover { background: var(--dyn-surface); }
+      .dyn-more-item:disabled { opacity: 0.5; cursor: not-allowed; }
+      .dyn-more-item-outline-success { color: var(--dyn-success); }
+      .dyn-more-item-outline-warning { color: var(--dyn-warning); }
+      .dyn-more-item-outline-danger { color: var(--dyn-danger); }
+      .dyn-more-item-primary { color: var(--dyn-primary); }
+    
+      /* colorClass, applied to a dyn-more-item once it's collapsed into
+         "More" — drop the button's border (looks boxed/wrong on a flat
+         list row); the soft tint background is left as-is, it reads fine
+         as a subtle color cue and won't fight .dyn-more-item:hover above
+         since that rule has higher specificity and still wins on hover. */
+      .dyn-more-item.dyn-btn-accent-amber  { border-color: transparent; color: #b45309; }
+      .dyn-more-item.dyn-btn-accent-green  { border-color: transparent; color: #047857; }
+      .dyn-more-item.dyn-btn-accent-purple { border-color: transparent; color: #6d28d9; }
+      .dyn-more-item.dyn-btn-accent-pink   { border-color: transparent; color: #be185d; }
+      .dyn-more-item.dyn-btn-accent-red    { border-color: transparent; color: #b91c1c; }
+      .dyn-more-item.dyn-btn-accent-yellow { border-color: transparent; color: #a16207; }
+      .dyn-more-item.dyn-btn-accent-blue   { border-color: transparent; color: #1d4ed8; }
+      .dyn-more-item.dyn-btn-accent-teal   { border-color: transparent; color: #0f766e; }
+    
+      /* ---- Page card ---- */
+      .dyn-page-card {
+        background: #fff;
+        border: 1px solid var(--dyn-line);
+        border-radius: 18px;
+        box-shadow:
+          0 1px 2px rgba(22, 24, 31, 0.04),
+          0 24px 48px -28px rgba(22, 24, 31, 0.28),
+          0 0 0 1px rgba(22, 24, 31, 0.02);
+        padding: 2.5rem 2.75rem 2.75rem;
+        margin-bottom: 2.5rem;
+      }
+    
+      .dyn-section { margin-bottom: 1.75rem; }
+      .dyn-section:last-child { margin-bottom: 0; }
+      .dyn-section-title {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: var(--dyn-ink);
+        margin-bottom: 1rem;
+      }
+      .dyn-section-subtitle { font-weight: 400; color: var(--dyn-muted); font-size: 0.82rem; }
+    
+      /* Older bordered-per-section look, opt-in via schema.formStyle = 'sectioned' */
+      .dyn-card-bordered {
+        border: 1px solid var(--dyn-line);
+        border-radius: var(--dyn-radius);
+        padding: 1.5rem;
+        margin-bottom: 1.25rem;
+        background: #fff;
+      }
+      .dyn-card-header-centered { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; }
+      .dyn-card-header-line { flex: 1; height: 1px; background: var(--dyn-line); }
+      .dyn-card-title { font-weight: 700; color: var(--dyn-ink); white-space: nowrap; font-size: 0.9rem; }
+    
+      .dyn-grid {
+        row-gap: 1.25rem; /* horizontal gutters come from Bootstrap's own .row/.col-md-* padding — this only adds vertical spacing between wrapped rows, which Bootstrap doesn't do on its own */
+      }
+    
+      .dyn-field { display: flex; flex-direction: column; margin-bottom: 1.25rem; }
+      .dyn-grid > .dyn-field { margin-bottom: 0; } /* row-gap above already handles it; avoid double spacing */
+      .dyn-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--dyn-body);
+        margin-bottom: 0.4rem;
+      }
+      .dyn-label-muted { color: var(--dyn-muted); font-weight: 400; }
+      .dyn-required { color: var(--dyn-danger); }
+      .dyn-add-new { color: var(--dyn-primary); font-weight: 600; font-size: 0.76rem; cursor: pointer; }
+      .dyn-add-new:hover { text-decoration: underline; }
+    
+      .dyn-input::placeholder { color: var(--dyn-muted); }
+      .dyn-input:focus {
+        outline: none;
+        border-color: var(--dyn-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--dyn-accent) 16%, transparent);
+      }
+      .dyn-input:disabled { background: var(--dyn-surface); color: var(--dyn-muted); cursor: not-allowed; }
+    
+      .dyn-select {
+        appearance: none;
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        padding-right: 2.25rem;
+      }
+    
+      .dyn-textarea { min-height: 100px; resize: vertical; font-family: inherit; line-height: 1.5; }
+    
+      .dyn-checkbox { width: 18px; height: 18px; accent-color: var(--dyn-primary); cursor: pointer; }
+    
+      .dyn-custom-block { display: flex; flex-direction: column; }
+    
+      .dyn-pills-wrap { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+      .dyn-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 0.4rem 0.9rem;
+        border: 1px solid var(--dyn-line);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--dyn-body);
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.12s ease;
+      }
+      .dyn-pill:hover { border-color: var(--dyn-primary); background: color-mix(in srgb, var(--dyn-primary) 6%, white); }
+      .dyn-pill-active {
+        border-color: var(--dyn-primary);
+        background: var(--dyn-primary);
+        color: var(--dyn-primary-contrast);
+      }
+      .dyn-pill-active:hover { background: color-mix(in srgb, var(--dyn-primary) 85%, black); color: var(--dyn-primary-contrast); }
+    
+      .dyn-image-field { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+      .dyn-upload-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.5rem 0.9rem;
+        border: 1px solid var(--dyn-line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--dyn-primary);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.12s ease, border-color 0.12s ease;
+      }
+      .dyn-upload-btn:hover { background: var(--dyn-surface); border-color: #d8d3c4; }
+    
+      .dyn-error { color: var(--dyn-danger); font-size: 0.78rem; margin-top: 0.35rem; }
+    
+      .dyn-livesearch-wrap { position: relative; }
+      .dyn-livesearch-list {
+        position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0;
+        background: #fff; border: 1px solid var(--dyn-line); border-radius: 10px;
+        box-shadow: 0 8px 20px rgba(22, 24, 31, 0.08);
+        max-height: 220px; overflow-y: auto; margin: 0; padding: 0.35rem; list-style: none;
+      }
+      .dyn-livesearch-item {
+        padding: 0.55rem 0.65rem;
+        border-radius: 7px;
+        cursor: pointer;
+        font-size: 0.88rem;
+        color: var(--dyn-body);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .dyn-livesearch-item:hover { background: var(--dyn-surface); color: var(--dyn-ink); }
+    
+      .dyn-spinner {
+        display: inline-block;
+        width: 13px;
+        height: 13px;
+        border: 2px solid var(--dyn-line);
+        border-top-color: var(--dyn-primary);
+        border-radius: 50%;
+        animation: dyn-spin 0.7s linear infinite;
+      }
+      @keyframes dyn-spin { to { transform: rotate(360deg); } }
+    
+      /* ---- Buttons — same variant vocabulary as schema.profileActions
+         (outline-secondary / outline-success / outline-warning /
+         outline-danger / dark), so DynamicForm can render controller.actions
+         with className={\`dyn-btn dyn-btn-\${a.variant}\`} and get a matching
+         look with zero mapping logic. ---- */
+      .dyn-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        padding: 0.6rem 1.15rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        border-radius: 8px;
+        border: 1px solid var(--dyn-line);
+        background: #fff;
+        color: var(--dyn-body);
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+        box-shadow: 0 1px 2px rgba(22, 24, 31, 0.04);
+        transition: background-color 0.15s ease, border-color 0.15s ease,
+          color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+      }
+      .dyn-btn span { white-space: nowrap; }
+      .dyn-btn:hover {
+        background: var(--dyn-surface);
+        border-color: #d8d3c4;
+        color: var(--dyn-ink);
+        box-shadow: 0 4px 12px -2px rgba(22, 24, 31, 0.12);
+        transform: translateY(-1px);
+      }
+      .dyn-btn:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(22, 24, 31, 0.06); }
+      .dyn-btn:focus-visible { outline: 2px solid var(--dyn-accent); outline-offset: 2px; }
+      .dyn-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+    
+    
+      .dyn-btn-primary:hover,
+      .dyn-btn-dark:hover {
+        background: color-mix(in srgb, var(--dyn-primary) 85%, black);
+        border-color: color-mix(in srgb, var(--dyn-primary) 85%, black);
+        color: var(--dyn-primary-contrast);
+      }
+    
+      .dyn-btn-outline-secondary { color: var(--dyn-body); border-color: var(--dyn-line); }
+    
+      .dyn-btn-outline-success {
+        color: var(--dyn-success);
+        border-color: var(--dyn-success);
+        background: color-mix(in srgb, var(--dyn-success) 8%, white);
+      }
+      .dyn-btn-outline-success:hover { background: var(--dyn-success); color: #fff; }
+    
+      .dyn-btn-outline-warning {
+        color: var(--dyn-warning);
+        border-color: var(--dyn-warning);
+        background: color-mix(in srgb, var(--dyn-warning) 8%, white);
+      }
+      .dyn-btn-outline-warning:hover { background: var(--dyn-warning); color: #fff; }
+    
+      .dyn-btn-outline-danger {
+        color: var(--dyn-danger);
+        border-color: var(--dyn-danger);
+        background: color-mix(in srgb, var(--dyn-danger) 8%, white);
+      }
+      .dyn-btn-outline-danger:hover { background: var(--dyn-danger); color: #fff; }
+    
+      /* ---- colorClass accent set — optional, additive coat of paint on
+         top of whatever variant a profileActions entry already uses (see
+         DynamicForm.jsx). Same recipe every time: soft tint background +
+         matching border/text at rest, solid fill + white text on hover.
+         Pick whichever name matches the action's intent (e.g. green for
+         something "go/approve"-flavored) or invent more of your own —
+         they're just plain classes, nothing wired to variant. ---- */
+      .dyn-btn-accent-amber {
+        background: #fffbeb;
+        border-color: #f59e0b;
+        color: #b45309;
+      }
+      .dyn-btn-accent-amber:hover { background: #f59e0b; color: #fff; }
+    
+      .dyn-btn-accent-green {
+        background: #ecfdf5;
+        border-color: #10b981;
+        color: #047857;
+      }
+      .dyn-btn-accent-green:hover { background: #10b981; color: #fff; }
+    
+      .dyn-btn-accent-purple {
+        background: #f5f3ff;
+        border-color: #8b5cf6;
+        color: #6d28d9;
+      }
+      .dyn-btn-accent-purple:hover { background: #8b5cf6; color: #fff; }
+    
+      .dyn-btn-accent-pink {
+        background: #fdf2f8;
+        border-color: #ec4899;
+        color: #be185d;
+      }
+      .dyn-btn-accent-pink:hover { background: #ec4899; color: #fff; }
+    
+      .dyn-btn-accent-red {
+        background: #fef2f2;
+        border-color: #ef4444;
+        color: #b91c1c;
+      }
+      .dyn-btn-accent-red:hover { background: #ef4444; color: #fff; }
+    
+      .dyn-btn-accent-yellow {
+        background: #fefce8;
+        border-color: #eab308;
+        color: #a16207;
+      }
+      .dyn-btn-accent-yellow:hover { background: #eab308; color: #1f2937; }
+    
+      .dyn-btn-accent-blue {
+        background: #eff6ff;
+        border-color: #3b82f6;
+        color: #1d4ed8;
+      }
+      .dyn-btn-accent-blue:hover { background: #3b82f6; color: #fff; }
+    
+      .dyn-btn-accent-teal {
+        background: #f0fdfa;
+        border-color: #14b8a6;
+        color: #0f766e;
+      }
+      .dyn-btn-accent-teal:hover { background: #14b8a6; color: #fff; }
+    
+      .dyn-btn-sm { padding: 0.45rem 0.8rem; font-size: 0.78rem; }
+    
+      .dyn-submit-bar {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.6rem;
+        margin-top: 1.5rem;
+      }
+    
+      @media (max-width: 768px) {
+        .dyn-page-card { padding: 1.5rem 1.25rem 1.75rem; border-radius: 14px; }
+    
+        .dyn-page-header { flex-direction: column; align-items: flex-start; }
+    
+        /* Layout (2-up on phones, inline from sm up) comes from
+           col-6 col-sm-auto on each button's wrapper div in
+           DynamicForm.jsx — this block only owns look. */
+        .dyn-toolbar-tray { margin: 0 0 0.25rem; }
+    
+        .dyn-card-bordered { padding: 1.1rem; }
+        .dyn-section-panel { padding: 1rem 0.9rem 1.15rem; }
+    
+        .dyn-submit-bar .dyn-btn { width: 100%; }
+      }
+    
+      /* Matches Bootstrap's own sm breakpoint (col-6 -> col-sm-auto kicks
+         in at 576px) — below this, two buttons share a col-6 cell, so a
+         longer label ("Change update type") needs to wrap onto a second
+         line instead of overflowing past the button's edge, which is what
+         was making the row look broken/stacked instead of a clean 2-up
+         grid. */
+      @media (max-width: 575.98px) {
+        .dyn-toolbar-actions .dyn-btn {
+          padding: 0.55rem 0.5rem;
+          font-size: 0.76rem;
+          white-space: normal;
+          line-height: 1.2;
+        }
+        .dyn-toolbar-actions .dyn-btn span { white-space: normal; }
+        .dyn-more-panel { right: 0; left: auto; width: 100%; max-width: none; }
+      }

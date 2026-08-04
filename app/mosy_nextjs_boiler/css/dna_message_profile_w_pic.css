@@ -1,0 +1,63 @@
+.elforge_message_profile_v2_header{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    padding:16px;
+    background:#fff;
+    border-bottom:1px solid #e6ebf2;
+    }
+    
+    /* Avatar */
+    
+    .elforge_message_profile_v2_avatar_block{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    }
+    
+    .elforge_message_profile_v2_avatar_wrapper{
+    position:relative;
+    width:140px;
+    height:140px;
+    }
+    
+    .elforge_message_profile_v2_avatar{
+    width:120px;
+    height:120px;
+    border-radius:50%;
+    object-fit:cover;
+    }
+    
+    /* Upload button */
+    
+    .elforge_message_profile_v2_upload_btn{
+    position:absolute;
+    bottom:-28px;
+    right:-91px;
+    }
+    
+    .elforge_message_profile_v2_upload_btn_mini{
+        position:relative;
+        right:-70px;
+    }
+
+    /* Text */
+    
+    .elforge_message_profile_v2_text_block{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    }
+    
+    .elforge_message_profile_v2_name h4{
+    margin:0;
+    font-size:18px;
+    font-weight:600;
+    color:#1f2937;
+    }
+    
+    .elforge_message_profile_v2_meta{
+    font-size:14px;
+    color:#6b7280;
+    margin-top:2px;
+    }

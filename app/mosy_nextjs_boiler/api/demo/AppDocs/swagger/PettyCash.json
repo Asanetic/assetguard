@@ -1,0 +1,393 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Petty Cash API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/pettycash/pettycash": {
+            "get": {
+                "summary": "Get Petty Cash",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Petty Cash",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "request_date": {
+                                        "type": "string",
+                                        "description": "Request date"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "reason_for_request": {
+                                        "type": "string",
+                                        "description": "Reason for request"
+                                    },
+                                    "vendor": {
+                                        "type": "string",
+                                        "description": "Vendor"
+                                    },
+                                    "approved_date": {
+                                        "type": "string",
+                                        "description": "Approved date"
+                                    },
+                                    "approval_status": {
+                                        "type": "string",
+                                        "description": "Approval status"
+                                    },
+                                    "payment_date": {
+                                        "type": "string",
+                                        "description": "Payment date"
+                                    },
+                                    "ref_no": {
+                                        "type": "string",
+                                        "description": "Ref no"
+                                    },
+                                    "payment_remark": {
+                                        "type": "string",
+                                        "description": "Payment remark"
+                                    },
+                                    "admin_remark": {
+                                        "type": "string",
+                                        "description": "Admin remark"
+                                    },
+                                    "approved_by": {
+                                        "type": "string",
+                                        "description": "Approved by"
+                                    },
+                                    "requested_by": {
+                                        "type": "string",
+                                        "description": "Requested by"
+                                    },
+                                    "request_remark": {
+                                        "type": "string",
+                                        "description": "Request remark"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "receipt_file": {
+                                        "type": "string",
+                                        "description": "Receipt file"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Petty Cash",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "request_date": {
+                                        "type": "string",
+                                        "description": "Request date"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "reason_for_request": {
+                                        "type": "string",
+                                        "description": "Reason for request"
+                                    },
+                                    "vendor": {
+                                        "type": "string",
+                                        "description": "Vendor"
+                                    },
+                                    "approved_date": {
+                                        "type": "string",
+                                        "description": "Approved date"
+                                    },
+                                    "approval_status": {
+                                        "type": "string",
+                                        "description": "Approval status"
+                                    },
+                                    "payment_date": {
+                                        "type": "string",
+                                        "description": "Payment date"
+                                    },
+                                    "ref_no": {
+                                        "type": "string",
+                                        "description": "Ref no"
+                                    },
+                                    "payment_remark": {
+                                        "type": "string",
+                                        "description": "Payment remark"
+                                    },
+                                    "admin_remark": {
+                                        "type": "string",
+                                        "description": "Admin remark"
+                                    },
+                                    "approved_by": {
+                                        "type": "string",
+                                        "description": "Approved by"
+                                    },
+                                    "requested_by": {
+                                        "type": "string",
+                                        "description": "Requested by"
+                                    },
+                                    "request_remark": {
+                                        "type": "string",
+                                        "description": "Request remark"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "receipt_file": {
+                                        "type": "string",
+                                        "description": "Receipt file"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Petty Cash id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/pettycash/pettycash": {
+            "get": {
+                "summary": "Get Petty Cash",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Petty Cash",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "request_date": {
+                                        "type": "string",
+                                        "description": "Request date"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "reason_for_request": {
+                                        "type": "string",
+                                        "description": "Reason for request"
+                                    },
+                                    "vendor": {
+                                        "type": "string",
+                                        "description": "Vendor"
+                                    },
+                                    "approved_date": {
+                                        "type": "string",
+                                        "description": "Approved date"
+                                    },
+                                    "approval_status": {
+                                        "type": "string",
+                                        "description": "Approval status"
+                                    },
+                                    "payment_date": {
+                                        "type": "string",
+                                        "description": "Payment date"
+                                    },
+                                    "ref_no": {
+                                        "type": "string",
+                                        "description": "Ref no"
+                                    },
+                                    "payment_remark": {
+                                        "type": "string",
+                                        "description": "Payment remark"
+                                    },
+                                    "admin_remark": {
+                                        "type": "string",
+                                        "description": "Admin remark"
+                                    },
+                                    "approved_by": {
+                                        "type": "string",
+                                        "description": "Approved by"
+                                    },
+                                    "requested_by": {
+                                        "type": "string",
+                                        "description": "Requested by"
+                                    },
+                                    "request_remark": {
+                                        "type": "string",
+                                        "description": "Request remark"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "receipt_file": {
+                                        "type": "string",
+                                        "description": "Receipt file"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Petty Cash",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "request_date": {
+                                        "type": "string",
+                                        "description": "Request date"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "reason_for_request": {
+                                        "type": "string",
+                                        "description": "Reason for request"
+                                    },
+                                    "vendor": {
+                                        "type": "string",
+                                        "description": "Vendor"
+                                    },
+                                    "approved_date": {
+                                        "type": "string",
+                                        "description": "Approved date"
+                                    },
+                                    "approval_status": {
+                                        "type": "string",
+                                        "description": "Approval status"
+                                    },
+                                    "payment_date": {
+                                        "type": "string",
+                                        "description": "Payment date"
+                                    },
+                                    "ref_no": {
+                                        "type": "string",
+                                        "description": "Ref no"
+                                    },
+                                    "payment_remark": {
+                                        "type": "string",
+                                        "description": "Payment remark"
+                                    },
+                                    "admin_remark": {
+                                        "type": "string",
+                                        "description": "Admin remark"
+                                    },
+                                    "approved_by": {
+                                        "type": "string",
+                                        "description": "Approved by"
+                                    },
+                                    "requested_by": {
+                                        "type": "string",
+                                        "description": "Requested by"
+                                    },
+                                    "request_remark": {
+                                        "type": "string",
+                                        "description": "Request remark"
+                                    },
+                                    "amount_paid": {
+                                        "type": "string",
+                                        "description": "Amount paid"
+                                    },
+                                    "receipt_file": {
+                                        "type": "string",
+                                        "description": "Receipt file"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Petty Cash id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

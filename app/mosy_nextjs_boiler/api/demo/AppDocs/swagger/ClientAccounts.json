@@ -1,0 +1,281 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Client Accounts API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/clientaccounts/clientaccounts": {
+            "get": {
+                "summary": "Get Client Accounts",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Client Accounts",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "client_email": {
+                                        "type": "string",
+                                        "description": "Client email"
+                                    },
+                                    "client_tel": {
+                                        "type": "string",
+                                        "description": "Client tel"
+                                    },
+                                    "client_location": {
+                                        "type": "string",
+                                        "description": "Client location"
+                                    },
+                                    "client_photo": {
+                                        "type": "string",
+                                        "description": "Client photo"
+                                    },
+                                    "gender": {
+                                        "type": "string",
+                                        "description": "Gender"
+                                    },
+                                    "date_registered": {
+                                        "type": "string",
+                                        "description": "Date registered"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "description": "Password"
+                                    },
+                                    "admin_id": {
+                                        "type": "string",
+                                        "description": "Admin id"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Client Accounts",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "client_email": {
+                                        "type": "string",
+                                        "description": "Client email"
+                                    },
+                                    "client_tel": {
+                                        "type": "string",
+                                        "description": "Client tel"
+                                    },
+                                    "client_location": {
+                                        "type": "string",
+                                        "description": "Client location"
+                                    },
+                                    "client_photo": {
+                                        "type": "string",
+                                        "description": "Client photo"
+                                    },
+                                    "gender": {
+                                        "type": "string",
+                                        "description": "Gender"
+                                    },
+                                    "date_registered": {
+                                        "type": "string",
+                                        "description": "Date registered"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "description": "Password"
+                                    },
+                                    "admin_id": {
+                                        "type": "string",
+                                        "description": "Admin id"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Client Accounts id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/clientaccounts/clientaccounts": {
+            "get": {
+                "summary": "Get Client Accounts",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Client Accounts",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "client_email": {
+                                        "type": "string",
+                                        "description": "Client email"
+                                    },
+                                    "client_tel": {
+                                        "type": "string",
+                                        "description": "Client tel"
+                                    },
+                                    "client_location": {
+                                        "type": "string",
+                                        "description": "Client location"
+                                    },
+                                    "client_photo": {
+                                        "type": "string",
+                                        "description": "Client photo"
+                                    },
+                                    "gender": {
+                                        "type": "string",
+                                        "description": "Gender"
+                                    },
+                                    "date_registered": {
+                                        "type": "string",
+                                        "description": "Date registered"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "description": "Password"
+                                    },
+                                    "admin_id": {
+                                        "type": "string",
+                                        "description": "Admin id"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Client Accounts",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "client_email": {
+                                        "type": "string",
+                                        "description": "Client email"
+                                    },
+                                    "client_tel": {
+                                        "type": "string",
+                                        "description": "Client tel"
+                                    },
+                                    "client_location": {
+                                        "type": "string",
+                                        "description": "Client location"
+                                    },
+                                    "client_photo": {
+                                        "type": "string",
+                                        "description": "Client photo"
+                                    },
+                                    "gender": {
+                                        "type": "string",
+                                        "description": "Gender"
+                                    },
+                                    "date_registered": {
+                                        "type": "string",
+                                        "description": "Date registered"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "description": "Password"
+                                    },
+                                    "admin_id": {
+                                        "type": "string",
+                                        "description": "Admin id"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Client Accounts id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

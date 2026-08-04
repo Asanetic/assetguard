@@ -1,0 +1,185 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Device List API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/assetguard/devicelist/devicelist": {
+            "get": {
+                "summary": "Get Device List",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Device List",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "device_name": {
+                                        "type": "string",
+                                        "description": "Device name"
+                                    },
+                                    "date_installed": {
+                                        "type": "string",
+                                        "description": "Date installed"
+                                    },
+                                    "serial_number": {
+                                        "type": "string",
+                                        "description": "Serial number"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "registered_on": {
+                                        "type": "string",
+                                        "description": "Registered on"
+                                    },
+                                    "geofence": {
+                                        "type": "string",
+                                        "description": "Geofence"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "site_name": {
+                                        "type": "string",
+                                        "description": "Site name"
+                                    },
+                                    "low_battery_level": {
+                                        "type": "string",
+                                        "description": "Low battery level"
+                                    },
+                                    "geofence_limit_distance": {
+                                        "type": "string",
+                                        "description": "Geofence limit distance"
+                                    },
+                                    "device_location": {
+                                        "type": "string",
+                                        "description": "Device location"
+                                    },
+                                    "speed_alert_value": {
+                                        "type": "string",
+                                        "description": "Speed alert value"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Device List",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "device_name": {
+                                        "type": "string",
+                                        "description": "Device name"
+                                    },
+                                    "date_installed": {
+                                        "type": "string",
+                                        "description": "Date installed"
+                                    },
+                                    "serial_number": {
+                                        "type": "string",
+                                        "description": "Serial number"
+                                    },
+                                    "remark": {
+                                        "type": "string",
+                                        "description": "Remark"
+                                    },
+                                    "registered_on": {
+                                        "type": "string",
+                                        "description": "Registered on"
+                                    },
+                                    "geofence": {
+                                        "type": "string",
+                                        "description": "Geofence"
+                                    },
+                                    "site_id": {
+                                        "type": "string",
+                                        "description": "Site id"
+                                    },
+                                    "site_name": {
+                                        "type": "string",
+                                        "description": "Site name"
+                                    },
+                                    "low_battery_level": {
+                                        "type": "string",
+                                        "description": "Low battery level"
+                                    },
+                                    "geofence_limit_distance": {
+                                        "type": "string",
+                                        "description": "Geofence limit distance"
+                                    },
+                                    "device_location": {
+                                        "type": "string",
+                                        "description": "Device location"
+                                    },
+                                    "speed_alert_value": {
+                                        "type": "string",
+                                        "description": "Speed alert value"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Device List id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

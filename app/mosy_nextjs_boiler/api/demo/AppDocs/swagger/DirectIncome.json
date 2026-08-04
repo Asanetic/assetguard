@@ -1,0 +1,265 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Direct Income API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/directincome/directincome": {
+            "get": {
+                "summary": "Get Direct Income",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Direct Income",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reference_no": {
+                                        "type": "string",
+                                        "description": "Reference no"
+                                    },
+                                    "debit_account": {
+                                        "type": "string",
+                                        "description": "Debit account"
+                                    },
+                                    "credit_account": {
+                                        "type": "string",
+                                        "description": "Credit account"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "received_from": {
+                                        "type": "string",
+                                        "description": "Received from"
+                                    },
+                                    "deposit_date": {
+                                        "type": "string",
+                                        "description": "Deposit date"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "transaction_remark": {
+                                        "type": "string",
+                                        "description": "Transaction remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Direct Income",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reference_no": {
+                                        "type": "string",
+                                        "description": "Reference no"
+                                    },
+                                    "debit_account": {
+                                        "type": "string",
+                                        "description": "Debit account"
+                                    },
+                                    "credit_account": {
+                                        "type": "string",
+                                        "description": "Credit account"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "received_from": {
+                                        "type": "string",
+                                        "description": "Received from"
+                                    },
+                                    "deposit_date": {
+                                        "type": "string",
+                                        "description": "Deposit date"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "transaction_remark": {
+                                        "type": "string",
+                                        "description": "Transaction remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Direct Income id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/directincome/directincome": {
+            "get": {
+                "summary": "Get Direct Income",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Direct Income",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reference_no": {
+                                        "type": "string",
+                                        "description": "Reference no"
+                                    },
+                                    "debit_account": {
+                                        "type": "string",
+                                        "description": "Debit account"
+                                    },
+                                    "credit_account": {
+                                        "type": "string",
+                                        "description": "Credit account"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "received_from": {
+                                        "type": "string",
+                                        "description": "Received from"
+                                    },
+                                    "deposit_date": {
+                                        "type": "string",
+                                        "description": "Deposit date"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "transaction_remark": {
+                                        "type": "string",
+                                        "description": "Transaction remark"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Direct Income",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reference_no": {
+                                        "type": "string",
+                                        "description": "Reference no"
+                                    },
+                                    "debit_account": {
+                                        "type": "string",
+                                        "description": "Debit account"
+                                    },
+                                    "credit_account": {
+                                        "type": "string",
+                                        "description": "Credit account"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "received_from": {
+                                        "type": "string",
+                                        "description": "Received from"
+                                    },
+                                    "deposit_date": {
+                                        "type": "string",
+                                        "description": "Deposit date"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Amount"
+                                    },
+                                    "transaction_remark": {
+                                        "type": "string",
+                                        "description": "Transaction remark"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Direct Income id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

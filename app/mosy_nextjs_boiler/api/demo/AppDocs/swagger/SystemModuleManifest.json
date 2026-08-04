@@ -1,0 +1,729 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "System Module Manifest  API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/systemmodulemanifest/systemmodulemanifest": {
+            "get": {
+                "summary": "Get System Module Manifest ",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create System Module Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "component_name": {
+                                        "type": "string",
+                                        "description": "Component name"
+                                    },
+                                    "module_key": {
+                                        "type": "string",
+                                        "description": "Module key"
+                                    },
+                                    "module_name": {
+                                        "type": "string",
+                                        "description": "Module name"
+                                    },
+                                    "permission_type": {
+                                        "type": "string",
+                                        "description": "Permission type"
+                                    },
+                                    "capability_key": {
+                                        "type": "string",
+                                        "description": "Capability key"
+                                    },
+                                    "access_name": {
+                                        "type": "string",
+                                        "description": "Access name"
+                                    },
+                                    "relative_path": {
+                                        "type": "string",
+                                        "description": "Relative path"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update System Module Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "component_name": {
+                                        "type": "string",
+                                        "description": "Component name"
+                                    },
+                                    "module_key": {
+                                        "type": "string",
+                                        "description": "Module key"
+                                    },
+                                    "module_name": {
+                                        "type": "string",
+                                        "description": "Module name"
+                                    },
+                                    "permission_type": {
+                                        "type": "string",
+                                        "description": "Permission type"
+                                    },
+                                    "capability_key": {
+                                        "type": "string",
+                                        "description": "Capability key"
+                                    },
+                                    "access_name": {
+                                        "type": "string",
+                                        "description": "Access name"
+                                    },
+                                    "relative_path": {
+                                        "type": "string",
+                                        "description": "Relative path"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " System Module Manifest  id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/grupet/systemmodulemanifest/systemmodulemanifest": {
+            "get": {
+                "summary": "Get System Module Manifest ",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create System Module Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "component_name": {
+                                        "type": "string",
+                                        "description": "Component name"
+                                    },
+                                    "module_key": {
+                                        "type": "string",
+                                        "description": "Module key"
+                                    },
+                                    "module_name": {
+                                        "type": "string",
+                                        "description": "Module name"
+                                    },
+                                    "permission_type": {
+                                        "type": "string",
+                                        "description": "Permission type"
+                                    },
+                                    "capability_key": {
+                                        "type": "string",
+                                        "description": "Capability key"
+                                    },
+                                    "access_name": {
+                                        "type": "string",
+                                        "description": "Access name"
+                                    },
+                                    "relative_path": {
+                                        "type": "string",
+                                        "description": "Relative path"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update System Module Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "component_name": {
+                                        "type": "string",
+                                        "description": "Component name"
+                                    },
+                                    "module_key": {
+                                        "type": "string",
+                                        "description": "Module key"
+                                    },
+                                    "module_name": {
+                                        "type": "string",
+                                        "description": "Module name"
+                                    },
+                                    "permission_type": {
+                                        "type": "string",
+                                        "description": "Permission type"
+                                    },
+                                    "capability_key": {
+                                        "type": "string",
+                                        "description": "Capability key"
+                                    },
+                                    "access_name": {
+                                        "type": "string",
+                                        "description": "Access name"
+                                    },
+                                    "relative_path": {
+                                        "type": "string",
+                                        "description": "Relative path"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " System Module Manifest  id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/systemmodulemanifest/systemmodulemanifest": {
+            "get": {
+                "summary": "Get System Module Manifest ",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create System Module Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "component_name": {
+                                        "type": "string",
+                                        "description": "Component name"
+                                    },
+                                    "module_key": {
+                                        "type": "string",
+                                        "description": "Module key"
+                                    },
+                                    "module_name": {
+                                        "type": "string",
+                                        "description": "Module name"
+                                    },
+                                    "permission_type": {
+                                        "type": "string",
+                                        "description": "Permission type"
+                                    },
+                                    "capability_key": {
+                                        "type": "string",
+                                        "description": "Capability key"
+                                    },
+                                    "access_name": {
+                                        "type": "string",
+                                        "description": "Access name"
+                                    },
+                                    "relative_path": {
+                                        "type": "string",
+                                        "description": "Relative path"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update System Module Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "component_name": {
+                                        "type": "string",
+                                        "description": "Component name"
+                                    },
+                                    "module_key": {
+                                        "type": "string",
+                                        "description": "Module key"
+                                    },
+                                    "module_name": {
+                                        "type": "string",
+                                        "description": "Module name"
+                                    },
+                                    "permission_type": {
+                                        "type": "string",
+                                        "description": "Permission type"
+                                    },
+                                    "capability_key": {
+                                        "type": "string",
+                                        "description": "Capability key"
+                                    },
+                                    "access_name": {
+                                        "type": "string",
+                                        "description": "Access name"
+                                    },
+                                    "relative_path": {
+                                        "type": "string",
+                                        "description": "Relative path"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " System Module Manifest  id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomcrm/systemmodulemanifest/systemmodulemanifest": {
+            "get": {
+                "summary": "Get System Module Manifest ",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create System Module Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "component_name": {
+                                        "type": "string",
+                                        "description": "Component name"
+                                    },
+                                    "module_key": {
+                                        "type": "string",
+                                        "description": "Module key"
+                                    },
+                                    "module_name": {
+                                        "type": "string",
+                                        "description": "Module name"
+                                    },
+                                    "permission_type": {
+                                        "type": "string",
+                                        "description": "Permission type"
+                                    },
+                                    "capability_key": {
+                                        "type": "string",
+                                        "description": "Capability key"
+                                    },
+                                    "access_name": {
+                                        "type": "string",
+                                        "description": "Access name"
+                                    },
+                                    "relative_path": {
+                                        "type": "string",
+                                        "description": "Relative path"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update System Module Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "component_name": {
+                                        "type": "string",
+                                        "description": "Component name"
+                                    },
+                                    "module_key": {
+                                        "type": "string",
+                                        "description": "Module key"
+                                    },
+                                    "module_name": {
+                                        "type": "string",
+                                        "description": "Module name"
+                                    },
+                                    "permission_type": {
+                                        "type": "string",
+                                        "description": "Permission type"
+                                    },
+                                    "capability_key": {
+                                        "type": "string",
+                                        "description": "Capability key"
+                                    },
+                                    "access_name": {
+                                        "type": "string",
+                                        "description": "Access name"
+                                    },
+                                    "relative_path": {
+                                        "type": "string",
+                                        "description": "Relative path"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " System Module Manifest  id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomnovabill/systemmodulemanifest/systemmodulemanifest": {
+            "get": {
+                "summary": "Get System Module Manifest ",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create System Module Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "component_name": {
+                                        "type": "string",
+                                        "description": "Component name"
+                                    },
+                                    "module_key": {
+                                        "type": "string",
+                                        "description": "Module key"
+                                    },
+                                    "module_name": {
+                                        "type": "string",
+                                        "description": "Module name"
+                                    },
+                                    "permission_type": {
+                                        "type": "string",
+                                        "description": "Permission type"
+                                    },
+                                    "capability_key": {
+                                        "type": "string",
+                                        "description": "Capability key"
+                                    },
+                                    "access_name": {
+                                        "type": "string",
+                                        "description": "Access name"
+                                    },
+                                    "relative_path": {
+                                        "type": "string",
+                                        "description": "Relative path"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update System Module Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "component_name": {
+                                        "type": "string",
+                                        "description": "Component name"
+                                    },
+                                    "module_key": {
+                                        "type": "string",
+                                        "description": "Module key"
+                                    },
+                                    "module_name": {
+                                        "type": "string",
+                                        "description": "Module name"
+                                    },
+                                    "permission_type": {
+                                        "type": "string",
+                                        "description": "Permission type"
+                                    },
+                                    "capability_key": {
+                                        "type": "string",
+                                        "description": "Capability key"
+                                    },
+                                    "access_name": {
+                                        "type": "string",
+                                        "description": "Access name"
+                                    },
+                                    "relative_path": {
+                                        "type": "string",
+                                        "description": "Relative path"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " System Module Manifest  id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/supercrm/systemmodulemanifest/systemmodulemanifest": {
+            "get": {
+                "summary": "Get System Module Manifest ",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create System Module Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "component_name": {
+                                        "type": "string",
+                                        "description": "Component name"
+                                    },
+                                    "module_key": {
+                                        "type": "string",
+                                        "description": "Module key"
+                                    },
+                                    "module_name": {
+                                        "type": "string",
+                                        "description": "Module name"
+                                    },
+                                    "permission_type": {
+                                        "type": "string",
+                                        "description": "Permission type"
+                                    },
+                                    "capability_key": {
+                                        "type": "string",
+                                        "description": "Capability key"
+                                    },
+                                    "access_name": {
+                                        "type": "string",
+                                        "description": "Access name"
+                                    },
+                                    "relative_path": {
+                                        "type": "string",
+                                        "description": "Relative path"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update System Module Manifest ",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "component_name": {
+                                        "type": "string",
+                                        "description": "Component name"
+                                    },
+                                    "module_key": {
+                                        "type": "string",
+                                        "description": "Module key"
+                                    },
+                                    "module_name": {
+                                        "type": "string",
+                                        "description": "Module name"
+                                    },
+                                    "permission_type": {
+                                        "type": "string",
+                                        "description": "Permission type"
+                                    },
+                                    "capability_key": {
+                                        "type": "string",
+                                        "description": "Capability key"
+                                    },
+                                    "access_name": {
+                                        "type": "string",
+                                        "description": "Access name"
+                                    },
+                                    "relative_path": {
+                                        "type": "string",
+                                        "description": "Relative path"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " System Module Manifest  id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

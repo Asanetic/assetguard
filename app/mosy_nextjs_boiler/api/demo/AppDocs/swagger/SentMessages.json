@@ -1,0 +1,281 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Sent Messages API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/grupet/sentmessages/sentmessages": {
+            "get": {
+                "summary": "Get Sent Messages",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Sent Messages",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_record_id": {
+                                        "type": "string",
+                                        "description": "User record id"
+                                    },
+                                    "send_channel": {
+                                        "type": "string",
+                                        "description": "Send channel"
+                                    },
+                                    "receiver_phone": {
+                                        "type": "string",
+                                        "description": "Receiver phone"
+                                    },
+                                    "receiver_email": {
+                                        "type": "string",
+                                        "description": "Receiver email"
+                                    },
+                                    "email_subject": {
+                                        "type": "string",
+                                        "description": "Email subject"
+                                    },
+                                    "message_body": {
+                                        "type": "string",
+                                        "description": "Message body"
+                                    },
+                                    "send_status": {
+                                        "type": "string",
+                                        "description": "Send status"
+                                    },
+                                    "send_response": {
+                                        "type": "string",
+                                        "description": "Send response"
+                                    },
+                                    "sent_at": {
+                                        "type": "string",
+                                        "description": "Sent at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Sent Messages",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_record_id": {
+                                        "type": "string",
+                                        "description": "User record id"
+                                    },
+                                    "send_channel": {
+                                        "type": "string",
+                                        "description": "Send channel"
+                                    },
+                                    "receiver_phone": {
+                                        "type": "string",
+                                        "description": "Receiver phone"
+                                    },
+                                    "receiver_email": {
+                                        "type": "string",
+                                        "description": "Receiver email"
+                                    },
+                                    "email_subject": {
+                                        "type": "string",
+                                        "description": "Email subject"
+                                    },
+                                    "message_body": {
+                                        "type": "string",
+                                        "description": "Message body"
+                                    },
+                                    "send_status": {
+                                        "type": "string",
+                                        "description": "Send status"
+                                    },
+                                    "send_response": {
+                                        "type": "string",
+                                        "description": "Send response"
+                                    },
+                                    "sent_at": {
+                                        "type": "string",
+                                        "description": "Sent at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Sent Messages id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomnovabill/sentmessages/sentmessages": {
+            "get": {
+                "summary": "Get Sent Messages",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Sent Messages",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_record_id": {
+                                        "type": "string",
+                                        "description": "User record id"
+                                    },
+                                    "send_channel": {
+                                        "type": "string",
+                                        "description": "Send channel"
+                                    },
+                                    "receiver_phone": {
+                                        "type": "string",
+                                        "description": "Receiver phone"
+                                    },
+                                    "receiver_email": {
+                                        "type": "string",
+                                        "description": "Receiver email"
+                                    },
+                                    "email_subject": {
+                                        "type": "string",
+                                        "description": "Email subject"
+                                    },
+                                    "message_body": {
+                                        "type": "string",
+                                        "description": "Message body"
+                                    },
+                                    "send_status": {
+                                        "type": "string",
+                                        "description": "Send status"
+                                    },
+                                    "send_response": {
+                                        "type": "string",
+                                        "description": "Send response"
+                                    },
+                                    "sent_at": {
+                                        "type": "string",
+                                        "description": "Sent at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Sent Messages",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_record_id": {
+                                        "type": "string",
+                                        "description": "User record id"
+                                    },
+                                    "send_channel": {
+                                        "type": "string",
+                                        "description": "Send channel"
+                                    },
+                                    "receiver_phone": {
+                                        "type": "string",
+                                        "description": "Receiver phone"
+                                    },
+                                    "receiver_email": {
+                                        "type": "string",
+                                        "description": "Receiver email"
+                                    },
+                                    "email_subject": {
+                                        "type": "string",
+                                        "description": "Email subject"
+                                    },
+                                    "message_body": {
+                                        "type": "string",
+                                        "description": "Message body"
+                                    },
+                                    "send_status": {
+                                        "type": "string",
+                                        "description": "Send status"
+                                    },
+                                    "send_response": {
+                                        "type": "string",
+                                        "description": "Send response"
+                                    },
+                                    "sent_at": {
+                                        "type": "string",
+                                        "description": "Sent at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Sent Messages id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

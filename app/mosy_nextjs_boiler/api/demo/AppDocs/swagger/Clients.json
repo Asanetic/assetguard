@@ -1,0 +1,953 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Clients API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/autoisp/clients/clients": {
+            "get": {
+                "summary": "Get Clients",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Clients",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "login_password": {
+                                        "type": "string",
+                                        "description": "Login password"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "regdate": {
+                                        "type": "string",
+                                        "description": "Regdate"
+                                    },
+                                    "user_no": {
+                                        "type": "string",
+                                        "description": "User no"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "user_gender": {
+                                        "type": "string",
+                                        "description": "User gender"
+                                    },
+                                    "last_seen": {
+                                        "type": "string",
+                                        "description": "Last seen"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "description": "City"
+                                    },
+                                    "town": {
+                                        "type": "string",
+                                        "description": "Town"
+                                    },
+                                    "client_type": {
+                                        "type": "string",
+                                        "description": "Client type"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    },
+                                    "active_state": {
+                                        "type": "string",
+                                        "description": "Active state"
+                                    },
+                                    "expiry_date": {
+                                        "type": "string",
+                                        "description": "Expiry date"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "last_follow_up_date": {
+                                        "type": "string",
+                                        "description": "Last follow up date"
+                                    },
+                                    "follow_up_state": {
+                                        "type": "string",
+                                        "description": "Follow up state"
+                                    },
+                                    "package_id": {
+                                        "type": "string",
+                                        "description": "Package id"
+                                    },
+                                    "package_name": {
+                                        "type": "string",
+                                        "description": "Package name"
+                                    },
+                                    "package_price": {
+                                        "type": "string",
+                                        "description": "Package price"
+                                    },
+                                    "last_sync": {
+                                        "type": "string",
+                                        "description": "Last sync"
+                                    },
+                                    "online_status": {
+                                        "type": "string",
+                                        "description": "Online status"
+                                    },
+                                    "uptime": {
+                                        "type": "string",
+                                        "description": "Uptime"
+                                    },
+                                    "online_class": {
+                                        "type": "string",
+                                        "description": "Online class"
+                                    },
+                                    "credits_available": {
+                                        "type": "string",
+                                        "description": "Credits available"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Clients",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "login_password": {
+                                        "type": "string",
+                                        "description": "Login password"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "regdate": {
+                                        "type": "string",
+                                        "description": "Regdate"
+                                    },
+                                    "user_no": {
+                                        "type": "string",
+                                        "description": "User no"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "user_gender": {
+                                        "type": "string",
+                                        "description": "User gender"
+                                    },
+                                    "last_seen": {
+                                        "type": "string",
+                                        "description": "Last seen"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "description": "City"
+                                    },
+                                    "town": {
+                                        "type": "string",
+                                        "description": "Town"
+                                    },
+                                    "client_type": {
+                                        "type": "string",
+                                        "description": "Client type"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    },
+                                    "active_state": {
+                                        "type": "string",
+                                        "description": "Active state"
+                                    },
+                                    "expiry_date": {
+                                        "type": "string",
+                                        "description": "Expiry date"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "last_follow_up_date": {
+                                        "type": "string",
+                                        "description": "Last follow up date"
+                                    },
+                                    "follow_up_state": {
+                                        "type": "string",
+                                        "description": "Follow up state"
+                                    },
+                                    "package_id": {
+                                        "type": "string",
+                                        "description": "Package id"
+                                    },
+                                    "package_name": {
+                                        "type": "string",
+                                        "description": "Package name"
+                                    },
+                                    "package_price": {
+                                        "type": "string",
+                                        "description": "Package price"
+                                    },
+                                    "last_sync": {
+                                        "type": "string",
+                                        "description": "Last sync"
+                                    },
+                                    "online_status": {
+                                        "type": "string",
+                                        "description": "Online status"
+                                    },
+                                    "uptime": {
+                                        "type": "string",
+                                        "description": "Uptime"
+                                    },
+                                    "online_class": {
+                                        "type": "string",
+                                        "description": "Online class"
+                                    },
+                                    "credits_available": {
+                                        "type": "string",
+                                        "description": "Credits available"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Clients id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/superbisp/clients/clients": {
+            "get": {
+                "summary": "Get Clients",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Clients",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "login_password": {
+                                        "type": "string",
+                                        "description": "Login password"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "regdate": {
+                                        "type": "string",
+                                        "description": "Regdate"
+                                    },
+                                    "user_no": {
+                                        "type": "string",
+                                        "description": "User no"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "user_gender": {
+                                        "type": "string",
+                                        "description": "User gender"
+                                    },
+                                    "last_seen": {
+                                        "type": "string",
+                                        "description": "Last seen"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "description": "City"
+                                    },
+                                    "town": {
+                                        "type": "string",
+                                        "description": "Town"
+                                    },
+                                    "client_type": {
+                                        "type": "string",
+                                        "description": "Client type"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    },
+                                    "active_state": {
+                                        "type": "string",
+                                        "description": "Active state"
+                                    },
+                                    "expiry_date": {
+                                        "type": "string",
+                                        "description": "Expiry date"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "last_follow_up_date": {
+                                        "type": "string",
+                                        "description": "Last follow up date"
+                                    },
+                                    "follow_up_state": {
+                                        "type": "string",
+                                        "description": "Follow up state"
+                                    },
+                                    "package_id": {
+                                        "type": "string",
+                                        "description": "Package id"
+                                    },
+                                    "package_name": {
+                                        "type": "string",
+                                        "description": "Package name"
+                                    },
+                                    "package_price": {
+                                        "type": "string",
+                                        "description": "Package price"
+                                    },
+                                    "last_sync": {
+                                        "type": "string",
+                                        "description": "Last sync"
+                                    },
+                                    "online_status": {
+                                        "type": "string",
+                                        "description": "Online status"
+                                    },
+                                    "uptime": {
+                                        "type": "string",
+                                        "description": "Uptime"
+                                    },
+                                    "online_class": {
+                                        "type": "string",
+                                        "description": "Online class"
+                                    },
+                                    "credits_available": {
+                                        "type": "string",
+                                        "description": "Credits available"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Clients",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "Email"
+                                    },
+                                    "tel": {
+                                        "type": "string",
+                                        "description": "Tel"
+                                    },
+                                    "login_password": {
+                                        "type": "string",
+                                        "description": "Login password"
+                                    },
+                                    "ref_id": {
+                                        "type": "string",
+                                        "description": "Ref id"
+                                    },
+                                    "regdate": {
+                                        "type": "string",
+                                        "description": "Regdate"
+                                    },
+                                    "user_no": {
+                                        "type": "string",
+                                        "description": "User no"
+                                    },
+                                    "user_pic": {
+                                        "type": "string",
+                                        "description": "User pic"
+                                    },
+                                    "user_gender": {
+                                        "type": "string",
+                                        "description": "User gender"
+                                    },
+                                    "last_seen": {
+                                        "type": "string",
+                                        "description": "Last seen"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "description": "City"
+                                    },
+                                    "town": {
+                                        "type": "string",
+                                        "description": "Town"
+                                    },
+                                    "client_type": {
+                                        "type": "string",
+                                        "description": "Client type"
+                                    },
+                                    "about": {
+                                        "type": "string",
+                                        "description": "About"
+                                    },
+                                    "active_state": {
+                                        "type": "string",
+                                        "description": "Active state"
+                                    },
+                                    "expiry_date": {
+                                        "type": "string",
+                                        "description": "Expiry date"
+                                    },
+                                    "group_name": {
+                                        "type": "string",
+                                        "description": "Group name"
+                                    },
+                                    "team_id": {
+                                        "type": "string",
+                                        "description": "Team id"
+                                    },
+                                    "last_follow_up_date": {
+                                        "type": "string",
+                                        "description": "Last follow up date"
+                                    },
+                                    "follow_up_state": {
+                                        "type": "string",
+                                        "description": "Follow up state"
+                                    },
+                                    "package_id": {
+                                        "type": "string",
+                                        "description": "Package id"
+                                    },
+                                    "package_name": {
+                                        "type": "string",
+                                        "description": "Package name"
+                                    },
+                                    "package_price": {
+                                        "type": "string",
+                                        "description": "Package price"
+                                    },
+                                    "last_sync": {
+                                        "type": "string",
+                                        "description": "Last sync"
+                                    },
+                                    "online_status": {
+                                        "type": "string",
+                                        "description": "Online status"
+                                    },
+                                    "uptime": {
+                                        "type": "string",
+                                        "description": "Uptime"
+                                    },
+                                    "online_class": {
+                                        "type": "string",
+                                        "description": "Online class"
+                                    },
+                                    "credits_available": {
+                                        "type": "string",
+                                        "description": "Credits available"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Clients id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/bloomcrm/clients/clients": {
+            "get": {
+                "summary": "Get Clients",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Clients",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "client_email": {
+                                        "type": "string",
+                                        "description": "Client email"
+                                    },
+                                    "client_tel": {
+                                        "type": "string",
+                                        "description": "Client tel"
+                                    },
+                                    "client_location": {
+                                        "type": "string",
+                                        "description": "Client location"
+                                    },
+                                    "client_photo": {
+                                        "type": "string",
+                                        "description": "Client photo"
+                                    },
+                                    "gender": {
+                                        "type": "string",
+                                        "description": "Gender"
+                                    },
+                                    "date_registered": {
+                                        "type": "string",
+                                        "description": "Date registered"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "description": "Password"
+                                    },
+                                    "admin_id": {
+                                        "type": "string",
+                                        "description": "Admin id"
+                                    },
+                                    "industry": {
+                                        "type": "string",
+                                        "description": "Industry"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Clients",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "Client name"
+                                    },
+                                    "client_email": {
+                                        "type": "string",
+                                        "description": "Client email"
+                                    },
+                                    "client_tel": {
+                                        "type": "string",
+                                        "description": "Client tel"
+                                    },
+                                    "client_location": {
+                                        "type": "string",
+                                        "description": "Client location"
+                                    },
+                                    "client_photo": {
+                                        "type": "string",
+                                        "description": "Client photo"
+                                    },
+                                    "gender": {
+                                        "type": "string",
+                                        "description": "Gender"
+                                    },
+                                    "date_registered": {
+                                        "type": "string",
+                                        "description": "Date registered"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "description": "Password"
+                                    },
+                                    "admin_id": {
+                                        "type": "string",
+                                        "description": "Admin id"
+                                    },
+                                    "industry": {
+                                        "type": "string",
+                                        "description": "Industry"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Status"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Clients id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        },
+        "api/supercrm/clients/clients": {
+            "get": {
+                "summary": "Get Clients",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Clients",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "full_name": {
+                                        "type": "string",
+                                        "description": "Full name"
+                                    },
+                                    "business_name": {
+                                        "type": "string",
+                                        "description": "Business name"
+                                    },
+                                    "phone_number": {
+                                        "type": "string",
+                                        "description": "Phone number"
+                                    },
+                                    "alternative_phone_number": {
+                                        "type": "string",
+                                        "description": "Alternative phone number"
+                                    },
+                                    "email_address": {
+                                        "type": "string",
+                                        "description": "Email address"
+                                    },
+                                    "website_url": {
+                                        "type": "string",
+                                        "description": "Website url"
+                                    },
+                                    "industry_type": {
+                                        "type": "string",
+                                        "description": "Industry type"
+                                    },
+                                    "lead_source": {
+                                        "type": "string",
+                                        "description": "Lead source"
+                                    },
+                                    "country_name": {
+                                        "type": "string",
+                                        "description": "Country name"
+                                    },
+                                    "city_name": {
+                                        "type": "string",
+                                        "description": "City name"
+                                    },
+                                    "client_status": {
+                                        "type": "string",
+                                        "description": "Client status"
+                                    },
+                                    "assigned_sales_rep": {
+                                        "type": "string",
+                                        "description": "Assigned sales rep"
+                                    },
+                                    "business_address": {
+                                        "type": "string",
+                                        "description": "Business address"
+                                    },
+                                    "tax_number": {
+                                        "type": "string",
+                                        "description": "Tax number"
+                                    },
+                                    "profile_photo": {
+                                        "type": "string",
+                                        "description": "Profile photo"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "description": "Notes"
+                                    },
+                                    "last_contact_date": {
+                                        "type": "string",
+                                        "description": "Last contact date"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Clients",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "full_name": {
+                                        "type": "string",
+                                        "description": "Full name"
+                                    },
+                                    "business_name": {
+                                        "type": "string",
+                                        "description": "Business name"
+                                    },
+                                    "phone_number": {
+                                        "type": "string",
+                                        "description": "Phone number"
+                                    },
+                                    "alternative_phone_number": {
+                                        "type": "string",
+                                        "description": "Alternative phone number"
+                                    },
+                                    "email_address": {
+                                        "type": "string",
+                                        "description": "Email address"
+                                    },
+                                    "website_url": {
+                                        "type": "string",
+                                        "description": "Website url"
+                                    },
+                                    "industry_type": {
+                                        "type": "string",
+                                        "description": "Industry type"
+                                    },
+                                    "lead_source": {
+                                        "type": "string",
+                                        "description": "Lead source"
+                                    },
+                                    "country_name": {
+                                        "type": "string",
+                                        "description": "Country name"
+                                    },
+                                    "city_name": {
+                                        "type": "string",
+                                        "description": "City name"
+                                    },
+                                    "client_status": {
+                                        "type": "string",
+                                        "description": "Client status"
+                                    },
+                                    "assigned_sales_rep": {
+                                        "type": "string",
+                                        "description": "Assigned sales rep"
+                                    },
+                                    "business_address": {
+                                        "type": "string",
+                                        "description": "Business address"
+                                    },
+                                    "tax_number": {
+                                        "type": "string",
+                                        "description": "Tax number"
+                                    },
+                                    "profile_photo": {
+                                        "type": "string",
+                                        "description": "Profile photo"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "description": "Notes"
+                                    },
+                                    "last_contact_date": {
+                                        "type": "string",
+                                        "description": "Last contact date"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Clients id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

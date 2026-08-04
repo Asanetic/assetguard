@@ -1,0 +1,185 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Quotations API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/quotations/quotations": {
+            "get": {
+                "summary": "Get Quotations",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Quotations",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "quotation_number": {
+                                        "type": "string",
+                                        "description": "Quotation number"
+                                    },
+                                    "quotation_title": {
+                                        "type": "string",
+                                        "description": "Quotation title"
+                                    },
+                                    "quotation_description": {
+                                        "type": "string",
+                                        "description": "Quotation description"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "deal_id": {
+                                        "type": "string",
+                                        "description": "Deal id"
+                                    },
+                                    "quotation_amount": {
+                                        "type": "string",
+                                        "description": "Quotation amount"
+                                    },
+                                    "tax_amount": {
+                                        "type": "string",
+                                        "description": "Tax amount"
+                                    },
+                                    "discount_amount": {
+                                        "type": "string",
+                                        "description": "Discount amount"
+                                    },
+                                    "quotation_status": {
+                                        "type": "string",
+                                        "description": "Quotation status"
+                                    },
+                                    "quotation_issued_on": {
+                                        "type": "string",
+                                        "description": "Quotation issued on"
+                                    },
+                                    "quotation_expiry_date": {
+                                        "type": "string",
+                                        "description": "Quotation expiry date"
+                                    },
+                                    "quotation_notes": {
+                                        "type": "string",
+                                        "description": "Quotation notes"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Quotations",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "quotation_number": {
+                                        "type": "string",
+                                        "description": "Quotation number"
+                                    },
+                                    "quotation_title": {
+                                        "type": "string",
+                                        "description": "Quotation title"
+                                    },
+                                    "quotation_description": {
+                                        "type": "string",
+                                        "description": "Quotation description"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Client id"
+                                    },
+                                    "deal_id": {
+                                        "type": "string",
+                                        "description": "Deal id"
+                                    },
+                                    "quotation_amount": {
+                                        "type": "string",
+                                        "description": "Quotation amount"
+                                    },
+                                    "tax_amount": {
+                                        "type": "string",
+                                        "description": "Tax amount"
+                                    },
+                                    "discount_amount": {
+                                        "type": "string",
+                                        "description": "Discount amount"
+                                    },
+                                    "quotation_status": {
+                                        "type": "string",
+                                        "description": "Quotation status"
+                                    },
+                                    "quotation_issued_on": {
+                                        "type": "string",
+                                        "description": "Quotation issued on"
+                                    },
+                                    "quotation_expiry_date": {
+                                        "type": "string",
+                                        "description": "Quotation expiry date"
+                                    },
+                                    "quotation_notes": {
+                                        "type": "string",
+                                        "description": "Quotation notes"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Quotations id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

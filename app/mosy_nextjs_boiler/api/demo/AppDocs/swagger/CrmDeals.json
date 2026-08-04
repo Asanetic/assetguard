@@ -1,0 +1,201 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Crm Deals API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/bloomcrm/crmdeals/crmdeals": {
+            "get": {
+                "summary": "Get Crm Deals",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Crm Deals",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "deal_title": {
+                                        "type": "string",
+                                        "description": "Deal title"
+                                    },
+                                    "contact_id": {
+                                        "type": "string",
+                                        "description": "Contact id"
+                                    },
+                                    "company_id": {
+                                        "type": "string",
+                                        "description": "Company id"
+                                    },
+                                    "lead_id": {
+                                        "type": "string",
+                                        "description": "Lead id"
+                                    },
+                                    "pipeline_stage_id": {
+                                        "type": "string",
+                                        "description": "Pipeline stage id"
+                                    },
+                                    "deal_value": {
+                                        "type": "string",
+                                        "description": "Deal value"
+                                    },
+                                    "currency": {
+                                        "type": "string",
+                                        "description": "Currency"
+                                    },
+                                    "probability_percent": {
+                                        "type": "string",
+                                        "description": "Probability percent"
+                                    },
+                                    "expected_close_date": {
+                                        "type": "string",
+                                        "description": "Expected close date"
+                                    },
+                                    "actual_close_date": {
+                                        "type": "string",
+                                        "description": "Actual close date"
+                                    },
+                                    "deal_status": {
+                                        "type": "string",
+                                        "description": "Deal status"
+                                    },
+                                    "assigned_user_id": {
+                                        "type": "string",
+                                        "description": "Assigned user id"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "description": "Notes"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_updated": {
+                                        "type": "string",
+                                        "description": "Date updated"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Crm Deals",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "deal_title": {
+                                        "type": "string",
+                                        "description": "Deal title"
+                                    },
+                                    "contact_id": {
+                                        "type": "string",
+                                        "description": "Contact id"
+                                    },
+                                    "company_id": {
+                                        "type": "string",
+                                        "description": "Company id"
+                                    },
+                                    "lead_id": {
+                                        "type": "string",
+                                        "description": "Lead id"
+                                    },
+                                    "pipeline_stage_id": {
+                                        "type": "string",
+                                        "description": "Pipeline stage id"
+                                    },
+                                    "deal_value": {
+                                        "type": "string",
+                                        "description": "Deal value"
+                                    },
+                                    "currency": {
+                                        "type": "string",
+                                        "description": "Currency"
+                                    },
+                                    "probability_percent": {
+                                        "type": "string",
+                                        "description": "Probability percent"
+                                    },
+                                    "expected_close_date": {
+                                        "type": "string",
+                                        "description": "Expected close date"
+                                    },
+                                    "actual_close_date": {
+                                        "type": "string",
+                                        "description": "Actual close date"
+                                    },
+                                    "deal_status": {
+                                        "type": "string",
+                                        "description": "Deal status"
+                                    },
+                                    "assigned_user_id": {
+                                        "type": "string",
+                                        "description": "Assigned user id"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "description": "Notes"
+                                    },
+                                    "created_by": {
+                                        "type": "string",
+                                        "description": "Created by"
+                                    },
+                                    "date_created": {
+                                        "type": "string",
+                                        "description": "Date created"
+                                    },
+                                    "date_updated": {
+                                        "type": "string",
+                                        "description": "Date updated"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Crm Deals id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

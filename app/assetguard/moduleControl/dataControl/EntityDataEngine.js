@@ -192,6 +192,23 @@ export class EntityDataEngine {
     this.load();
   }
 
+  // Replaces advancedQuery ENTIRELY in one state update / one load() —
+  // deliberately separate from setFilterValue/filter above, which always
+  // MERGES (correct for things like a sidebar with several simultaneous
+  // inputs — user_id AND a date range together). This is for the
+  // opposite case: picking ONE new "smart filter" (tag/map/date) should
+  // by default REPLACE whatever filter was active before, not silently
+  // AND against it — two unrelated filters stacking can zero out
+  // results with no visible explanation, which looks like "the filter
+  // is broken" rather than "two filters are combined." Pass
+  // { merge: true } to opt into the old additive behavior for a
+  // specific call site that genuinely wants simultaneous filters.
+  setAdvancedQuery(query, { merge = false } = {}) {
+    const advancedQuery = merge ? { ...this.state.advancedQuery, ...query } : { ...query };
+    this._setState({ advancedQuery, page: 1 });
+    this.load();
+  }
+
   clearFilterValue(key) {
     this.setFilterValue(key, null);
   }
@@ -227,8 +244,26 @@ export class EntityDataEngine {
 
   // ---- Convenience wrappers — UI code never computes page math or
   // repeats the "clear search + reload" sequence itself ----
-  refresh() {
-    this._setState({ search: '', page: 1 });
+  //
+  // fixedQueryOverride is optional. Passed, it REPLACES this.fixedQuery
+  // before reloading — the one legitimate way to change scope after
+  // construction, since fixedQuery is otherwise a constructor-time
+  // snapshot (useEntityController's engineRef is only ever created once;
+  // changing the `fixedQuery` prop on a later render does NOT by itself
+  // reach the already-built engine instance). Omitted, behavior is
+  // unchanged: clear search, reload page 1, current scope untouched.
+  //
+  // Second param is opt-in: { clearAdvanced: true } ALSO drops
+  // advancedQuery in the SAME state update (one load(), not two) — this
+  // is the public "Refresh" button's job (a real "start over"). The
+  // internal reload() used after every mutation never passes this, so
+  // saving/deleting/updating a row never silently wipes someone's active
+  // filter as a side effect.
+  refresh(fixedQueryOverride, { clearAdvanced = false } = {}) {
+    if (fixedQueryOverride !== undefined) this.fixedQuery = fixedQueryOverride || {};
+    const patch = { search: '', page: 1 };
+    if (clearAdvanced) patch.advancedQuery = {};
+    this._setState(patch);
     this.load();
   }
 

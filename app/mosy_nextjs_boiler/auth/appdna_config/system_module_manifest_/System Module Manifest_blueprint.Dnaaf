@@ -1,0 +1,157 @@
+$write_assembly_file='';
+/****************************************************
+ * Digital Nexus Assembly Builder (Next.js Modules)
+ * --------------------------------------------------
+ * PURPOSE:
+ *   Automates creation of Next.js module files
+ *   (list, profile, subprofile, routes, UI widgets).
+ *
+ * MAIN OUTPUT:
+ *   Assembly DNA file (*.Dnaaf)
+ ****************************************************/
+
+//@extract config files 
+/* =========================
+   1. DNA Options
+   ========================= */
+$dna_file_name   = "next_js_module_builder___next____"; 
+$create_dna      = "yes"; // yes | no
+$overwrite_dna_file = "yes"; // yes | no
+
+/* =========================
+   2. Helpers & Config Loader
+   ========================= */
+eval(find_snippet("1171"));   // camelCase converter
+
+$table_config_file__ = "../appdna/lendpalv2/system_module_manifest_/tbl_attr/next_auth_roles_config.php";
+
+include($table_config_file__);
+
+eval(find_snippet("1204")); ///snippet headers
+
+/* =========================
+   8. Flags & States
+   ========================= */
+$clone_data_class = ""; // d-none
+
+eval(find_snippet("1202")); // button and mini list imports 
+
+
+/* =========================
+   10. Debug Echo
+   ========================= */
+echo '<hr>List Widget  --- '.$camelcasetbl_prefix.'List <br>';
+echo 'Profile Widget   --- '.$camelcasetbl_prefix.'Profile <br>';
+echo 'Event Inteprate  --- Inteprate'.$camelcasetbl_prefix.'Event <br>';
+echo 'Api route        --- /api/'.$appname.'/'.$nextjs_tbl_alias.'/'.$last_file_name.'<hr>';
+
+
+/* =========================
+   11. Imports (Next.js)
+   ========================= */
+
+        /* ===================sample imports 
+
+        import  ".$camelcasetbl_prefix."List from './".$camelcasetbl_prefix."List';
+
+        //".$appname." custom functions
+        //import {  } from '../../".$appname."_custom_functions';
+
+        //def logo 
+        //import logo from '../../../img/logo/logo.png'; // outside public!
+
+        //large text 
+        //import ReactMarkdown from 'react-markdown';
+          =================== sample import
+*/ 
+
+$additional_imports = "
+//components
+import { MosyAlertCard, MosyNotify ,closeMosyModal } from  '../../../MosyUtils/ActionModals'; 
+import MosySnackWidget from '../../../MosyUtils/MosySnackWidget';
+
+//basic utils
+import { mosyScrollTo , deleteUrlParam, mosyFormInputHandler,mosyUrlParam ,mosyTonum  } from '../../../MosyUtils/hiveUtils';
+
+//data control and processors
+import { inteprate".$camelcasetbl_prefix."FormAction, ".$camelcasetbl."ProfileData , popDeleteDialog, Inteprate".$camelcasetbl_prefix."Event } from '../dataControl/".$camelcasetbl_prefix."RequestHandler';
+
+//state management
+import { use".$camelcasetbl_prefix."State } from '../dataControl/".$camelcasetbl_prefix."StateManager';
+
+//profile components
+import { 
+         SubmitButtons,
+         AddNewButton, 
+         LiveSearchDropdown,
+         MosySmartField,
+         MosyActionButton,
+         SmartDropdown,  
+         DeleteButton ,
+         MosyImageViewer,
+         MosyFileUploadButton 
+       } from '../../UiControl/componentControl';
+
+//def logo 
+import logo from '../../../img/logo/logo.png'; // outside public!
+
+import MosyHtmlEditor from '../../../MosyUtils/htmlEditor'
+
+//routes manager
+///handle routes 
+import { getApiRoutes } from '../../AppRoutes/apiRoutesHandler';
+
+// Use default base root (/)
+const apiRoutes = getApiRoutes();
+$profile_module_imports_
+$list_module_imports
+$import_profile_string
+
+// export profile
+";
+
+$additional_list_imports = "
+//custom utils
+import { deleteUrlParam, magicTrimText, mosyUrlParam, mosyFormatDateOnly , mosyFormatDateTime, mosyTonum , mosyToggleSelectAllTblRows , mosySelectTblRows } from '../../../MosyUtils/hiveUtils';
+import { mosyFilterUrl } from '../../DataControl/MosyFilterEngine';
+
+//list components
+import { 
+         MosySmartDropdownActions, 
+         AddNewButton, 
+         MosyActionButton, 
+         MosyGridRowOptions,
+         MosyPaginationUi,
+         DeleteButton,
+         MosyImageViewer
+       } from '../../UiControl/componentControl';
+         
+import MosySnackWidget from '../../../MosyUtils/MosySnackWidget';
+
+//data 
+import { load".$camelcasetbl_prefix."ListData, popDeleteDialog, Inteprate".$camelcasetbl_prefix."Event  } from '../dataControl/".$camelcasetbl_prefix."RequestHandler';
+
+//state management
+import { use".$camelcasetbl_prefix."State } from '../dataControl/".$camelcasetbl_prefix."StateManager';
+
+import logo from '../../../img/logo/logo.png'; // outside public!
+
+//large text 
+import ReactMarkdown from 'react-markdown';
+
+//routes manager
+///handle routes 
+import { getApiRoutes } from '../../AppRoutes/apiRoutesHandler';
+
+//custom fuctions
+//import {  } from '../../AppCore/coreUtils';
+
+// Use default base root (/)
+const apiRoutes = getApiRoutes();
+$import_list_string
+
+//export list
+";
+
+
+eval(find_snippet("1203")); // anippet footer 

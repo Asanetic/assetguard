@@ -17,6 +17,8 @@ import {
   FileText,
   ShieldCog,
   Truck,
+  Camera,
+  Home,
 } from "lucide-react";
 import { Brand } from "./AssetGuard/Brand";
 import { hiveRoutes } from "../appConfigs/hiveRoutes";
@@ -26,8 +28,12 @@ const NAVY = "#14315D";
 const BLUE = "#2E6CF5";
 const RAIL_WIDTH = 80;
 const DRAWER_WIDTH = 280;
-// Height of the top bar shown in place of the rail on mobile (< md breakpoint).
-const MOBILE_BAR_HEIGHT = 56;
+// Height of the slim top bar shown above the bottom rail on mobile (< md breakpoint).
+const MOBILE_BAR_HEIGHT = 52;
+// Height of the persistent bottom tab rail on mobile (< md breakpoint) — mirrors
+// the prototype's bottomNavMobile(): Sites, Devices, a floating Capture button,
+// Alarms, Playback.
+const MOBILE_RAIL_HEIGHT = 64;
 
 const mainroute = hiveRoutes.assettracker
 
@@ -158,6 +164,18 @@ const railItems = [
   },
 ];
 
+// Mobile bottom rail — same four destinations as railItems, but with a
+// floating Capture button inserted in the middle (matches the prototype's
+// bottomNavMobile()). Kept as a separate ordered list rather than deriving
+// it from railItems so the capture slot position doesn't have to be inferred.
+const mobileRailItems = [
+  railItems[0], // Sites
+  railItems[1], // Devices
+  { key: "home", href: `${mainroute}/home`, icon: Home, label: "Home", isCapture: true },
+  railItems[2], // Alarms
+  railItems[3], // Playback
+];
+
 
 
 // Fixed-width box every drawer row's icon sits in, so labels line up
@@ -185,7 +203,8 @@ export function AssetGuardSidebar({
 
   return (
     <>
-      {/* 1a. Mobile top bar — replaces the rail below the md breakpoint */}
+      {/* 1a. Mobile top bar — slim header for branding + drawer access.
+             Route destinations live in the bottom rail below, not here. */}
       <header
         className="d-flex d-md-none align-items-center justify-content-between position-fixed top-0 start-0 w-100 px-2"
         style={{ height: MOBILE_BAR_HEIGHT, backgroundColor: NAVY, zIndex: 1040 }}
@@ -202,23 +221,95 @@ export function AssetGuardSidebar({
 
         <Brand variant="compact" />
 
-        <Link
-          href="/alarms"
-          aria-label="Alarms"
-          className="d-flex p-2 align-items-center justify-content-center position-relative text-decoration-none"
-          style={{ color: "#AEC3E4" }}
-        >
-          <BellRing size={20} />
-          {alarmCount > 0 && (
-            <span
-              className="badge rounded-pill bg-danger text-white position-absolute"
-              style={{ top: 0, right: 0, fontSize: 8, padding: "2px 5px" }}
-            >
-              {alarmCount}
-            </span>
-          )}
-        </Link>
+        {/* Alarms now lives in the bottom rail; keep this slot empty so the
+            brand stays centered without duplicating the alarms entry point. */}
+        <span style={{ width: 38 }} aria-hidden="true" />
       </header>
+
+      {/* 1b-mobile. Persistent bottom tab rail — visible below the md breakpoint,
+          mirrors the desktop mini rail's destinations (railItems) plus a
+          floating Capture button in the middle, matching the prototype's
+          bottomNavMobile(). */}
+      <nav
+        aria-label="Primary"
+        className="d-flex d-md-none align-items-end position-fixed start-0 w-100 bg-white"
+        style={{
+          bottom: 0,
+          height: MOBILE_RAIL_HEIGHT,
+          borderTop: "1px solid #E2E8F0",
+          zIndex: 1040,
+        }}
+      >
+        {mobileRailItems.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(item.href);
+
+          if (item.isCapture) {
+            return (
+              <Link
+                key={item.key}
+                href={item.href}
+                aria-label={item.label}
+                className="d-flex flex-column flex-fill align-items-center text-decoration-none"
+              >
+                <span
+                  className="d-flex align-items-center justify-content-center"
+                  style={{
+                    position: "relative",
+                    top: -14,
+                    width: 50,
+                    height: 50,
+                    borderRadius: "50%",
+                    backgroundColor: "#F1F5F9",
+                    border: "4px solid #FFFFFF",
+                    color: "#94A3B8",
+                  }}
+                >
+                  <Home size={21} strokeWidth={2} />
+                </span>
+                <span
+                  style={{
+                    fontSize: 9.5,
+                    fontWeight: 700,
+                    color: "#94A3B8",
+                    marginTop: -10,
+                    paddingBottom: 5,
+                  }}
+                >
+                  {item.label}
+                </span>
+              </Link>
+            );
+          }
+
+          return (
+            <Link
+              key={item.key}
+              href={item.href}
+              aria-label={item.label}
+              className="d-flex flex-column flex-fill align-items-center text-decoration-none position-relative"
+              style={{
+                gap: 2,
+                padding: "7px 0 5px",
+                color: active ? BLUE : "#94A3B8",
+                fontSize: 9.5,
+                fontWeight: 600,
+              }}
+            >
+              <Icon size={18} strokeWidth={2} />
+              {item.label}
+              {item.showBadge && alarmCount > 0 && (
+                <span
+                  className="badge rounded-pill bg-danger text-white position-absolute"
+                  style={{ top: 2, right: "16%", fontSize: 8, padding: "2px 4px" }}
+                >
+                  {alarmCount}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
 
       {/* 1b. Persistent mini rail — visible from the md breakpoint up */}
       <aside
@@ -449,5 +540,7 @@ export function AssetGuardSidebar({
 
 /** Fixed width of the persistent rail, in px — import this to offset page content on desktop (>= md). */
 AssetGuardSidebar.RAIL_WIDTH = RAIL_WIDTH;
-/** Height of the mobile top bar, in px — import this to offset page content on mobile (< md). */
+/** Height of the mobile top bar, in px — import this to offset page content (padding-top) on mobile (< md). */
 AssetGuardSidebar.MOBILE_BAR_HEIGHT = MOBILE_BAR_HEIGHT;
+/** Height of the mobile bottom tab rail, in px — import this to offset page content (padding-bottom) on mobile (< md), e.g. `paddingBottom: AssetGuardSidebar.MOBILE_RAIL_HEIGHT` on your page wrapper so content isn't hidden behind the rail. */
+AssetGuardSidebar.MOBILE_RAIL_HEIGHT = MOBILE_RAIL_HEIGHT;

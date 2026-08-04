@@ -1,0 +1,249 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Messages API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "api/supercrm/messages/messages": {
+            "get": {
+                "summary": "Get Messages",
+                "parameters": [
+                    {
+                        "name": "searchAny",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Base64 search value"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Messages",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "message_number": {
+                                        "type": "string",
+                                        "description": "Message number"
+                                    },
+                                    "related_record_id": {
+                                        "type": "string",
+                                        "description": "Related record id"
+                                    },
+                                    "recipient_name": {
+                                        "type": "string",
+                                        "description": "Recipient name"
+                                    },
+                                    "recipient_phone": {
+                                        "type": "string",
+                                        "description": "Recipient phone"
+                                    },
+                                    "recipient_email": {
+                                        "type": "string",
+                                        "description": "Recipient email"
+                                    },
+                                    "message_channel": {
+                                        "type": "string",
+                                        "description": "Message channel"
+                                    },
+                                    "message_subject": {
+                                        "type": "string",
+                                        "description": "Message subject"
+                                    },
+                                    "message_content": {
+                                        "type": "string",
+                                        "description": "Message content"
+                                    },
+                                    "message_status": {
+                                        "type": "string",
+                                        "description": "Message status"
+                                    },
+                                    "delivery_status": {
+                                        "type": "string",
+                                        "description": "Delivery status"
+                                    },
+                                    "request_source": {
+                                        "type": "string",
+                                        "description": "Request source"
+                                    },
+                                    "request_id": {
+                                        "type": "string",
+                                        "description": "Request id"
+                                    },
+                                    "sent_by": {
+                                        "type": "string",
+                                        "description": "Sent by"
+                                    },
+                                    "scheduled_for": {
+                                        "type": "string",
+                                        "description": "Scheduled for"
+                                    },
+                                    "sent_on": {
+                                        "type": "string",
+                                        "description": "Sent on"
+                                    },
+                                    "delivered_on": {
+                                        "type": "string",
+                                        "description": "Delivered on"
+                                    },
+                                    "read_on": {
+                                        "type": "string",
+                                        "description": "Read on"
+                                    },
+                                    "failed_on": {
+                                        "type": "string",
+                                        "description": "Failed on"
+                                    },
+                                    "failure_reason": {
+                                        "type": "string",
+                                        "description": "Failure reason"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created successfully"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Messages",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "message_number": {
+                                        "type": "string",
+                                        "description": "Message number"
+                                    },
+                                    "related_record_id": {
+                                        "type": "string",
+                                        "description": "Related record id"
+                                    },
+                                    "recipient_name": {
+                                        "type": "string",
+                                        "description": "Recipient name"
+                                    },
+                                    "recipient_phone": {
+                                        "type": "string",
+                                        "description": "Recipient phone"
+                                    },
+                                    "recipient_email": {
+                                        "type": "string",
+                                        "description": "Recipient email"
+                                    },
+                                    "message_channel": {
+                                        "type": "string",
+                                        "description": "Message channel"
+                                    },
+                                    "message_subject": {
+                                        "type": "string",
+                                        "description": "Message subject"
+                                    },
+                                    "message_content": {
+                                        "type": "string",
+                                        "description": "Message content"
+                                    },
+                                    "message_status": {
+                                        "type": "string",
+                                        "description": "Message status"
+                                    },
+                                    "delivery_status": {
+                                        "type": "string",
+                                        "description": "Delivery status"
+                                    },
+                                    "request_source": {
+                                        "type": "string",
+                                        "description": "Request source"
+                                    },
+                                    "request_id": {
+                                        "type": "string",
+                                        "description": "Request id"
+                                    },
+                                    "sent_by": {
+                                        "type": "string",
+                                        "description": "Sent by"
+                                    },
+                                    "scheduled_for": {
+                                        "type": "string",
+                                        "description": "Scheduled for"
+                                    },
+                                    "sent_on": {
+                                        "type": "string",
+                                        "description": "Sent on"
+                                    },
+                                    "delivered_on": {
+                                        "type": "string",
+                                        "description": "Delivered on"
+                                    },
+                                    "read_on": {
+                                        "type": "string",
+                                        "description": "Read on"
+                                    },
+                                    "failed_on": {
+                                        "type": "string",
+                                        "description": "Failed on"
+                                    },
+                                    "failure_reason": {
+                                        "type": "string",
+                                        "description": "Failure reason"
+                                    },
+                                    "created_on": {
+                                        "type": "string",
+                                        "description": "Created on"
+                                    },
+                                    "created_at": {
+                                        "type": "string",
+                                        "description": "Created at"
+                                    },
+                                    "updated_at": {
+                                        "type": "string",
+                                        "description": "Updated at"
+                                    },
+                                    "Node": {
+                                        "type": "string",
+                                        "description": " Messages id to update "
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                }
+            }
+        }
+    }
+}

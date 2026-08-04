@@ -1,0 +1,212 @@
+/* ============================================================
+   CardListGrid — "Cards list items UI" styling
+   Scope: matches the clu-* classes in CardListGrid.jsx
+   ============================================================ */
+
+   .clu-card-list {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 16px;
+  }
+  
+  .clu-heading {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+  }
+  
+  /* ---- Search ---- */
+  .clu-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .clu-search-input {
+    flex: 1;
+    height: 40px;
+    padding: 0 16px;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #111827;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  
+  .clu-search-input:focus {
+    border-color: #111827;
+  }
+  
+  .clu-search-input::placeholder {
+    color: #9CA3AF;
+  }
+  
+  .clu-search-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid #E5E7EB;
+    background: #fff;
+    color: #6B7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  
+  .clu-search-btn:hover {
+    background: #111827;
+    color: #fff;
+    border-color: #111827;
+  }
+  
+  /* ---- Loading / error / empty states ---- */
+  .clu-state {
+    font-size: 14px;
+    color: #6B7280;
+  }
+  
+  /* ---- List + Card ---- */
+  .clu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .clu-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #fff;
+    border: 1px solid #F1F1F4;
+    border-radius: 16px;
+    padding: 14px 20px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  
+  .clu-card:hover {
+    box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
+    transform: translateY(-1px);
+  }
+  
+  /* ---- Avatar ---- */
+  .clu-avatar {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #F3F4F6;
+  }
+  
+  /* ---- Body ---- */
+  .clu-card-body {
+    flex: 1;
+    min-width: 0; /* allow text truncation inside a flex child */
+  }
+  
+  .clu-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 2px;
+  }
+  
+  .clu-card-subtitle {
+    font-size: 13px;
+    color: #6B7280;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  
+  .clu-card-meta {
+    font-size: 12px;
+    color: #9CA3AF;
+    margin-top: 4px;
+  }
+  
+  /* ---- Actions ---- */
+  .clu-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-shrink: 0;
+  }
+  
+  .clu-see-more {
+    font-size: 13px;
+    font-weight: 500;
+    color: #6B7280;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  
+  .clu-see-more:hover {
+    color: #111827;
+    text-decoration: underline;
+  }
+  
+  .clu-follow-btn {
+    padding: 8px 20px;
+    border-radius: 999px;
+    border: none;
+    background: #111827;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  
+  .clu-follow-btn:hover {
+    background: #F97316; /* orange accent, matches the hovered card in the reference */
+  }
+  
+  .clu-follow-btn:active {
+    transform: scale(0.97);
+  }
+  
+  .clu-follow-btn.clu-following {
+    background: #F3F4F6;
+    color: #111827;
+  }
+  
+  .clu-follow-btn.clu-following:hover {
+    background: #E5E7EB;
+  }
+  
+  /* ---- Pagination ---- */
+  .clu-pagination-wrap {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+  }
+  
+  /* ---- Mobile: stack card content ---- */
+  @media (max-width: 480px) {
+    .clu-card {
+      flex-wrap: wrap;
+    }
+  
+    .clu-card-subtitle {
+      white-space: normal;
+    }
+  
+    .clu-card-actions {
+      width: 100%;
+      justify-content: space-between;
+      margin-top: 8px;
+      padding-left: 64px; /* aligns roughly under the title, past the avatar */
+    }
+  }

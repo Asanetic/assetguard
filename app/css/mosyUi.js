@@ -4,6 +4,79 @@ import mosyThemeConfigs from '../appConfigs/mosyTheme'; // <-- Import your globa
 const MosyUiTheme = () => (
   <style>{`
       
+
+/*/========================   Root Theme   ======================== */
+.etc-card {
+    --etc-ink: #0b1220;
+    --etc-body: #1e293b;
+    --etc-muted: #64748b;
+    --etc-line: #dfe3ea;
+    --etc-surface: #f8fafc;
+  
+    --etc-primary: ${mosyThemeConfigs.btnBg};
+    --etc-primary-contrast: #ffffff;
+    --etc-primary-gradient: ${mosyThemeConfigs.sideBarBg};
+  
+    --etc-success: #0d7a6c;
+    --etc-warning: #b45309;
+    --etc-danger: #b91c1c;
+    --etc-radius: 10px;
+  
+    background: #ffffff;
+    border: 1px solid var(--etc-line);
+    border-radius: 14px;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  }
+
+.dyn-form-scope {
+    --dyn-ink: #16181f;
+    --dyn-body: #363b46;
+    --dyn-muted: #83808a;
+    --dyn-line: #e6e2d8;
+    --dyn-surface:rgb(247, 247, 247);
+
+    --dyn-primary:${mosyThemeConfigs.btnBg};
+    --dyn-primary-gradient:${mosyThemeConfigs.sideBarBg};
+    --dyn-primary-contrast: #ffffff;
+    --dyn-accent: #a3823f;
+
+    --dyn-success: #0d7a6c;
+    --dyn-warning: #b45309;
+    --dyn-danger: #b91c1c;
+    --dyn-radius: 10px;
+
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    padding: 0 clamp(0.75rem, 2.5vw, 2rem);
+  }
+
+  .etc-card {
+  --etc-ink: #0f172a;
+  --etc-body: #47536b;
+  --etc-muted: #94a0b3;
+  --etc-line: #e7eaf0;
+  --etc-surface: #f8fafc;
+  --etc-accent: ${mosyThemeConfigs.btnBg};
+  --etc-accent-dark: #14315D;
+  --etc-accent-soft: #e6f5f2;
+  --etc-danger: #b91c1c;
+  --etc-radius: 10px;
+
+  background: #ffffff;
+  border: 1px solid var(--etc-line);
+  border-radius: 14px;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+
+
+/*========================   Premium Search   ======================== */
     .premium_search_wrap {
   position: relative;
 }
@@ -1028,13 +1101,50 @@ body {
              10px -10px 50px #ffffff;*/
 }
 
+  .dyn-section-panel {
+    background: ${mosyThemeConfigs.ctnBg};
+    border: ${mosyThemeConfigs.genBorderSize}px solid ${mosyThemeConfigs.genBorderColor};
+    border-radius: var(--dyn-radius);
+    padding: 1.25rem 1.25rem 1.4rem;
+  }
+
+  .dyn-input {
+    width: 100%;
+    box-sizing: border-box;
+    border: ${mosyThemeConfigs.genBorderSize}px solid ${mosyThemeConfigs.genBorderColor};
+    border-radius: 8px;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.92rem;
+    color: var(--dyn-ink);
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(22, 24, 31, 0.03);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .qem-btn-primary {
+    background: linear-gradient(225deg, ${mosyThemeConfigs.btnFirstColor}, ${mosyThemeConfigs.btnSecondColor});
+     color: var(--dyn-primary-contrast);
+    box-shadow: 0 1px 2px rgba(22, 24, 31, 0.08), 0 10px 22px -10px rgba(6, 39, 66, 0.55);
+  }
+
 .btn-primary {
   background: linear-gradient(225deg, ${mosyThemeConfigs.btnFirstColor}, ${mosyThemeConfigs.btnSecondColor});
   /*box-shadow:  -10px 10px 90px #000000,
              10px -10px 50px #ffffff;*/
   border: 2px;
 }
-
+.etc-btn-primary,
+.etc-btn-primary.etc-btn {
+  background: linear-gradient(225deg, ${mosyThemeConfigs.btnFirstColor}, ${mosyThemeConfigs.btnSecondColor});
+  border-color: var(--etc-accent);
+  color: #ffffff;
+}
+.dyn-btn-primary,
+  .dyn-btn-dark {
+   background: linear-gradient(225deg, ${mosyThemeConfigs.btnFirstColor}, ${mosyThemeConfigs.btnSecondColor});
+    border-color: var(--dyn-primary);
+    color: var(--dyn-primary-contrast);
+  }
 .nav-pills .nav-link.active,
 .nav-pills .show>.nav-link {
   border-radius: 0px;

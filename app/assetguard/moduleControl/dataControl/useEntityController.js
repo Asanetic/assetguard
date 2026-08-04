@@ -25,11 +25,12 @@ export function useEntityController(schema, options = {}) {
   }, [schema.apiBase, JSON.stringify(options.fixedQuery)]);
 
   return {
-    ...state, // includes page, pageCount, pageSize, rows, loading, error, search, etc.
+    ...state, // includes page, pageCount, pageSize, rows, loading, error, search, advancedQuery, etc.
     schema,
     applyFilter: engine.applyFilter.bind(engine),
     setFilterValue: engine.setFilterValue.bind(engine),
     filter: engine.filter.bind(engine),
+    setAdvancedQuery: engine.setAdvancedQuery.bind(engine),
     setDateRange: engine.setDateRange.bind(engine),
     clearFilterValue: engine.clearFilterValue.bind(engine),
     clearAllAdvancedFilters: engine.clearAllAdvancedFilters.bind(engine),
