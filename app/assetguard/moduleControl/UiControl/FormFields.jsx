@@ -76,6 +76,7 @@ export function SelectInput({ field, value, setValue, readOnly }) {
 // defaultValue } (its own, older vocabulary). This function's only job is
 // translating one into the other — SmartDropdown owns all the actual
 // fetch/select/"Add new" logic now, GroupedSelectInput no longer does.
+ 
 export function GroupedSelectInput({ field, value, setValue, readOnly }) {
   return (
     <SmartDropdown
@@ -86,6 +87,7 @@ export function GroupedSelectInput({ field, value, setValue, readOnly }) {
       label={field.label}
       defaultValue={value ?? ''}
       onSelect={(val) => setValue(field.key, val)}
+      readOnly={readOnly}
     />
   );
 }
@@ -146,43 +148,49 @@ export function DateTimeInput({ field, value, setValue, readOnly }) {
 }
 
 
-  export function LiveSearchInput({ field, value, setValue, readOnly, row }) {
-    // Overrides row's (possibly stale) cached label the instant a fresh
-    // pick happens, so the display text doesn't wait on a refetch to catch
-    // up — that round-trip was the source of the flicker/blank.
-    const [justPickedLabel, setJustPickedLabel] = useState(null);
-    const currentLabel = justPickedLabel ?? row?.[field.labelKey];
+export function LiveSearchInput({ field, value, setValue, readOnly, row }) {
+  const [justPickedLabel, setJustPickedLabel] = useState(null);
+  const currentLabel = justPickedLabel ?? row?.[field.labelKey];
+
+  const defaultValue = useMemo(
+    () => (value != null ? { [field.valueField]: value, [field.displayField]: currentLabel ?? '' } : null),
+    [value, currentLabel, field.valueField, field.displayField]
+  );
+
+  // onFullSelect is a pure packaging function: (item) -> { key: value, ... }.
+  // It doesn't touch setValue itself — it just decides what this
+  // selection should mean for the rest of the form. Applying that to
+  // form state is this component's job, same as it already does for its
+  // own field via onSelect below.
+  const handleSelectFull = (item) => {
+    setJustPickedLabel(item[field.displayField] ?? null);
   
-    // Memoized so LiveSearchDropdown's internal useEffect (which re-syncs
-    // its query/selected state whenever defaultValue's *reference* changes)
-    // only fires on a real change, not on every unrelated parent re-render.
-    const defaultValue = useMemo(
-      () => (value != null ? { [field.valueField]: value, [field.displayField]: currentLabel ?? '' } : null),
-      [value, currentLabel, field.valueField, field.displayField]
-    );
-    console.log("currentLabel - LiveSearchInput ", currentLabel, field, row);
+    if (typeof field.onFullSelect === 'function') {
+      const patch = field.onFullSelect(item) || {};
+      Object.entries(patch).forEach(([key, val]) => setValue(key, val));
+    }
+  };
 
-
-    return (
-      <LiveSearchDropdown
-        apiEndpoint={field.endpoint}
-        tblName={field.searchTable || field.key}
-        parentTable={field.parentTable || field.key}
-        inputName={field.labelKey || field.displayField}
-        hiddenInputName={field.key}
-        label={field.label}
-        displayField={field.displayField}
-        valueField={field.valueField}
-        defaultValue={defaultValue}
-        defaultColSize={field.colSpan}
-        onSelect={(id) => setValue(field.key, id)}
-        onSelectFull={(item) => setJustPickedLabel(item[field.displayField] ?? null)}
-        customDisplay={field.customDisplay}
-        mosyFilterOptions={field.mosyFilterOptions}
-      />
-    );
-  }
-  LiveSearchInput.selfLabeled = true;
+  return (
+    <LiveSearchDropdown
+      apiEndpoint={field.endpoint}
+      tblName={field.searchTable || field.key}
+      parentTable={field.parentTable || field.key}
+      inputName={field.labelKey || field.displayField}
+      hiddenInputName={field.key}
+      label={field.label}
+      displayField={field.displayField}
+      valueField={field.valueField}
+      defaultValue={defaultValue}
+      defaultColSize={field.colSpan}
+      onSelect={(id) => setValue(field.key, id)}
+      onSelectFull={handleSelectFull}
+      customDisplay={field.customDisplay}
+      mosyFilterOptions={field.mosyFilterOptions}
+    />
+  );
+}
+LiveSearchInput.selfLabeled = true;
 
 export function RichTextInput({ field, value, setValue }) {
   return (

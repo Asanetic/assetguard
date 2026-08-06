@@ -182,7 +182,7 @@ export default function LoginForm({ onLogin, redirectTo = "/dashboard" }) {
             onChange={(e) => setRemember(e.target.checked)}
             style={{ accentColor: BLUE, width: 16, height: 16, margin: 0 }}
           />
-          Remember me
+          <span className="mx-2">Remember me</span>
         </label>
         <Link href="/forgot-password" className="fw-semibold text-decoration-none" style={{ color: BLUE, fontSize: 14 }}>
           Forgot password?
@@ -196,6 +196,7 @@ export default function LoginForm({ onLogin, redirectTo = "/dashboard" }) {
       <input type="hidden" id="login_method" name="login_method" value={method} />
       <div className="text-center mt-4" style={{ fontSize: 14, color: "#64748B" }}>
         New to AssetGuard?{" "}
+        <div className="col-md-12 py-1"></div>
         <Link href={`${hiveRoutes.auth}/registration`} className="fw-semibold text-decoration-none mr-2" style={{ color: "#334155" }}>
           Request access
         </Link>      

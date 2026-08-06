@@ -92,7 +92,7 @@ export default function AuthShell({
             )}
 
             {/* Mobile brand row — centered mark + wordmark + tagline, matches the app's mobile header */}
-            <div className="ag-shell-brand-mobile text-center">
+            <div className="ag-shell-brand-mobile text-center mt-4">
               <MarkIcon size={48} />
               <div className="fw-bold ag-shell-wordmark">
                 <span style={{ color: "#fff" }}>Asset</span>
@@ -133,7 +133,7 @@ export default function AuthShell({
                 className="d-flex align-items-center justify-content-center gap-2 mt-4"
                 style={{ fontSize: 12.5, color: "#94A3B8" }}
               >
-                <Lock size={14} /> Secured by Symphony Technologies Limited — AssetGuard v1.0
+                <Lock size={14}  /> <span className="mx-2">Secured by Symphony Technologies Limited </span>
               </div>
             </div>
           </div>
@@ -311,6 +311,6 @@ export default function AuthShell({
       `}</style>
     </div>
 
-    
+
   );
 }

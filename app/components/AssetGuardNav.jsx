@@ -19,6 +19,8 @@ import {
   Truck,
   Camera,
   Home,
+  Download,
+  ImportIcon,
 } from "lucide-react";
 import { Brand } from "./AssetGuard/Brand";
 import { hiveRoutes } from "../appConfigs/hiveRoutes";
@@ -61,6 +63,7 @@ export const menu = [
       { label: "All sites", href: `${mainroute}/sites/list` },
       { label: "Group sites", href: `${mainroute}/sites/#` },
       { label: "Add site", href: `${mainroute}/sites/profile` },
+      { label: "Import sites", href: `${mainroute}/sites/import` },
     ],
   },
   {
@@ -71,6 +74,7 @@ export const menu = [
     children: [
       { label: "All devices", href: `${mainroute}/devices/list` },
       { label: "Add device", href: `${mainroute}/devices/profile` },
+      { label: "Import devices", href: `${mainroute}/devices/import` },
     ],
   },
   {
@@ -132,6 +136,17 @@ export const menu = [
       { label: "Clusters", href: `${mainroute}/clusters/list` },
       { label: "System settings", href: `${mainroute}/#` },
       { label: "Audit logs", href: `${mainroute}/##` },
+    ],
+  },
+  {
+    key: "data_import",
+    label: "Import data",
+    icon: ImportIcon,
+    color: NAVY,
+    children: [
+      { label: "Companies", href: `${mainroute}/companies/import` },
+      { label: "Regions", href: `${mainroute}/regions/import` },
+      { label: "Clusters", href: `${mainroute}/clusters/import` },
     ],
   },
 ];

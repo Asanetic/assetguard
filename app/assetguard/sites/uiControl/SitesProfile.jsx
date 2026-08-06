@@ -1,10 +1,10 @@
 'use client';
 import { useSearchParams } from 'next/navigation';
-import DynamicForm from './DynamicForm';
+import DynamicForm from '../../moduleControl/UiControl/DynamicForm';
 import { SitesSchema } from '../schema';
-import { useEntityFormController } from '../dataControl/useEntityFormController';
+import { useEntityFormController } from '../../moduleControl/dataControl/useEntityFormController';
 import { mosyGetSchemaTitle } from '../../../MosyUtils/hiveUtils';
-// import TestGrid from './TestGrid';
+import SitesActions from '../logicControl/actionsRegistry';
 
 // SitesProfile — pure shell. It resolves the id, wires up the
 // controller, and hands DynamicForm the two strings that make this page
@@ -13,24 +13,21 @@ import { mosyGetSchemaTitle } from '../../../MosyUtils/hiveUtils';
 // profileActions toolbar) — this file has no markup of its own. Point
 // the same pattern at a different schema and both the fields AND the
 // header/button set change with zero edits here.
-export default function SitesProfile({ id: idProp, onDone }) {
+export default function SitesProfile({ id: idProp, onDone, hiddenActions=[] }) {
   const searchParams = useSearchParams();
   const id = idProp ?? searchParams.get(`${SitesSchema.entity}_dataNode`);
-  const form = useEntityFormController(SitesSchema, {
+  const form = useEntityFormController(SitesSchema, SitesActions, {
     id,
     onDone,
-    redirectOnDelete: '/assetguard/Sites',
+    redirectOnDelete: './list',
   });
-
-  // TestGrid (devices at this site) intentionally left out for now:
-  // <TestGrid schema={SitesSchema} fixedQuery={{ site_id: id }} title="Devices at this Site" />
 
   return (
     <DynamicForm
       controller={form}
       eyebrow={form.isEditing ? 'Sites Profile' : 'Sites Directory'}
       title={form.isEditing ? mosyGetSchemaTitle(SitesSchema, form.values, '') : 'New Sites'}
-
+      hiddenActions={hiddenActions}
     />
   );
 }

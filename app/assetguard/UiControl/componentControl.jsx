@@ -581,14 +581,15 @@ export function mosyToCamelCase(str) {
 }
 
 
-export function SmartDropdown({ 
-  apiEndpoint, 
-  idField, 
-  labelField, 
+export function SmartDropdown({
+  apiEndpoint,
+  idField,
+  labelField,
   inputName = 'smart_input',
   label = 'Select or type an option',
   onSelect,
-  defaultValue = ''
+  defaultValue = '',
+  readOnly = false,
 }) {
   const [options, setOptions] = useState([]);
   const [selectedValue, setSelectedValue] = useState('');
@@ -596,80 +597,100 @@ export function SmartDropdown({
   const [isCustom, setIsCustom] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const initialDefault = useRef(defaultValue); // 👈 Keeps default persistent
+  const groupByField = mosyToCamelCase(labelField);
 
-  const groupByField = mosyToCamelCase(labelField)
+  // Tracks the last value THIS component pushed out via onSelect. When a
+  // new defaultValue comes in that matches this, it's just our own state
+  // bouncing back down through the parent — not a real external change —
+  // so the seed effect below skips it instead of resetting mid-type.
+  const lastEmitted = useRef(defaultValue);
+  const seeded = useRef(false);
+
+  // Fetch options ONCE per endpoint. No longer depends on defaultValue,
+  // so typing/selecting never re-triggers a network call.
   useEffect(() => {
+    let cancelled = false;
     async function fetchData() {
+      setLoading(true);
       try {
-        // Fetch the  data with the given key
         const res = await mosyGetData({
           endpoint: apiEndpoint,
-          params: { 
-          groupBy : btoa(`${groupByField}`),
-          src : btoa(`${inputName}`)
+          params: {
+            groupBy: btoa(`${groupByField}`),
+            src: btoa(`${inputName}`),
           },
         });
-        
-        const data = res
-        if (data.status === 'success') {
-          const items = data.data || [];
-          setOptions(items);
-
-          // Determine if default value exists in options
-        const isInOptions = items.some(item => item[labelField] === defaultValue);          
-
-        if (defaultValue) {
-          setSelectedValue(defaultValue);
-          setCustomInput(defaultValue);
-          if (onSelect) onSelect(defaultValue);
-        }
-          
+        if (cancelled) return;
+        if (res.status === 'success') {
+          setOptions(res.data || []);
         } else {
-          console.error('API Error:', data.message);
+          console.error('API Error:', res.message);
         }
       } catch (err) {
-        console.error('Fetch failed:', err);
+        if (!cancelled) console.error('Fetch failed:', err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
-
     fetchData();
-  }, [apiEndpoint, defaultValue]);
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiEndpoint]);
+
+  // Seed/re-seed from an external defaultValue — first mount, or a real
+  // change (e.g. async record load resolving after this component
+  // already rendered). Skips it entirely if defaultValue === the value we
+  // ourselves last emitted, so the user's own typing/selecting never gets
+  // overwritten by its own echo.
+  useEffect(() => {
+    if (defaultValue === lastEmitted.current && seeded.current) return;
+    if (!defaultValue) { seeded.current = true; return; }
+
+    const isInOptions = options.some((item) => item[labelField] === defaultValue);
+    setSelectedValue(defaultValue);
+    setCustomInput(defaultValue);
+    setIsCustom(!isInOptions && options.length > 0 ? true : isCustom);
+    lastEmitted.current = defaultValue;
+    seeded.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultValue, options]);
 
   const handleSelectChange = (e) => {
     const val = e.target.value;
+    lastEmitted.current = val;
     setIsCustom(false);
     setSelectedValue(val);
     setCustomInput(val);
-    if (onSelect) onSelect(val);
+    onSelect?.(val);
   };
 
   const handleInputChange = (e) => {
     const val = e.target.value;
+    lastEmitted.current = val;
     setCustomInput(val);
-    if (onSelect) onSelect(val);
+    onSelect?.(val);
   };
 
-
- const toggleCustomInput = () => {
-    setIsCustom(prev => {
-      const goingToDropdown = prev === true;
-      if (goingToDropdown) {
-        // Re-apply initial default only if they didn't select anything yet
-        setSelectedValue(prevVal => prevVal || initialDefault.current);
-      }
-      return !prev;
-    });
+  const toggleCustomInput = () => {
+    setIsCustom((prev) => !prev);
   };
-  
-  
+
+  if (readOnly) {
+    return (
+      <>
+        <label className="text-left">{label}</label>
+        <div className="form-control dyn-input-static">
+          {customInput || selectedValue || '—'}
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <label className="cpointer text-left">
         {label}
-        <span className="pr-2">{' '}</span> | 
+        <span className="pr-2">{' '}</span> |
         {!isCustom ? (
           <span onClick={toggleCustomInput} className="text-primary ms-2 badge">
             <i className="ml-2 fa fa-plus"></i> Add new
@@ -680,7 +701,6 @@ export function SmartDropdown({
           </span>
         )}
       </label>
-
       {!isCustom ? (
         <select
           className="form-control"
@@ -688,33 +708,20 @@ export function SmartDropdown({
           value={selectedValue}
           onChange={handleSelectChange}
         >
-        <option value="">
-          {selectedValue ? selectedValue : `-- Select ${label}--`}
-        </option>
-
-        {options.map((item) => (
-
-        <option
-        key={
-            item[idField]
-            ||
-            item[labelField]
-        }
-        value={item[labelField]}
-        >
-
-            {item[labelField]}
-
-        </option>
-
-        ))}
-
+          <option value="">
+            {selectedValue ? selectedValue : `-- Select ${label}--`}
+          </option>
+          {options.map((item) => (
+            <option key={item[idField] || item[labelField]} value={item[labelField]}>
+              {item[labelField]}
+            </option>
+          ))}
         </select>
       ) : (
         <input
           type="text"
           className="form-control mb-2"
-          placeholder={`Type new  ${label}`}
+          placeholder={`Type new ${label}`}
           name={inputName}
           value={customInput}
           onChange={handleInputChange}
@@ -724,10 +731,28 @@ export function SmartDropdown({
   );
 }
 
+function shoutFieldMismatch({ parentTable, hiddenInputName, field, item }) {
+  const message =
+    `LiveSearchDropdown config error on "${parentTable}.${hiddenInputName}"\n\n` +
+    `Field "${field}" was not found on the result object returned by the API.\n\n` +
+    `Available keys: ${Object.keys(item || {}).join(', ') || '(none — item was empty)'}\n\n` +
+    `Check the schema's valueField/displayField for a typo (stray quote, ` +
+    `wrong column name) or confirm the endpoint actually returns that column.`;
+
+  console.log('[LiveSearchDropdown] FIELD MISMATCH', {
+    parentTable, hiddenInputName, field, item, availableKeys: Object.keys(item || {}),
+    message
+  });
+
+  if (typeof window !== 'undefined') {
+   // window.alert(message);
+  }
+}
+
 export function LiveSearchDropdown({
   apiEndpoint,
   tblName = 'q',
-  parentTable ="p",
+  parentTable = "p",
   inputName = 'live_search',
   hiddenInputName = 'selected_id',
   label = 'Search & select an option',
@@ -737,13 +762,13 @@ export function LiveSearchDropdown({
   valueField = 'id',
   defaultValue = null,
   onInputChange,
-  defaultColSize="col-md-4",
-  cellOverrides={},
-  inputOverrides={},
-  context={},
-  labelClassName="",
-  mosyFilterOptions={},
-  customDisplay = ""}) {
+  defaultColSize = "col-md-4",
+  cellOverrides = {},
+  inputOverrides = {},
+  context = {},
+  labelClassName = "",
+  mosyFilterOptions = {},
+  customDisplay = "" }) {
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -752,60 +777,57 @@ export function LiveSearchDropdown({
   const [hasSearched, setHasSearched] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const debounceRef = useRef(null);
+  const shoutedRef = useRef(new Set()); // avoid re-alerting on every render for the same broken config
 
   const formatCustomDisplay = (template, item) => {
     if (!template) return item[displayField] ?? '';
-  
-    return template.replace(/{{(.*?)}}/g, (_, key) => {
-      return item[key.trim()] ?? '';
-    });
+    return template.replace(/{{(.*?)}}/g, (_, key) => item[key.trim()] ?? '');
   };
 
-  console.log(`[LiveSearchDropdown] defaultValue ${JSON.stringify(defaultValue)} inputName ${inputName} displayField ${displayField} valueField ${valueField} ${tblName} parent ${parentTable}`);
-  // Set default value on mount
+  // Set default value on mount — same loud check applies here, since a
+  // bad valueField in a saved/seeded record is just as dangerous as a bad
+  // one on fresh selection.
   useEffect(() => {
-    if (defaultValue && defaultValue[valueField]) {
-      setSelected(defaultValue);
-      setQuery(defaultValue[displayField]);
+    if (!defaultValue) return;
+
+    const hasValue = Object.prototype.hasOwnProperty.call(defaultValue, valueField);
+    if (!hasValue) {
+      const shoutKey = `mount:${valueField}`;
+      if (!shoutedRef.current.has(shoutKey)) {
+        shoutedRef.current.add(shoutKey);
+        shoutFieldMismatch({ parentTable, hiddenInputName, field: valueField, item: defaultValue });
+      }
+      return; // don't seed a broken default — better empty than silently wrong
     }
-  }, [defaultValue, valueField, displayField]);
+
+    if (defaultValue[valueField]) {
+      setSelected(defaultValue);
+      setQuery(defaultValue[displayField] ?? '');
+    }
+  }, [defaultValue, valueField, displayField, parentTable, hiddenInputName]);
 
   // Perform live search
   useEffect(() => {
-    /*if (!query.trim() && !isFocused) {
-      setResults([]);
-      setHasSearched(false);
-      return;
-    }*/
-
     setLoading(true);
     setHasSearched(true);
 
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      const encodedQuery = btoa(query)
-        
-      const customParams = { [`q${tblName}`] : encodedQuery, ...mosyFilterOptions}
-        
-      const queryFilterStr = MosySecureFilterEngine(tblName, customParams)
+      const encodedQuery = btoa(query);
+      const customParams = { [`q${tblName}`]: encodedQuery, ...mosyFilterOptions };
+      const queryFilterStr = MosySecureFilterEngine(tblName, customParams);
 
-      console.log(`queryFilterStr ${JSON.stringify(queryFilterStr)}`, queryFilterStr , mosyFilterOptions)
       try {
-        
-        // Fetch the  data with the given key
         const res = await mosyGetData({
           endpoint: apiEndpoint,
-          params: { 
-          ...queryFilterStr,    
-          src : btoa(`${parentTable} - ${hiddenInputName}`)
-
+          params: {
+            ...queryFilterStr,
+            src: btoa(`${parentTable} - ${hiddenInputName}`),
           },
         });
-        
-        //console.log("LiveSearchDropdown res ", res)
-        const data =res // await res.json();
-        if (data.status === 'success') {
-          setResults(data.data || []);
+
+        if (res.status === 'success') {
+          setResults(res.data || []);
         } else {
           console.error('API error:', res);
         }
@@ -816,162 +838,138 @@ export function LiveSearchDropdown({
       }
     }, 400);
 
-    //console.log(`live search tbl ${tblName} isfocused ${isFocused} reslts ${results.length}  isloading ${loading} hasSearched ${hasSearched}`)
     return () => clearTimeout(debounceRef.current);
   }, [query, apiEndpoint, tblName]);
 
-
   const handleSelect = (item) => {
+    const hasValueField = Object.prototype.hasOwnProperty.call(item, valueField);
+    const hasDisplayField = Object.prototype.hasOwnProperty.call(item, displayField);
+
+    if (!hasValueField) {
+      shoutFieldMismatch({ parentTable, hiddenInputName, field: valueField, item });
+      return; // hard stop — do not call onSelect with undefined
+    }
+    if (!hasDisplayField) {
+      shoutFieldMismatch({ parentTable, hiddenInputName, field: displayField, item });
+      return;
+    }
+
     const displayValue = item[displayField] ?? '';
     setSelected(item);
     setQuery(displayValue);
-  
+
     if (onSelect) onSelect(item[valueField]);
     if (onSelectFull) onSelectFull(item);
-  
+
     if (onInputChange) {
-      // Hidden ID
-      onInputChange({
-        target: {
-          name: hiddenInputName,
-          value: item[valueField],
-        },
-      });
-  
-      // Display text (optional)
-      onInputChange({
-        target: {
-          name: inputName,
-          value: displayValue,
-        },
-      });
+      onInputChange({ target: { name: hiddenInputName, value: item[valueField] } });
+      onInputChange({ target: { name: inputName, value: displayValue } });
     }
   };
-  
-  
 
-  // Handle typing
   const handleInputChange = (e) => {
     setQuery(e.target.value);
     setSelected(null);
-    if (onInputChange) onInputChange(e); // Notify the outside world!
-
+    if (onInputChange) onInputChange(e);
   };
 
   const { activeIndex, handleKeyDown } = useDropdownNavigation(
     results,
     (item) => {
-      onSelectFull(item);
+      // Keyboard-select path was calling onSelectFull directly, bypassing
+      // handleSelect's validation entirely — that's a second silent hole
+      // for the exact same bug. Route it through handleSelect instead so
+      // Enter/arrow-select gets the same loud guard as a mouse click.
+      handleSelect(item);
     }
   );
 
-  // Focus/blur handlers to control dropdown visibility
   const handleFocus = () => setIsFocused(true);
   const handleBlur = () => setTimeout(() => setIsFocused(false), 150);
 
   const cellClass = mosyCellClass(parentTable, hiddenInputName, context, cellOverrides);
   const inputProps = mosyInputProps(parentTable, hiddenInputName, context, inputOverrides);
-
   const createNewCellClass = mosyCellClass(parentTable, `${hiddenInputName}_create_new`, context, cellOverrides);
 
   return (
-                      
-    <div className={`form-group ${defaultColSize} text-left  p-0 m-0 hive_data_cell ${cellClass}`}>
-    <div className="col-md-12 p-0 m-0 " id="">          
-    <div className="form-group position-relative p-0 m-0 ">
-      <label className={`${labelClassName} text-left`}>{label}</label>
-      <input
-        type="text"
-        className="form-control"
-        name={inputName}
-        id={inputName}
-        autoComplete="off"
-        value={query}
-        onChange={handleInputChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        placeholder={`Search ${label}...`}
-        onKeyDown={handleKeyDown} 
-        {...inputProps}
-      />
+    <div className={`form-group ${defaultColSize} text-left p-0 m-0 hive_data_cell ${cellClass}`}>
+      <div className="col-md-12 p-0 m-0" id="">
+        <div className="form-group position-relative p-0 m-0">
+          <label className={`${labelClassName} text-left`}>{label}</label>
+          <input
+            type="text"
+            className="form-control"
+            name={inputName}
+            id={inputName}
+            autoComplete="off"
+            value={query}
+            onChange={handleInputChange}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            placeholder={`Search ${label}...`}
+            onKeyDown={handleKeyDown}
+            {...inputProps}
+          />
 
-        {isFocused && (
-          <ul
-            className="list-group position-absolute w-100 bg-white shadow"
-            style={{ maxHeight: '220px', overflowY: 'auto', zIndex: 9 }}
-          >
-            {loading && (
-              <li className="list-group-item text-muted">
-                <i className="fa fa-spinner fa-spin me-2"></i> Searching...
-              </li>
-            )}
-
-            {!loading && results.length > 0 && results.map((item, idx) => (
-              <li
-                key={`${item[valueField]}=${magicRandomStr()}`}
-                className={`list-group-item list-group-item-action ${
-                  idx === activeIndex ? "active text-white" : ""
-                }`}
-                onClick={() => handleSelect(item)}
-                style={{ cursor: 'pointer' }}
-              >
-                {customDisplay 
-                  ? formatCustomDisplay(customDisplay, item)
-                  : item[displayField]
-                }
-              </li>
-            ))}
-
-            {!loading && results.length === 0 && hasSearched && (
-              <li className="list-group-item text-muted p-2">
-              <div className="d-flex justify-content-between align-items-center">
-                <span className="d-flex align-items-center badge">
-                  <i className="fa fa-info-circle mr-2"></i> No results found
-                </span>
-
-                <u
-                  onClick={() => setIsFocused(false)}
-                  style={{ cursor: 'pointer' }}
-                  className="text-danger badge pr-2"
-                >
-                  <i className="fa fa-times-circle me-1"></i> Close
-                </u>
-              </div>
-            </li>
-            )}
-
-            {/* Always show Add New when focused */}
-            <li
-              className={`list-group-item list-group-item-action text-primary ${createNewCellClass} hide_livesearch_add_new`}
-              style={{ cursor: 'pointer', fontWeight: 'bold' }}
-              onClick={() => {
-                setTimeout(() => setIsFocused(false), 50);
-                MosyExtendLiveSearch({
-                  table: tblName,
-                  label,
-                  query,
-                  context,
-                  hiddenInputName,
-                  parentTable
-                });
-                setIsFocused(false);
-              }}
+          {isFocused && (
+            <ul
+              className="list-group position-absolute w-100 bg-white shadow"
+              style={{ maxHeight: '220px', overflowY: 'auto', zIndex: 9 }}
             >
-              <i className="fa fa-plus me-2 text-success"></i>
-              <span className="badge">{'Add new'}</span>
-            </li>
-          </ul>
-        )}
+              {loading && (
+                <li className="list-group-item text-muted">
+                  <i className="fa fa-spinner fa-spin me-2"></i> Searching...
+                </li>
+              )}
 
+              {!loading && results.length > 0 && results.map((item, idx) => (
+                <li
+                  key={`${item[valueField]}=${magicRandomStr()}`}
+                  className={`list-group-item list-group-item-action ${idx === activeIndex ? "active text-white" : ""}`}
+                  onClick={() => handleSelect(item)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {customDisplay ? formatCustomDisplay(customDisplay, item) : item[displayField]}
+                </li>
+              ))}
 
-      {selected && (
-        <input type="hidden" name={hiddenInputName} value={selected[valueField]} onChange={onInputChange} />
-      )}
-    </div>
-    </div>
+              {!loading && results.length === 0 && hasSearched && (
+                <li className="list-group-item text-muted p-2">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <span className="d-flex align-items-center badge">
+                      <i className="fa fa-info-circle mr-2"></i> No results found
+                    </span>
+                    <u onClick={() => setIsFocused(false)} style={{ cursor: 'pointer' }} className="text-danger badge pr-2">
+                      <i className="fa fa-times-circle me-1"></i> Close
+                    </u>
+                  </div>
+                </li>
+              )}
+
+              <li
+                className={`list-group-item list-group-item-action text-primary ${createNewCellClass} hide_livesearch_add_new`}
+                style={{ cursor: 'pointer', fontWeight: 'bold' }}
+                onClick={() => {
+                  setTimeout(() => setIsFocused(false), 50);
+                  MosyExtendLiveSearch({ table: tblName, label, query, context, hiddenInputName, parentTable });
+                  setIsFocused(false);
+                }}
+              >
+                <i className="fa fa-plus me-2 text-success"></i>
+                <span className="badge">{'Add new'}</span>
+              </li>
+            </ul>
+          )}
+
+          {selected && (
+            <input type="hidden" name={hiddenInputName} value={selected[valueField]} onChange={onInputChange} />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
+
 
 
 export function MosySmartField({

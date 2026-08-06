@@ -1,15 +1,14 @@
 import { Suspense } from 'react';
-import DevicesList from '../uiControl/DevicesList';
 import { hiveRoutes } from '../../../appConfigs/hiveRoutes';
 import DevicesProfile from '../uiControl/DevicesProfile';
 
 
 export async function generateMetadata({ searchParams }) {
-  const mosyTitle = "Devices"//searchParams?.mosyTitle || "Tasks";
+  const mosyTitle = "Devices profile"//searchParams?.mosyTitle || "Tasks";
 
   return {
-    title: mosyTitle ? decodeURIComponent(mosyTitle) : `Devices`,
-    description: 'supercrm Tasks',
+    title: mosyTitle ? decodeURIComponent(mosyTitle) : `Devices Profile`,
+    description: 'Devices profile / item details',
     
     icons: {
       icon: `${hiveRoutes.hiveBaseRoute}/logo.png`

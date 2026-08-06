@@ -10,6 +10,9 @@ import {
   mosySqlInsert,
   mosySqlUpdate,
   mosySqlDelete,
+  mosyUploadFile,
+  mosyDeleteFile,
+  mosyQddata,
 } from '../../apiUtils/dataControl/dataUtils';
 
 import { mutateInputArray } from '../beMonitor';
@@ -71,13 +74,83 @@ async function readBody(request) {
   return request.json();
 }
 
+// Reads the CURRENT stored path for every type:'image' field on one
+// record, before anything overwrites or deletes it. Same schema-driven
+// idea as processImageUploads — mosyQddata('clients','primkey', id) in
+// the legacy Clients route only ever read .profile_photo, hardcoded;
+// this reads every image field, whatever a given schema has.
+async function getImageFieldPaths(id) {
+  if (!id) return {};
+  const row = await mosyQddata(schema.entity, primkeyCol, id);
+  const paths = {};
+  schema.fields.filter((f) => f.type === 'image').forEach((f) => { paths[f.key] = row?.[f.key] || ''; });
+  return paths;
+}
+
+// schema-driven version of what the legacy Clients route did by hand for
+// exactly one hardcoded column (profile_photo). Runs for EVERY field
+// flagged type: 'image' — add another image field to schema.fields and
+// this covers it with zero route.js edits, same as everything else here.
+//
+// One real improvement over the legacy version: that route inserted the
+// record FIRST (with whatever garbage a raw File object turns into once
+// it hits the query), then ran a SEPARATE update afterward just to fix
+// the photo column, because it didn't have the record's id until after
+// the insert. This route already generates `newId` before either
+// insert/update runs, so the upload happens first and `body[f.key]` gets
+// swapped for the real stored path BEFORE mosySqlInsert/mosySqlUpdate
+// ever reads it — one write, not two.
+//
+// `existingPaths` (from getImageFieldPaths, PUT only — undefined on
+// create, where there's nothing to replace yet) lets this report back
+// exactly which fields got a genuine new upload AND had an old file to
+// clean up — never every image field, only the ones actually swapped
+// this request. The caller decides when it's safe to actually delete
+// those (i.e. only after the DB write itself succeeds).
+async function processImageUploads(body, entity, existingPaths = {}) {
+  const imageFields = schema.fields.filter((f) => f.type === 'image');
+  const replaced = [];
+
+  for (const f of imageFields) {
+    const incoming = body[f.key];
+    if (!incoming || typeof incoming !== 'object') continue; // plain string (existing path, or blank) — nothing to upload
+
+    if (typeof incoming.size === 'number' && incoming.size > 0) {
+      const filePath = await mosyUploadFile(incoming, `media/${entity}`);
+      body[f.key] = filePath; // swap the File for its stored path so the insert/update binds the real value
+      if (existingPaths[f.key]) replaced.push({ key: f.key, oldPath: existingPaths[f.key] });
+    } else {
+      // A File object with no actual bytes (nothing chosen, or a 0-byte
+      // pick) — treat as blank rather than let a raw File object reach
+      // the query.
+      body[f.key] = '';
+    }
+  }
+
+  return replaced;
+}
+
+// Best-effort — a file that's already gone (manually removed, storage
+// hiccup, whatever) shouldn't fail the request that's trying to clean up
+// after itself. Logged, not thrown.
+async function deleteFiles(paths) {
+  for (const path of paths) {
+    if (!path) continue;
+    try {
+      await mosyDeleteFile(path);
+    } catch (err) {
+      console.error(`Failed to delete attached media at "${path}":`, err);
+    }
+  }
+}
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
 
     const { valid, reason, data: authData } = processAuthToken(request);
     if (!valid) {
-      //return Response.json({ status: 'unauthorized', message: reason }, { status: 403 });
+      return Response.json({ status: 'unauthorized', message: reason }, { status: 403 });
     }
 
     const canSelect = validateRoleAccess({
@@ -128,9 +201,11 @@ export async function POST(request) {
       return Response.json({ status: 'error', message: canPost.message, data: [] });
     }
 
+    await processImageUploads(body, schema.entity);
+
     const newId = magicRandomStr(7);
     const inputsArr = buildInputsArr();
-    const mutatedDataArray = mutateInputArray(schema.entity, inputsArr, request, newId, authData);
+    const mutatedDataArray = mutateInputArray(schema.entity, inputsArr, body, newId, authData);
     mutatedDataArray[recordIdCol] = newId;
 
     const result = await mosySqlInsert(schema.entity, mutatedDataArray, body);
@@ -166,12 +241,26 @@ export async function PUT(request) {
       return Response.json({ status: 'error', message: canUpdate.message, data: [] });
     }
 
+    // dataNodeValue has to come first — both getImageFieldPaths (needs
+    // the record's id to know what to look up) and processImageUploads
+    // (needs to know which old paths are actually being replaced) depend
+    // on it, and processImageUploads overwrites body[f.key] with the NEW
+    // path, so this is the only chance to read the OLD one.
     const dataNodeValue = base64Decode(body[`${schema.entity}_dataNode`]);
+    const existingImagePaths = await getImageFieldPaths(dataNodeValue);
+    const replacedImages = await processImageUploads(body, schema.entity, existingImagePaths);
+
     const newId = magicRandomStr(7);
     const inputsArr = buildInputsArr();
-    const mutatedDataArray = mutateInputArray(schema.entity, inputsArr, request, newId, authData);
+    const mutatedDataArray = mutateInputArray(schema.entity, inputsArr, body, newId, authData);
 
     const result = await mosySqlUpdate(schema.entity, mutatedDataArray, body, `${primkeyCol}='${dataNodeValue}'`);
+
+    // Only clean up the old file once the update actually persisted the
+    // new one — never delete on a failed write.
+    if (result && replacedImages.length) {
+      await deleteFiles(replacedImages.map((r) => r.oldPath));
+    }
 
     return Response.json({
       status: 'success',
@@ -206,7 +295,16 @@ export async function DELETE(request) {
     }
 
     const dataNodeValue = base64Decode(tokenId);
+
+    // Has to happen BEFORE the row is gone — once mosySqlDelete runs,
+    // there's no record left to read a stored media path from.
+    const existingImagePaths = await getImageFieldPaths(dataNodeValue);
+
     const result = await mosySqlDelete(schema.entity, `where ${primkeyCol}='${dataNodeValue}'`);
+
+    if (result) {
+      await deleteFiles(Object.values(existingImagePaths));
+    }
 
     console.log("delete result", result, `${dataNodeValue} token ${tokenId}` , schema.entity, primkeyCol);
 

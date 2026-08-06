@@ -6,14 +6,28 @@
  *
  * Run from the PROJECT ROOT (e.g. C:\xampp\htdocs\nextv2\mainapps\superpos>) — no need to cd in.
  *
- *   node clone-module.js Template Clients --app=superpos --source=_mosy_template
- *   -> clones  app/superpos/_mosy_template        -> app/superpos/clients
- *              app/api/superpos/_mosy_template     -> app/api/superpos/clients
+ * FromEntity is the placeholder token that's actually baked into the
+ * template files (e.g. "Smarttemplatev1"), not a literal word — whatever
+ * case-variant of it appears in the template gets swapped for ToEntity.
+ *
+ * --app defaults to the app this script physically lives in (same trick
+ * db-cli.js uses: path.basename(__dirname)), so it can usually be omitted.
+ * --source defaults to "_mosy_module_v1", so it can usually be omitted too:
+ *
+ *   node clone-module.js Smarttemplatev1 Deals
+ *   -> clones  app/superpos/_mosy_module_v1        -> app/superpos/deals
+ *              app/api/superpos/_mosy_module_v1     -> app/api/superpos/deals
+ *
+ * Override either default explicitly:
+ *
+ *   node clone-module.js Smarttemplatev1 Deals --app=supererpv2 --source=_mosy_module_v1
+ *   -> clones  app/supererpv2/_mosy_module_v1        -> app/supererpv2/deals
+ *              app/api/supererpv2/_mosy_module_v1     -> app/api/supererpv2/deals
  *
  * If your project has no app-namespace folder (module lives directly under app/),
- * omit --app:
- *   node clone-module.js Template Clients
- *   -> clones  app/_mosy_module_template -> app/clients  (and api/ counterpart)
+ * pass --app=- to opt out of the default:
+ *   node clone-module.js Smarttemplatev1 Deals --app=-
+ *   -> clones  app/_mosy_module_v1 -> app/deals  (and api/ counterpart)
  *
  * NESTED BUNDLES: --nest=<parentFolder> groups the module under an extra
  * parent folder (e.g. a "sales" bucket holding several sub-modules), and
@@ -23,7 +37,7 @@
  * with --list-suffix= / --profile-suffix=). dataControl/uiControl/
  * logicControl stay put inside the normal module folder either way.
  *
- *   node clone-module.js Template DailySales --app=superpos --nest=sales --split-list-profile
+ *   node clone-module.js Smarttemplatev1 DailySales --app=superpos --nest=sales --split-list-profile
  *   -> clones  app/superpos/sales/dailysales/          (dataControl, uiControl, logicControl)
  *              app/superpos/sales/dailysaleslist/       (was list/)
  *              app/superpos/sales/dailysalesprofile/    (was profile/)
@@ -41,8 +55,19 @@ const path = require('path');
 
 const args = process.argv.slice(2);
 const [FromEntity, ToEntity] = args.filter((a) => !a.startsWith('--'));
+
+// Same trick db-cli.js uses: the folder this script physically lives in
+// tells us which app we're in, so --app can be omitted when running against
+// "this" app. Pass --app=- explicitly if the project has no app-namespace
+// folder at all (module lives directly under app/).
+const defaultAppNamespace = path.basename(__dirname);
+const appArgRaw = args.find((a) => a.startsWith('--app='))?.split('=')[1];
+const appArg = appArgRaw === '-' ? '' : (appArgRaw || defaultAppNamespace);
+
+// Default source folder is the shared golden template. Override with
+// --source= to clone from something else (e.g. an existing sibling module).
+const DEFAULT_SOURCE_FOLDER = '_mosy_module_v1';
 const sourceArg = args.find((a) => a.startsWith('--source='))?.split('=')[1];
-const appArg = args.find((a) => a.startsWith('--app='))?.split('=')[1];
 const nestArg = args.find((a) => a.startsWith('--nest='))?.split('=')[1];
 const splitListProfile = args.includes('--split-list-profile');
 const listSuffix = args.find((a) => a.startsWith('--list-suffix='))?.split('=')[1] || 'list';
@@ -50,7 +75,11 @@ const profileSuffix = args.find((a) => a.startsWith('--profile-suffix='))?.split
 
 if (!FromEntity || !ToEntity) {
   console.error('❌ Usage: node clone-module.js <FromEntity> <ToEntity> [--app=namespace] [--source=folderName]');
-  console.error('   Example: node clone-module.js Template Clients --app=superpos --source=_mosy_template');
+  console.error(`   FromEntity is the placeholder token baked into the template files (e.g. "Smarttemplatev1").`);
+  console.error(`   --app defaults to "${path.basename(__dirname)}" (this script's folder); pass --app=- for none.`);
+  console.error(`   --source defaults to "_mosy_module_v1".`);
+  console.error('   Example: node clone-module.js Smarttemplatev1 Deals');
+  console.error('   Example: node clone-module.js Smarttemplatev1 Deals --app=supererpv2 --source=_mosy_module_v1');
   process.exit(1);
 }
 
@@ -64,7 +93,7 @@ const toLower = ToEntity.toLowerCase();
 const fromUpper = FromEntity.toUpperCase();
 const toUpper = ToEntity.toUpperCase();
 
-const sourceFolderName = sourceArg || (FromEntity === 'Template' ? '_mosy_module_template' : fromLower);
+const sourceFolderName = sourceArg || DEFAULT_SOURCE_FOLDER;
 
 // Run from project root always. --app inserts the namespace folder
 // (e.g. "superpos") between app/ and the module, matching your real layout.
@@ -188,7 +217,9 @@ function cloneDir(src, dest, destRoot, isRoot = false, splitOpts = null) {
 console.log(`📁 Cloning module "${fromLower}" -> "${toLower}"`);
 console.log(`   ${FromEntity} -> ${ToEntity}`);
 console.log(`   ${fromLower} -> ${toLower}`);
-console.log(`   ${fromUpper} -> ${toUpper}\n`);
+console.log(`   ${fromUpper} -> ${toUpper}`);
+console.log(`   app    = ${appArg || '(none)'}${appArgRaw ? '' : ' (defaulted)'}`);
+console.log(`   source = ${sourceFolderName}${sourceArg ? '' : ' (defaulted)'}\n`);
 
 const splitOpts = splitListProfile ? { listSuffix, profileSuffix } : null;
 

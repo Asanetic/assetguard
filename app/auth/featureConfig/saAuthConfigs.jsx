@@ -7,7 +7,7 @@ import mosyThemeConfigs from '../../appConfigs/mosyTheme';
 const commonRoot = "/"; // Adjust to your base path or env var if needed
 
 const saAuthConfigs = {
-  sessionPrefix: "assetguard", // Unique prefix for session keys
+  sessionPrefix: "asetguardv1", // Unique prefix for session keys
   oauthTable: "system_users",
   primkey: "primkey",
 

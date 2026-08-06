@@ -7,8 +7,8 @@ const commonRoot = ""; // Update this path if needed
 
 const mosyThemeConfigs = {
   // App Identity
-  mosyAppName: "Super ERP",
-  mosySystemName: "supercrmv7",
+  mosyAppName: "Asset Guard",
+  mosySystemName: "asetguardv1",
   mosyAppLogo: logo.src,
   mosyAppLogoStyle: {
     width: "auto",
