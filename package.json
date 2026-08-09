@@ -1,0 +1,24 @@
+{
+  "name": "atc-app-admin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "db:seed": "node db/seed.js",
+    "ingest": "node ingest/server.js"
+  },
+  "dependencies": {
+    "@tabler/icons-webfont": "^3.46.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.3",
+    "next": "^14.2.0",
+    "nodemailer": "^6.9.14",
+    "pg": "^8.23.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "xlsx": "^0.18.5"
+  }
+}
