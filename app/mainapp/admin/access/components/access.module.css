@@ -1,0 +1,116 @@
+/* app/mainapp/admin/access/components/access.module.css */
+.page { color: #0f274a; }
+.head { display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 6; background: #fff; padding-bottom: 10px; }
+.headIcon { color: #2e6cf5; font-size: 24px; }
+.title { font-size: 24px; font-weight: 800; color: #0f274a; }
+.sub { font-size: 13px; color: #64748b; margin: 2px 0 16px 34px; }
+
+/* tabs */
+.tabs { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab {
+  display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 10px; padding: 10px 16px; font-size: 13.5px; font-weight: 700; color: #334155;
+  cursor: pointer; font-family: inherit;
+}
+.tab i { font-size: 16px; }
+.tabActive { background: #2e6cf5; color: #fff; border-color: #2e6cf5; }
+
+/* card */
+.card { background: #fff; border: 1px solid #eef2f7; border-radius: 14px; padding: 18px; }
+.cardHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.cardHeadLeft { display: flex; align-items: flex-start; gap: 11px; }
+.cardHeadIcon { color: #2e6cf5; font-size: 22px; margin-top: 2px; }
+.cardTitle { font-size: 17px; font-weight: 800; color: #0f274a; }
+.cardSub { font-size: 12.5px; color: #64748b; margin-top: 2px; }
+.addBtn {
+  display: inline-flex; align-items: center; gap: 8px; background: #2e6cf5; color: #fff; border: 0;
+  border-radius: 10px; padding: 10px 16px; font-size: 13.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.addBtn:hover { background: #1e56db; }
+
+/* table */
+.tableWrap { border: 1px solid #eef2f7; border-radius: 10px; overflow: auto; }
+.table { width: 100%; border-collapse: collapse; min-width: 760px; }
+.table thead th {
+  background: #14315d; color: #fff; text-align: left; font-size: 12px; font-weight: 700;
+  padding: 12px 14px; white-space: nowrap;
+}
+.table tbody td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; font-size: 13.5px; color: #0f274a; vertical-align: middle; }
+.roleCell { display: flex; align-items: center; gap: 9px; font-weight: 700; }
+.roleIcon { width: 24px; height: 24px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.muted { color: #64748b; }
+.grpRow td { background: #f8fafc; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #94a3b8; padding: 8px 14px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 3px 10px; font-size: 11.5px; font-weight: 700; }
+.pillOn { background: #d1fae5; color: #065f46; }
+.pillOff { background: #f1f5f9; color: #64748b; }
+
+.actions { display: flex; gap: 8px; }
+.linkBtn { background: none; border: 0; color: #2e6cf5; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; padding: 6px 4px; }
+.editBtn { background: #fff; border: 1px solid #e2e8f0; color: #334155; border-radius: 8px; padding: 6px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.delBtn { background: #fff; border: 1px solid #fecaca; color: #dc2626; border-radius: 8px; padding: 6px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.toggle { background: none; border: 0; cursor: pointer; font-family: inherit; }
+
+.empty { padding: 40px; text-align: center; color: #94a3b8; }
+
+/* modal */
+.scrim { position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal { width: 100%; max-width: 460px; background: #fff; border-radius: 16px; padding: 22px; box-shadow: 0 20px 60px rgba(15,39,74,.28); max-height: 92vh; overflow-y: auto; }
+.modalWide { max-width: 820px; }
+.modalTitle { font-size: 18px; font-weight: 800; color: #0f274a; margin-bottom: 4px; }
+.modalSub { font-size: 13px; color: #64748b; margin-bottom: 16px; }
+.field { margin-bottom: 12px; }
+.label { display: block; font-size: 12.5px; font-weight: 600; color: #334155; margin-bottom: 6px; }
+.input { width: 100%; box-sizing: border-box; height: 42px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; color: #0f274a; background: #fff; }
+select.input { cursor: pointer; }
+.err { color: #dc2626; font-size: 12.5px; font-weight: 600; margin-bottom: 10px; }
+.modalActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.btnGhost { background: #fff; border: 1px solid #e2e8f0; color: #475569; border-radius: 10px; padding: 10px 16px; font-weight: 700; font-size: 13.5px; cursor: pointer; font-family: inherit; }
+.btnPrimary { background: #2e6cf5; border: 0; color: #fff; border-radius: 10px; padding: 10px 16px; font-weight: 700; font-size: 13.5px; cursor: pointer; font-family: inherit; }
+
+/* permissions matrix (per role modal + matrix tab) */
+.matrixWrap { border: 1px solid #eef2f7; border-radius: 10px; overflow: auto; max-height: 60vh; }
+.matrix { border-collapse: collapse; width: 100%; min-width: 720px; }
+.matrix thead th { position: sticky; top: 0; background: #14315d; color: #fff; font-size: 11px; font-weight: 700; padding: 9px 8px; text-align: center; white-space: nowrap; z-index: 1; }
+.matrix thead th.first { text-align: left; left: 0; z-index: 2; }
+.matrix td { border-bottom: 1px solid #f1f5f9; padding: 7px 8px; font-size: 12.5px; text-align: center; }
+.matrix td.first { text-align: left; color: #0f274a; font-weight: 600; white-space: nowrap; position: sticky; left: 0; background: #fff; }
+.matrix tr.grp td { background: #f8fafc; font-size: 10.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #94a3b8; text-align: left; }
+.matrix input { width: 15px; height: 15px; accent-color: #2e6cf5; cursor: pointer; }
+.matrixTools { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.roleSelect { height: 40px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0 12px; font-size: 14px; font-family: inherit; font-weight: 600; color: #0f274a; background: #fff; cursor: pointer; }
+.grantCount { font-size: 12.5px; color: #64748b; font-weight: 600; }
+.toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: #0f274a; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; z-index: 60; }
+
+/* ---- type badges ---- */
+.typeBadge { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; vertical-align: middle; }
+.typePage { background: #dbe7fe; color: #1e56db; }
+.typeButton { background: #fef3c7; color: #b45309; }
+.typeData { background: #e0f2fe; color: #0369a1; }
+
+/* ---- status pill (modules) ---- */
+.statusPill { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 12px; font-size: 11px; font-weight: 800; cursor: pointer; border: 0; font-family: inherit; }
+.statusOn { background: #d1fae5; color: #065f46; }
+.statusOff { background: #f1f5f9; color: #94a3b8; }
+.keyCell { font-family: ui-monospace, monospace; font-size: 12px; color: #64748b; }
+
+/* ---- permission matrix ---- */
+.permTools { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+.permLabel { font-size: 12.5px; font-weight: 700; color: #334155; }
+.grantedText { font-size: 13px; color: #64748b; font-weight: 600; }
+.permTable { width: 100%; border-collapse: collapse; min-width: 980px; }
+.permTable thead th { background: #14315d; color: #fff; font-size: 12px; font-weight: 700; padding: 12px 10px; white-space: nowrap; }
+.permTable thead th.left { text-align: left; }
+.permTable thead th.ctr { text-align: center; }
+.permTable td { border-bottom: 1px solid #f1f5f9; padding: 9px 10px; }
+.permTable td.ctr { text-align: center; }
+.permModule { font-weight: 700; color: #0f274a; }
+.grpHeadRow td { background: #eef2f8; padding: 9px 14px; }
+.grpHeadInner { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.grpHeadLeft { font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; }
+.grpCount { color: #94a3b8; font-weight: 700; margin-left: 8px; text-transform: none; letter-spacing: 0; }
+.grpBtns { display: flex; gap: 8px; }
+.grantAll { background: #d1fae5; color: #065f46; border: 0; border-radius: 8px; padding: 5px 11px; font-size: 11.5px; font-weight: 800; cursor: pointer; font-family: inherit; }
+.revokeAll { background: #fee2e2; color: #b91c1c; border: 0; border-radius: 8px; padding: 5px 11px; font-size: 11.5px; font-weight: 800; cursor: pointer; font-family: inherit; }
+.onPill { min-width: 40px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; cursor: pointer; border: 0; font-family: inherit; background: #d1fae5; color: #065f46; }
+.offPill { min-width: 40px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; cursor: pointer; border: 0; font-family: inherit; background: #f1f5f9; color: #94a3b8; }
+.toggleRowBtn { background: #fff; border: 1px solid #e2e8f0; color: #334155; border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }

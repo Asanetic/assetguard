@@ -1,0 +1,409 @@
+/* app/mainapp/shell/shell.module.css
+   Exact AssetGuard app shell: navy rail + red alarm bar + floating speaker +
+   slide-out drawer menu. Full-window. */
+
+.shell {
+  height: 100vh;         /* fixed viewport frame — the page itself never scrolls */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #f1f5f9;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+/* ---------------- Alarm bar (top, full width) ---------------- */
+.alarmBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #b91c1c;
+  color: #fff;
+  padding: 9px 18px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.alarmBar .barIcon {
+  font-size: 16px;
+  flex: none;
+}
+.alarmBar .barTxt {
+  flex: 1;
+}
+.alarmBarBtn {
+  background: #fff;
+  color: #dc2626;
+  border: 0;
+  border-radius: 7px;
+  padding: 6px 13px;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  flex: none;
+}
+
+/* ---------------- Body: rail + content ---------------- */
+.body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* ---- Rail (collapsed sidebar) — fixed, never scrolls with content ---- */
+.rail {
+  width: 64px;
+  background: #14315d;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  gap: 4px;
+  flex: none;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.burger {
+  background: transparent;
+  color: #c9d6ea;
+  border: 0;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.railBtn {
+  position: relative;
+  width: 52px;
+  height: 51px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  border: 0;
+  border-radius: 11px;
+  padding: 9px 0;
+  font-size: 9.5px;
+  font-weight: 600;
+  font-family: inherit;
+  background: transparent;
+  color: #c9d6ea;
+  cursor: pointer;
+}
+.railBtnActive {
+  background: #2e6cf5;
+  color: #fff;
+}
+.railBadge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 0 4px;
+}
+
+/* pushes the bottom cluster (profile + logout) to the base of the rail */
+.railSpacer {
+  flex: 1 1 auto;
+}
+.railAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #2e6cf5;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+.railBottomBtn {
+  width: 52px;
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: #c9d6ea;
+  font-size: 9.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.railBottomBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ---- Content ---- */
+.content {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  background: #ffffff;
+  padding: 22px 28px 40px;
+  box-sizing: border-box;
+}
+
+/* ---------------- Floating speaker ---------------- */
+.speaker {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff;
+  border: 0;
+  box-shadow: rgba(15, 23, 42, 0.2) 0 3px 12px;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 30;
+}
+.speakerLive::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(220, 38, 38, 0.5);
+  animation: spkPulse 1.8s ease-out infinite;
+}
+@keyframes spkPulse {
+  0% { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+/* ---------------- Drawer ---------------- */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 40;
+}
+.drawer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 300px;
+  background: #fff;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(15, 39, 74, 0.25);
+  overflow-y: auto;
+}
+.drawerUser {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #eef2f7;
+}
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #14315d;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.drawerUserName {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0f274a;
+}
+.drawerUserSub {
+  font-size: 12px;
+  color: #64748b;
+}
+.drawerBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #14315d;
+  color: #fff;
+  padding: 16px 18px;
+}
+.drawerBrandName {
+  font-size: 18px;
+  font-weight: 700;
+}
+.drawerBrandNameB {
+  color: #7eb2ff;
+}
+.menu {
+  padding: 8px 10px;
+  flex: 1;
+}
+.menuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 0;
+  background: transparent;
+  border-radius: 10px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #334155;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.menuItem:hover {
+  background: #f1f5f9;
+}
+.menuItemActive {
+  background: #eaf1ff;
+  color: #2e6cf5;
+}
+.menuIcon {
+  font-size: 19px;
+  width: 22px;
+  text-align: center;
+  flex: none;
+}
+.menuLabel {
+  flex: 1;
+}
+.chev {
+  font-size: 16px;
+  color: #94a3b8;
+  transition: transform 0.15s ease;
+}
+.chevOpen {
+  transform: rotate(180deg);
+}
+.submenu {
+  padding: 2px 0 6px 0;
+}
+.subItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px 9px 46px;
+  border: 0;
+  background: transparent;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #475569;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.subItem:hover {
+  background: #f1f5f9;
+}
+.subItemActive {
+  background: #eaf1ff;
+  color: #2e6cf5;
+}
+.logout {
+  color: #dc2626;
+}
+.logout:hover {
+  background: #fef2f2;
+}
+
+/* ---------------- Logout confirmation ---------------- */
+.confirmScrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.confirmCard {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(15, 39, 74, 0.28);
+  text-align: center;
+}
+.confirmIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: #dc2626;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.confirmTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f274a;
+}
+.confirmText {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 6px 0 18px;
+  line-height: 1.5;
+}
+.confirmActions {
+  display: flex;
+  gap: 10px;
+}
+.confirmCancel {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  border-radius: 10px;
+  padding: 11px 0;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.confirmLogout {
+  flex: 1;
+  background: #dc2626;
+  border: 0;
+  color: #fff;
+  border-radius: 10px;
+  padding: 11px 0;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.confirmLogout:hover {
+  background: #b91c1c;
+}
+.confirmLogout:disabled {
+  opacity: 0.7;
+  cursor: default;
+}

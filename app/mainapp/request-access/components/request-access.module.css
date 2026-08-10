@@ -1,0 +1,73 @@
+/* app/mainapp/request-access/components/request-access.module.css
+   Request access — exact prototype look, full window. */
+
+.screen {
+  min-height: 100vh; width: 100%; display: flex; background: #fff;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+.grid {
+  display: grid; grid-template-columns: minmax(380px, 0.44fr) minmax(460px, 0.56fr);
+  width: 100%; min-height: 100vh; background: #fff;
+}
+
+/* brand panel (shared look) */
+.brand {
+  background: #14315d; padding: 48px 40px; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; color: #fff;
+}
+.brandInner { position: relative; z-index: 1; }
+.brandLogoRow { display: flex; align-items: center; gap: 11px; }
+.brandName { font-size: 21px; font-weight: 700; letter-spacing: -0.3px; }
+.brandNameA { color: #fff; }
+.brandNameB { color: #7eb2ff; }
+.brandHeadline { font-size: 34px; font-weight: 700; line-height: 1.28; margin-top: 60px; color: #fff; }
+.brandSub { font-size: 15.5px; line-height: 1.7; color: #b9c7de; margin-top: 16px; max-width: 330px; }
+.brandPills { margin-top: 28px; display: flex; gap: 7px; flex-wrap: wrap; }
+.pill { border: 1px solid rgba(255,255,255,.22); padding: 6px 9px; border-radius: 999px; font-size: 11.5px; color: #d6e1f2; white-space: nowrap; }
+.orb { position: absolute; right: -80px; bottom: -80px; width: 380px; height: 380px; z-index: 0; }
+.orb span { position: absolute; border: 1px solid rgba(255,255,255,.09); border-radius: 50%; }
+.ping { position: absolute; left: 50%; top: 50%; width: 11px; height: 11px; margin: -5px 0 0 -5px; border-radius: 50%; background: #7eb2ff; font-style: normal; }
+.ping::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid rgba(126,178,255,.55); animation: ping 2.2s ease-out infinite; }
+@keyframes ping { 0% { transform: scale(.5); opacity: 1; } 100% { transform: scale(3.4); opacity: 0; } }
+
+/* form panel */
+.formPanel { padding: 48px 56px; display: flex; align-items: center; justify-content: center; background: #fff; box-sizing: border-box; }
+.formInner { max-width: 420px; width: 100%; }
+.title { font-size: 28px; font-weight: 700; color: #0f274a; }
+.sub { font-size: 14.5px; color: #64748b; margin: 8px 0 22px; }
+.field { margin-bottom: 16px; }
+.field18 { margin-bottom: 18px; }
+.lab { display: block; font-size: 13.5px; font-weight: 600; color: #334155; margin-bottom: 7px; }
+.req { color: #dc2626; }
+.in {
+  width: 100%; box-sizing: border-box; height: 46px; padding: 0 14px; border: 1px solid #e2e8f0;
+  border-radius: 10px; font-size: 15px; background: #fff; color: #0f274a; font-family: inherit;
+}
+.in:focus { border-color: #2e6cf5; box-shadow: 0 0 0 3px rgba(46,108,245,.14); outline: none; }
+select.in { cursor: pointer; }
+.textarea { height: 84px; padding: 11px 14px; resize: none; line-height: 1.5; }
+.phoneRow { display: flex; gap: 9px; }
+.phonePrefix {
+  display: flex; align-items: center; gap: 5px; padding: 0 13px; border: 1px solid #e2e8f0; border-radius: 10px;
+  background: #f8fafc; font-size: 14.5px; font-weight: 600; color: #334155; white-space: nowrap;
+}
+.msg { color: #dc2626; font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.submit { width: 100%; height: 48px; background: #2e6cf5; color: #fff; border: 0; border-radius: 10px; font-size: 15.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.submit:hover { background: #1e56db; }
+.submitOk { background: #059669; }
+.submit:disabled { cursor: default; }
+
+.divider { margin-top: 22px; padding-top: 18px; border-top: 1px solid #eef2f7; }
+.dividerTitle { font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 10px; }
+.adminRow { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.chip { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; flex: none; }
+.adminText { font-size: 14px; color: #334155; }
+.loginRow { margin-top: 18px; font-size: 14px; color: #64748b; text-align: center; }
+.loginLink { color: #2e6cf5; font-weight: 600; cursor: pointer; background: none; border: 0; font-family: inherit; font-size: 14px; }
+.secured { margin-top: 20px; font-size: 12.5px; color: #94a3b8; text-align: center; display: flex; gap: 6px; justify-content: center; align-items: center; }
+
+@media (max-width: 880px) {
+  .grid { grid-template-columns: 1fr; }
+  .brand { display: none; }
+  .formPanel { padding: 32px 20px; }
+}

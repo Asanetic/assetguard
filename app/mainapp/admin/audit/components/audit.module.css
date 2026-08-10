@@ -1,0 +1,71 @@
+/* app/mainapp/admin/audit/components/audit.module.css
+   Audit logs — ported from the prototype's auditLogsWeb. A complete, timestamped
+   trail of system activity. Self-contained. */
+
+.page { color: #0f274a; }
+
+/* pinned header */
+.head {
+  display: flex; align-items: flex-start; gap: 14px; position: sticky; top: 0; z-index: 6;
+  background: #fff; padding-bottom: 10px;
+}
+.title { font-size: 24px; font-weight: 800; color: #0f274a; }
+.sub { font-size: 13px; color: #64748b; margin-top: 2px; }
+.headActions { margin-left: auto; }
+.exportBtn {
+  height: 38px; padding: 0 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 9px;
+  font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.exportBtn:hover { background: #f8fafc; }
+.exportBtn i { font-size: 15px; }
+
+/* filters */
+.filters { display: flex; gap: 9px; margin: 4px 0 12px; }
+.search { position: relative; flex: 1; }
+.search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #94a3b8; }
+.searchInput {
+  width: 100%; box-sizing: border-box; height: 40px; padding: 0 12px 0 36px; border: 1px solid #e2e8f0;
+  border-radius: 10px; font-size: 13px; font-family: inherit; background: #fff; color: #0f274a; outline: none;
+}
+.searchInput:focus { border-color: #2e6cf5; box-shadow: 0 0 0 3px rgba(46,108,245,.14); }
+.catSelect {
+  height: 40px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0 12px; font-size: 12.5px;
+  font-family: inherit; font-weight: 600; background: #fff; color: #0f274a;
+}
+
+/* table */
+.card { border: 1px solid #eef2f7; border-radius: 13px; overflow: hidden; background: #fff; }
+.tableWrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; min-width: 820px; }
+.table thead th {
+  font-size: 10px; font-weight: 800; letter-spacing: .5px; color: #64748b; text-align: left;
+  padding: 11px 14px; background: #f8fafc; border-bottom: 1px solid #eef2f7; white-space: nowrap;
+}
+.table tbody td { padding: 11px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.table tbody tr:last-child td { border-bottom: 0; }
+
+.ts { font-size: 11.5px; color: #475569; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.userCell { display: flex; align-items: center; gap: 9px; }
+.avatar {
+  border-radius: 50%; background: #14315d; color: #fff; display: inline-flex; align-items: center;
+  justify-content: center; font-weight: 800; flex: none;
+}
+.userName { font-size: 12.5px; font-weight: 700; color: #0f274a; }
+.userRole { font-size: 10.5px; color: #94a3b8; }
+.action { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; }
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+.actionCat { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+.detail { font-size: 12px; color: #475569; max-width: 340px; }
+.ip { font-size: 11.5px; color: #94a3b8; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.empty { text-align: center; padding: 26px; color: #94a3b8; font-size: 13px; }
+.loading { text-align: center; padding: 26px; color: #94a3b8; font-size: 13px; }
+.note { font-size: 11.5px; color: #b45309; margin: 0 0 10px; }
+
+/* toast */
+.toast {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 80; background: #059669;
+  color: #fff; border-radius: 10px; padding: 9px 16px; font-size: 12.5px; font-weight: 700;
+  box-shadow: 0 10px 30px rgba(5,150,105,.3); white-space: nowrap;
+}

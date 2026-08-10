@@ -1,0 +1,139 @@
+/* app/mainapp/sites/components/addsite.module.css
+   Full "Add site" form — colors, fonts, spacing and section chips mirror the
+   prototype (assetguard_web_add_site_v4). */
+
+/* No width cap — the Add site form always fills the full content width. */
+.page { color: #0f274a; }
+
+/* full-width two-column layout: medium sections sit side by side so the form
+   fills the page instead of hugging the left. Each .col is a normal block so
+   its sections stack with their own margins; align-items:start top-aligns them. */
+.cols { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; align-items: start; }
+.col { min-width: 0; }
+
+.head { display: flex; align-items: center; position: sticky; top: 0; z-index: 6; background: #fff; padding-bottom: 10px; }
+.title { font-size: 24px; font-weight: 700; color: #0f274a; }
+.sub { font-size: 13.5px; color: #64748b; margin-top: 3px; }
+
+/* decorative map card */
+.map {
+  position: relative; background: #eaf1e6; border: 1px solid #e2e8f0; border-radius: 12px;
+  height: 170px; margin: 16px 0 14px; overflow: hidden;
+}
+.mapSvg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pin {
+  position: absolute; left: 50%; top: 52%; transform: translate(-50%,-50%);
+  width: 30px; height: 30px; border-radius: 50%; background: #2e6cf5; border: 3px solid #fff;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+  transition: left .4s, top .4s; font-size: 14px;
+}
+.toast {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  background: #059669; color: #fff; font-size: 12px; font-weight: 700;
+  padding: 6px 14px; border-radius: 999px;
+}
+.mapNote { position: absolute; bottom: 8px; left: 12px; font-size: 10.5px; color: #94a3b8; }
+
+/* sections */
+.sec { border: 1px solid #eef2f7; border-radius: 12px; padding: 16px; margin-bottom: 14px; background: #fff; }
+.sech { display: flex; align-items: center; gap: 9px; font-size: 14.5px; font-weight: 700; color: #0f274a; margin-bottom: 13px; }
+.schip { display: inline-flex; align-items: center; justify-content: center; width: 27px; height: 27px; border-radius: 8px; flex: none; font-size: 15px; }
+.secHint { font-size: 11px; color: #94a3b8; font-weight: 500; margin-left: 2px; }
+
+/* grids */
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 11px; margin-bottom: 11px; }
+.g2 { display: grid; grid-template-columns: 2fr 1fr; gap: 11px; margin-bottom: 11px; }
+.mb0 { margin-bottom: 0; }
+
+/* fields */
+.lab { display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px; }
+.rq { color: #dc2626; }
+.op { color: #94a3b8; font-weight: 500; }
+.in {
+  width: 100%; box-sizing: border-box; height: 40px; padding: 0 12px; border: 1px solid #e2e8f0;
+  border-radius: 9px; font-size: 13.5px; background: #fff; color: #0f274a; font-family: inherit;
+}
+.in:focus { border-color: #2e6cf5; box-shadow: 0 0 0 3px rgba(46,108,245,.13); outline: none; }
+select.in { cursor: pointer; }
+.in[readonly] { background: #f8fafc; color: #64748b; }
+.invalid { border-color: #dc2626 !important; }
+
+/* location helper button + banner */
+.locBtn {
+  background: #fff; color: #2e6cf5; border: 1px solid #bfd3fb; border-radius: 9px; height: 40px;
+  padding: 0 13px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; width: 100%;
+}
+.locBtn i { font-size: 15px; }
+.banner {
+  font-size: 12px; color: #92400e; background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px;
+  padding: 7px 11px; display: flex; align-items: center; gap: 7px;
+}
+.banner i { font-size: 14px; }
+
+/* footer */
+.msg { color: #dc2626; font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+.actions { padding-bottom: 8px; }
+.save {
+  width: 100%; background: #2e6cf5; color: #fff; border: 0; border-radius: 10px; padding: 13px 0;
+  font-size: 14.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.save:hover { background: #1e56db; }
+.saveOk { background: #059669 !important; }
+.cancel {
+  width: 100%; background: #fff; color: #334155; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 12px 0; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 9px;
+}
+
+/* Live maps pill on the map */
+.liveBtn {
+  position: absolute; left: 12px; bottom: 12px; z-index: 6; background: #fff;
+  border: 1px solid #e2e8f0; border-radius: 9px; padding: 6px 11px; font-family: inherit;
+  font-size: 11.5px; font-weight: 700; color: #2e6cf5; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.liveBtn i { font-size: 13px; }
+
+/* auto-filled but editable / read-only field variants */
+.inAuto { background: #f6faff; border-color: #bfd3fb; }
+.inLock { background: #f8fafc; color: #64748b; }
+
+/* sub-headers inside a section (Country / Region / teams) */
+.subHead { display: flex; align-items: baseline; gap: 8px; margin: 8px 0 8px; }
+.subHead b { font-size: 13px; color: #0f274a; }
+.subHead span { color: #94a3b8; font-weight: 500; font-size: 10.5px; }
+.groupLabel {
+  font-size: 11.5px; font-weight: 800; color: #64748b; letter-spacing: .3px; margin: 12px 0 6px;
+}
+
+/* contact chips under phone/email inputs */
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; background: #eef2f7; color: #475569;
+  border-radius: 99px; padding: 2px 8px; font-size: 10px; font-weight: 700;
+}
+.chipBad { background: #fee2e2; color: #dc2626; }
+.chipBad i { font-size: 11px; }
+
+/* team cards */
+.teamCard { border: 1px solid #eef2f7; border-radius: 10px; padding: 10px; margin-bottom: 8px; background: #f8fafc; }
+.teamCardOff { border-color: #f1f5f9; background: #fcfdfe; }
+.teamHead { display: flex; align-items: center; gap: 9px; }
+.teamHeadOn { margin-bottom: 8px; }
+.teamChk { width: 15px; height: 15px; accent-color: #2e6cf5; flex: none; cursor: pointer; }
+.teamIcon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex: none; font-size: 14px; }
+.teamName { font-size: 12px; color: #0f274a; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
+.teamDel { flex: none; background: #fee2e2; color: #dc2626; border: 0; width: 26px; height: 26px; border-radius: 7px; cursor: pointer; }
+.teamDel i { font-size: 12px; }
+.addTeam {
+  width: 100%; height: 34px; border-radius: 9px; border: 1px dashed #bfd3fb; background: #f6faff;
+  color: #2e6cf5; font-family: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; margin-bottom: 4px;
+}
+.addTeam i { font-size: 12px; vertical-align: -1px; }
+
+@media (max-width: 1040px) {
+  .cols { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .g3, .g2 { grid-template-columns: 1fr; }
+}
