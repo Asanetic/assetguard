@@ -18,6 +18,8 @@ const COLS = [
   ["lng", "Longitude"],
   ["cluster", "Response Cluster"],
   ["sec", "Security Region"],
+  ["secco", "Security Company"],
+  ["monco", "Monitoring Company"],
 ];
 
 // Accept common header spellings -> our internal key.
@@ -31,6 +33,8 @@ const HEADER_ALIASES = {
   longitude: "lng", lng: "lng", long: "lng",
   responsecluster: "cluster", cluster: "cluster",
   securityregion: "sec", secregion: "sec", security: "sec",
+  securitycompany: "secco", securityco: "secco", secco: "secco", guardcompany: "secco",
+  monitoringcompany: "monco", monitoringco: "monco", monco: "monco", noccompany: "monco",
 };
 
 function normHeader(h) {
@@ -114,7 +118,8 @@ export default function ImportSites({ onClose, onImported }) {
       const header = COLS.map((c) => c[1]);
       const example = [
         "KRC-DP-010", "Kericho Depot", "Symphony", "Rift Valley",
-        "Kericho", "-0.3689", "35.2861", "Cluster A", "Rift Valley",
+        "Kericho", "-0.3689", "35.2861", "Cluster D — Rift", "Rift Valley",
+        "Simba Security Group", "Rift Control Centre",
       ];
       const ws = XLSX.utils.aoa_to_sheet([header, example]);
       const wb = XLSX.utils.book_new();
@@ -134,6 +139,7 @@ export default function ImportSites({ onClose, onImported }) {
     const payload = rows.map((r) => ({
       code: r.id, name: r.name, smpms: r.smpms, dist: r.dist,
       county: r.county, lat: r.lat, lng: r.lng, cluster: r.cluster, sec: r.sec,
+      secco: r.secco, monco: r.monco,
     }));
     try {
       const res = await fetch("/api/mainapp/sites/import", {

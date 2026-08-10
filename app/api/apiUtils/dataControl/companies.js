@@ -15,7 +15,9 @@ export async function listCompanies(q) {
               OR lower(array_to_string(c.purposes, ' ')) LIKE $1`;
   }
   const { rows } = await query(
-    `SELECT c.id, c.code, c.name, c.purposes, c.contact_email, c.phone, c.status,
+    `SELECT c.id, c.code, c.name, c.purposes,
+            c.contact_email, c.phone,
+            COALESCE(c.status, 'Active') AS status,
             c.created_at,
             (SELECT COUNT(*)::int FROM users u WHERE u.company_id = c.id) AS users
        FROM companies c
@@ -23,8 +25,26 @@ export async function listCompanies(q) {
       ORDER BY c.created_at DESC`,
     params
   );
-  // sites count is 0 until the sites module exists.
+  // sites don't link to companies yet, so that count stays 0 for now.
   return rows.map((r) => ({ ...r, sites: 0 }));
+}
+
+/** Bulk import: create companies that don't already exist (by name). */
+export async function importCompanies(list = []) {
+  let imported = 0, skipped = 0;
+  for (const r of list) {
+    const name = String(r?.name || "").trim();
+    if (!name) { skipped += 1; continue; }
+    if (await findCompanyByName(name)) { skipped += 1; continue; }
+    await createCompany({
+      name,
+      purposes: Array.isArray(r.purposes) ? r.purposes : [],
+      contactEmail: r.email || null,
+      phone: r.phone || null,
+    });
+    imported += 1;
+  }
+  return { imported, skipped, total: imported + skipped };
 }
 
 export async function findCompanyByName(name) {

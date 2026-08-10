@@ -12,6 +12,7 @@ import { findUserByIdentity, createUser } from "../../apiUtils/dataControl/users
 import { findCompanyByName } from "../../apiUtils/dataControl/companies.js";
 import { hashPassword } from "../../apiUtils/authUtils/password.js";
 import { hasVerified } from "../../apiUtils/dataControl/verification.js";
+import { writeAudit } from "../../apiUtils/dataControl/audit.js";
 
 export async function POST(request) {
   let body;
@@ -89,6 +90,14 @@ export async function POST(request) {
       emailVerified: !!emailVerified,
       phoneVerified: !!phoneVerified,
     });
+
+    // Record the self-registration on the audit trail (actor is the registrant).
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim()
+      || request.headers.get("x-real-ip") || null;
+    writeAudit({
+      actorName: name, actorRole: "Applicant", action: "Registration submitted",
+      category: "Users", detail: `${name} requested access under ${company}`, ip,
+    }).catch(() => {});
 
     return NextResponse.json(
       {

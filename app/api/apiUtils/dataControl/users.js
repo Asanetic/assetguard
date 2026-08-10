@@ -123,6 +123,21 @@ export async function setRole(id, role) {
   return rows[0] || null;
 }
 
+/** Update editable profile fields (name / email / phone / company). */
+export async function updateUserProfile(id, { name, email, phone, companyId }) {
+  const { rows } = await query(
+    `UPDATE users
+        SET name       = COALESCE($2, name),
+            email      = COALESCE($3, email),
+            phone      = COALESCE($4, phone),
+            company_id = $5
+      WHERE id = $1
+      RETURNING id, name, email, phone, company_id, status`,
+    [id, name || null, email || null, phone || null, companyId || null]
+  );
+  return rows[0] || null;
+}
+
 /** Permanently delete a user. */
 export async function deleteUser(id) {
   await query(`DELETE FROM users WHERE id = $1`, [id]);

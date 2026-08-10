@@ -1,6 +1,6 @@
 /* app/mainapp/admin/access/components/access.module.css */
 .page { color: #0f274a; }
-.head { display: flex; align-items: center; gap: 10px; }
+.head { display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 6; background: #fff; padding-bottom: 10px; }
 .headIcon { color: #2e6cf5; font-size: 24px; }
 .title { font-size: 24px; font-weight: 800; color: #0f274a; }
 .sub { font-size: 13px; color: #64748b; margin: 2px 0 16px 34px; }

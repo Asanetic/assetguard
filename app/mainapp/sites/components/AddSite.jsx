@@ -270,6 +270,7 @@ export default function AddSite() {
           code: f.id, name: f.name, smpms_vendor: f.smpms,
           country: "Kenya", county: f.county, dist_region: f.distRegion,
           security_region: f.securityRegion, response_cluster: f.responseCluster,
+          security_company: sec.company || null, monitoring_company: monitoringCompany || null,
           lat, lng, coordinates: f.coords, status: "Pending", details,
         }),
       });
@@ -312,6 +313,10 @@ export default function AddSite() {
         </button>
         <div className={styles.mapNote}>Exact site location — updates when coordinates change</div>
       </div>
+
+      {/* full-width two-column layout */}
+      <div className={styles.cols}>
+      <div className={styles.col}>
 
       {/* 1) Site details */}
       <div className={styles.sec}>
@@ -401,6 +406,26 @@ export default function AddSite() {
         </div>
       </div>
 
+      {/* 6) Additional alert recipients */}
+      <div className={styles.sec}>
+        <div className={styles.sech}>
+          <span className={styles.schip} style={{ background: "#FEF3C7", color: "#B45309" }}>
+            <i className="ti ti-message" aria-hidden="true" />
+          </span>Additional alert recipients <span className={styles.secHint}>typed manually</span>
+        </div>
+        <div style={{ marginBottom: 11 }}>
+          <label className={styles.lab}>More phone numbers for SMS alerts <span className={styles.rq}>*</span> <span className={styles.op}>(separate with commas)</span></label>
+          <input {...reg("sms")} placeholder="+254 712 000 111, +254 733 222 333" value={f.sms} onChange={(e) => set("sms", e.target.value)} />
+        </div>
+        <div>
+          <label className={styles.lab}>More alert emails <span className={styles.op}>(optional, separate with commas)</span></label>
+          <input className={styles.in} placeholder="ops@company.com, security@company.com" value={f.emails} onChange={(e) => set("emails", e.target.value)} />
+        </div>
+      </div>
+
+      </div>{/* end left col */}
+      <div className={styles.col}>
+
       {/* 3) Company (national) */}
       <div className={styles.sec}>
         <div className={styles.sech}>
@@ -424,7 +449,30 @@ export default function AddSite() {
         <PersonRow label="Assistant manager 2" value={comp.a2} onChange={(v) => setComp((c) => ({ ...c, a2: v }))} />
       </div>
 
-      {/* 4) Security company details */}
+      {/* 5) NOC details */}
+      <div className={styles.sec}>
+        <div className={styles.sech}>
+          <span className={styles.schip} style={{ background: "#E0F2FE", color: "#0284C7" }}>
+            <i className="ti ti-headset" aria-hidden="true" />
+          </span>NOC details <span className={styles.secHint}>contacts auto-filled from NOC records</span>
+        </div>
+        <div className={styles.secHint} style={{ margin: "-4px 0 10px" }}>monitoring company follows the security region</div>
+        <div className={styles.g2}>
+          <div>
+            <label className={styles.lab}>Monitoring company <span className={styles.op}>(auto)</span></label>
+            <input className={`${styles.in} ${styles.inAuto}`} value={monitoringCompany}
+              onChange={(e) => setMonitoringCompany(e.target.value)} />
+          </div>
+          <div />
+        </div>
+        <div className={styles.groupLabel}>NOC TEAMS</div>
+        <TeamList rows={mnc} setRows={setMnc} icon="ti-headset" tint="#E0F2FE" ink="#0284C7" hasVehicle={false} />
+      </div>
+
+      </div>{/* end right col */}
+      </div>{/* end cols */}
+
+      {/* 4) Security company details — full width for the team lists */}
       <div className={styles.sec}>
         <div className={styles.sech}>
           <span className={styles.schip} style={{ background: "#FEE2E2", color: "#DC2626" }}>
@@ -453,43 +501,6 @@ export default function AddSite() {
         <TeamList rows={secNoc} setRows={setSecNoc} icon="ti-headset" tint="#E0F2FE" ink="#0284C7" hasVehicle={false} />
         <div className={styles.groupLabel}>RESPONSE TEAMS</div>
         <TeamList rows={response} setRows={setResponse} icon="ti-car" tint="#DBE7FE" ink="#2E6CF5" hasVehicle />
-      </div>
-
-      {/* 5) NOC details */}
-      <div className={styles.sec}>
-        <div className={styles.sech}>
-          <span className={styles.schip} style={{ background: "#E0F2FE", color: "#0284C7" }}>
-            <i className="ti ti-headset" aria-hidden="true" />
-          </span>NOC details <span className={styles.secHint}>contacts auto-filled from NOC records</span>
-        </div>
-        <div className={styles.secHint} style={{ margin: "-4px 0 10px" }}>monitoring company follows the security region</div>
-        <div className={styles.g2}>
-          <div>
-            <label className={styles.lab}>Monitoring company <span className={styles.op}>(auto)</span></label>
-            <input className={`${styles.in} ${styles.inAuto}`} value={monitoringCompany}
-              onChange={(e) => setMonitoringCompany(e.target.value)} />
-          </div>
-          <div />
-        </div>
-        <div className={styles.groupLabel}>NOC TEAMS</div>
-        <TeamList rows={mnc} setRows={setMnc} icon="ti-headset" tint="#E0F2FE" ink="#0284C7" hasVehicle={false} />
-      </div>
-
-      {/* 6) Additional alert recipients */}
-      <div className={styles.sec}>
-        <div className={styles.sech}>
-          <span className={styles.schip} style={{ background: "#FEF3C7", color: "#B45309" }}>
-            <i className="ti ti-message" aria-hidden="true" />
-          </span>Additional alert recipients <span className={styles.secHint}>typed manually</span>
-        </div>
-        <div style={{ marginBottom: 11 }}>
-          <label className={styles.lab}>More phone numbers for SMS alerts <span className={styles.rq}>*</span> <span className={styles.op}>(separate with commas)</span></label>
-          <input {...reg("sms")} placeholder="+254 712 000 111, +254 733 222 333" value={f.sms} onChange={(e) => set("sms", e.target.value)} />
-        </div>
-        <div>
-          <label className={styles.lab}>More alert emails <span className={styles.op}>(optional, separate with commas)</span></label>
-          <input className={styles.in} placeholder="ops@company.com, security@company.com" value={f.emails} onChange={(e) => set("emails", e.target.value)} />
-        </div>
       </div>
 
       {(showMsg || err) && <div className={styles.msg}>{err || "Fill in all required fields"}</div>}

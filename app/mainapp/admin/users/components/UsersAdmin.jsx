@@ -841,142 +841,198 @@ function ApproveModal({ user, roles, companies, onClose, onSaved }) {
 }
 
 /* ---------------- Create / Edit modal ---------------- */
-function UserModal({ modal, roles, companies, regions, onClose, onSaved }) {
-  const editing = modal.mode === "edit";
-  const approving = modal.mode === "approve";
-  const creating = modal.mode === "create";
+// ---------------- Edit user modal (matches prototype agEditUserDialog) ------
+function UserModal({ modal, roles, companies, onClose, onSaved }) {
   const u = modal.user || {};
-  const pf = modal.prefill || {};
-  const [form, setForm] = useState({
-    name: u.name || pf.name || "",
-    email: u.email || pf.email || "",
-    phone: u.phone || pf.phone || "",
-    company_id: u.company_id || "",
-    role: u.role || (roles[0]?.key || ""),
-    region: (u.regions && u.regions[0]) || "Country-wide",
-    status: u.status || "Active",
-    password: "",
-  });
+  const [name, setName] = useState(u.name || "");
+  const [email, setEmail] = useState(u.email || "");
+  const [phone, setPhone] = useState(u.phone || "");
+  const [companyId, setCompanyId] = useState(u.company_id || "");
+  const [role, setRole] = useState(u.role || (roles[0]?.key || ""));
+  const [status, setStatus] = useState(u.status === "Suspended" ? "Suspended" : "Active");
+
+  const initialRegions = Array.isArray(u.regions) ? u.regions : [];
+  const [all, setAll] = useState(initialRegions.length === 0);
+  const [sel, setSel] = useState(initialRegions);
+  const [filter, setFilter] = useState("");
+
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [showPw2, setShowPw2] = useState(false);
+  const [curNote, setCurNote] = useState(false);
+  const [genOut, setGenOut] = useState("");
+
   const [err, setErr] = useState("");
   const [saving, setSaving] = useState(false);
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const toggle = (r) => setSel((s) => (s.includes(r) ? s.filter((x) => x !== r) : [...s, r]));
+  const shown = SCOPE_REGIONS.filter((r) => r.toLowerCase().includes(filter.trim().toLowerCase()));
+  const signIn = u.email || u.phone || "—";
+
+  function generate() {
+    const A = "ABCDEFGHJKLMNPQRSTUVWXYZ", a = "abcdefghijkmnopqrstuvwxyz", d = "23456789";
+    const pick = (s, n) => Array.from({ length: n }, () => s[Math.floor(Math.random() * s.length)]).join("");
+    const t = pick(A, 2) + pick(a, 4) + pick(d, 3);
+    setPw(t); setPw2(t); setGenOut(t); setShowPw(true); setShowPw2(true);
+  }
 
   async function save() {
     setErr("");
-    if (creating) {
-      if (!form.name.trim() || !form.email.trim()) return setErr("Name and email are required");
-      if (form.password.length < 8) return setErr("Password must be at least 8 characters");
+    const regions = all ? [] : sel;
+    if (!all && regions.length === 0) return setErr("Pick at least one region, or choose country-wide");
+    const changePw = pw.trim().length > 0 || pw2.trim().length > 0;
+    if (changePw) {
+      if (pw.length < 8 || !/[0-9]/.test(pw)) return setErr("New password must be at least 8 characters and include a number");
+      if (pw !== pw2) return setErr("The two new passwords do not match");
     }
     setSaving(true);
+    const patch = (obj) => fetch(`/api/mainapp/users/${u.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj),
+    });
     try {
-      if (approving) {
-        const res = await fetch(`/api/mainapp/users/${u.id}`, {
-          method: "PATCH", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "approve",
-            role: form.role,
-            regions: form.region === "Country-wide" ? [] : [form.region],
-          }),
-        });
-        const d = await res.json();
-        if (!res.ok) { setSaving(false); return setErr(d.error || "Could not approve"); }
-        onSaved("Registration approved");
-      } else if (editing) {
-        await fetch(`/api/mainapp/users/${u.id}`, {
-          method: "PATCH", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "setRole", role: form.role }),
-        });
-        await fetch(`/api/mainapp/users/${u.id}`, {
-          method: "PATCH", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "setRegions", regions: form.region === "Country-wide" ? [] : [form.region] }),
-        });
-        if (form.status !== u.status) {
-          await fetch(`/api/mainapp/users/${u.id}`, {
-            method: "PATCH", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: form.status === "Suspended" ? "suspend" : "activate" }),
-          });
-        }
-        onSaved("User updated");
-      } else {
-        const res = await fetch("/api/mainapp/users", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: form.name, email: form.email, phone: form.phone,
-            company_id: form.company_id || null, role: form.role,
-            region: form.region === "Country-wide" ? null : form.region,
-            password: form.password,
-          }),
-        });
-        const d = await res.json();
-        if (!res.ok) { setSaving(false); return setErr(d.error || "Could not create user"); }
-        onSaved("User created");
+      await patch({ action: "update", name: name.trim(), email: email.trim(), phone: phone.trim(), company_id: companyId || null });
+      await patch({ action: "setRole", role });
+      await patch({ action: "setRegions", regions });
+      if (status !== u.status) await patch({ action: status === "Suspended" ? "suspend" : "activate" });
+      if (changePw) {
+        const r = await patch({ action: "setPassword", password: pw });
+        if (!r.ok) { const d = await r.json().catch(() => ({})); setSaving(false); return setErr(d.error || "Could not set password"); }
       }
+      onSaved("User updated");
     } catch { setSaving(false); setErr("Network error"); }
   }
 
   return (
     <div className={styles.scrim} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalTitle}>{approving ? "Approve registration" : editing ? "Edit user" : "Create user"}</div>
-        <div className={styles.modalSub}>
-          {approving ? `${u.name} · ${u.email || u.phone} — assign a role and region scope` : editing ? u.email : "Add a new user with an assigned role"}
+      <div className={styles.amModal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.amHeader}>
+          <div className={styles.amHeadLeft}>
+            <span className={styles.amHeadIcon}>
+              <i className="ti ti-user-cog" style={{ fontSize: 18 }} aria-hidden="true" />
+            </span>
+            <div>
+              <div className={styles.amTitle}>Edit user</div>
+              <div className={styles.amSub}>{(u.name || "")}{" · signs in with "}{signIn}</div>
+            </div>
+          </div>
+          <button className={styles.amClose} aria-label="Close" onClick={onClose}>
+            <i className="ti ti-x" style={{ fontSize: 20 }} aria-hidden="true" />
+          </button>
         </div>
-        {err && <div className={styles.err}>{err}</div>}
 
-        {creating && (
-          <>
-            <div className={styles.field}>
-              <label className={styles.label}>Full name</label>
-              <input className={styles.input} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Jane Wanjiku" />
-            </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Email</label>
-              <input className={styles.input} value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="jane@symphony.co.ke" />
-            </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Phone</label>
-              <input className={styles.input} value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+254712345678" />
-            </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Company</label>
-              <select className={styles.input} value={form.company_id} onChange={(e) => set("company_id", e.target.value)}>
-                <option value="">Select company…</option>
-                {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Temporary password</label>
-              <input className={styles.input} type="text" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="At least 8 characters" />
-            </div>
-          </>
-        )}
+        <div className={styles.amBody}>
+          {err && <div className={styles.err}>{err}</div>}
 
-        <div className={styles.field}>
-          <label className={styles.label}>Role</label>
-          <select className={styles.input} value={form.role} onChange={(e) => set("role", e.target.value)}>
-            {roles.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
-          </select>
-        </div>
-        <div className={styles.field}>
-          <label className={styles.label}>Region scope</label>
-          <select className={styles.input} value={form.region} onChange={(e) => set("region", e.target.value)}>
-            {regions.map((rg) => <option key={rg} value={rg}>{rg}</option>)}
-          </select>
-        </div>
-        {editing && (
           <div className={styles.field}>
-            <label className={styles.label}>Status</label>
-            <select className={styles.input} value={form.status} onChange={(e) => set("status", e.target.value)}>
+            <label className={styles.amLabel}>Full name</label>
+            <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.amLabel}>Email</label>
+            <input className={styles.input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.amLabel}>Phone</label>
+            <input className={styles.input} value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.amLabel}>Company</label>
+            <select className={styles.input} value={companyId} onChange={(e) => setCompanyId(e.target.value)}>
+              <option value="">Select company…</option>
+              {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div className={styles.field}>
+            <label className={styles.amLabel}>Role</label>
+            <select className={styles.input} value={role} onChange={(e) => setRole(e.target.value)}>
+              {roles.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
+            </select>
+          </div>
+          <div className={styles.field}>
+            <label className={styles.amLabel}>Status</label>
+            <select className={styles.input} value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="Active">Active</option>
               <option value="Suspended">Suspended</option>
             </select>
           </div>
-        )}
 
-        <div className={styles.modalActions}>
+          <div className={styles.field}>
+            <label className={styles.amLabel}>Region scope</label>
+            <div className={styles.scopeBox}>
+              <label className={styles.scopeAll}>
+                <input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} />
+                All — country-wide
+              </label>
+              <div className={styles.scopeFilterWrap}>
+                <input className={styles.scopeFilter} placeholder="Filter regions…" value={filter}
+                  onChange={(e) => setFilter(e.target.value)} disabled={all} />
+              </div>
+              <div className={styles.scopeList}>
+                <div className={styles.scopeGroup}>Security regions</div>
+                {shown.map((r) => (
+                  <label key={r} className={`${styles.scopeRow} ${all ? styles.scopeRowDisabled : ""}`}>
+                    <input type="checkbox" value={r} checked={sel.includes(r)} onChange={() => toggle(r)} disabled={all} />
+                    {r}
+                  </label>
+                ))}
+              </div>
+              {all
+                ? <div className={styles.scopeNote} style={{ color: "#059669" }}>Country-wide — every region</div>
+                : (sel.length > 0
+                    ? <div className={styles.scopeNote}>{sel.length} region{sel.length === 1 ? "" : "s"} selected</div>
+                    : <div className={styles.scopeNote} style={{ color: "#dc2626" }}>Nothing selected — tick All or pick regions</div>)}
+            </div>
+          </div>
+
+          <div className={styles.pwHead}>
+            Password <span className={styles.pwHint}>— leave the new fields blank to keep the current one</span>
+          </div>
+          <div className={styles.field}>
+            <label className={styles.amLabel}>Current password</label>
+            <div className={styles.amPwWrap}>
+              <input className={styles.input} readOnly value="••••••••••••"
+                style={{ fontFamily: "ui-monospace, monospace", background: "#f8fafc", color: "#64748b", fontWeight: 700 }} />
+              <button type="button" className={styles.amPwEye} aria-label="About current password" onClick={() => setCurNote((n) => !n)}>
+                <i className="ti ti-eye" style={{ fontSize: 18 }} aria-hidden="true" />
+              </button>
+            </div>
+            {curNote && <div className={styles.curNote}>Stored encrypted — it can&apos;t be shown. Set a new one below to change it.</div>}
+          </div>
+          <div className={styles.field}>
+            <label className={styles.amLabel}>New password</label>
+            <div className={styles.amPwWrap}>
+              <input className={styles.input} type={showPw ? "text" : "password"} value={pw}
+                placeholder="At least 8 characters, one number" onChange={(e) => setPw(e.target.value)} />
+              <button type="button" className={styles.amPwEye} aria-label="Show password" onClick={() => setShowPw((s) => !s)}>
+                <i className={showPw ? "ti ti-eye-off" : "ti ti-eye"} style={{ fontSize: 18 }} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+          <div className={styles.field}>
+            <label className={styles.amLabel}>Confirm new password</label>
+            <div className={styles.amPwWrap}>
+              <input className={styles.input} type={showPw2 ? "text" : "password"} value={pw2}
+                placeholder="Repeat the new password" onChange={(e) => setPw2(e.target.value)} />
+              <button type="button" className={styles.amPwEye} aria-label="Show password" onClick={() => setShowPw2((s) => !s)}>
+                <i className={showPw2 ? "ti ti-eye-off" : "ti ti-eye"} style={{ fontSize: 18 }} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+          <button type="button" className={styles.genPwBtn} onClick={generate}>
+            <i className="ti ti-key" style={{ fontSize: 15 }} aria-hidden="true" /> Generate a temporary password
+          </button>
+          {genOut && (
+            <div className={styles.pwOut}>
+              Temporary password: <b>{genOut}</b> — filled in above. Click <b>Save changes</b> to apply.
+            </div>
+          )}
+        </div>
+
+        <div className={styles.amFooter}>
           <button className={styles.btnGhost} onClick={onClose} disabled={saving}>Cancel</button>
           <button className={styles.btnPrimary} onClick={save} disabled={saving}>
-            {saving ? "Saving…" : approving ? "Approve" : editing ? "Save changes" : "Create user"}
+            {saving ? "Saving…" : "Save changes"}
           </button>
         </div>
       </div>

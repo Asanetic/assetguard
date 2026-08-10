@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { listRoles, createRole } from "../../apiUtils/dataControl/roles.js";
 import { requireAdmin } from "../../apiUtils/authUtils/session.js";
+import { logAudit } from "../../apiUtils/dataControl/audit.js";
 
 export async function GET(request) {
   const gate = requireAdmin(request);
@@ -30,6 +31,7 @@ export async function POST(request) {
   if (!key) return NextResponse.json({ error: "Could not derive a role key" }, { status: 400 });
   try {
     const role = await createRole({ key, name: name.trim(), icon, bg, fg, description });
+    logAudit(request, { action: "Role created", category: "System", detail: `Created role ${role.name}` });
     return NextResponse.json({ role }, { status: 201 });
   } catch (err) {
     if (err.code === "23505") return NextResponse.json({ error: "A role with that key already exists" }, { status: 409 });

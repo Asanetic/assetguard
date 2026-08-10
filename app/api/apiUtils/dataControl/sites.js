@@ -64,19 +64,22 @@ export async function getSiteByCode(code) {
 export async function createSite({
   code, name, region = null, location = null, devices = 0, status = "Pending",
   smpms_vendor = null, dist_region = null, county = null, lat = null, lng = null,
-  response_cluster = null, security_region = null, country = null, details = null,
+  response_cluster = null, security_region = null, country = null,
+  security_company = null, monitoring_company = null, details = null,
 }) {
   const { rows } = await query(
     `INSERT INTO sites
        (code, name, region, location, devices, status,
         smpms_vendor, dist_region, county, lat, lng,
-        response_cluster, security_region, country, details)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb)
+        response_cluster, security_region, country,
+        security_company, monitoring_company, details)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::jsonb)
      RETURNING ${COLS}`,
     [
       code, name, region, location, Number(devices) || 0, status,
       smpms_vendor, dist_region, county, lat, lng,
       response_cluster, security_region, country,
+      security_company, monitoring_company,
       details ? JSON.stringify(details) : null,
     ]
   );
@@ -137,19 +140,22 @@ export async function importSites(rows = []) {
     // xmax = 0 on the returned row means the row was freshly inserted.
     const { rows: out } = await query(
       `INSERT INTO sites
-         (code, name, region, location, smpms_vendor, dist_region, county, lat, lng, response_cluster, security_region)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+         (code, name, region, location, smpms_vendor, dist_region, county, lat, lng,
+          response_cluster, security_region, security_company, monitoring_company)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
        ON CONFLICT (code) DO UPDATE SET
-         name             = EXCLUDED.name,
-         region           = EXCLUDED.region,
-         location         = EXCLUDED.location,
-         smpms_vendor     = EXCLUDED.smpms_vendor,
-         dist_region      = EXCLUDED.dist_region,
-         county           = EXCLUDED.county,
-         lat              = EXCLUDED.lat,
-         lng              = EXCLUDED.lng,
-         response_cluster = EXCLUDED.response_cluster,
-         security_region  = EXCLUDED.security_region
+         name               = EXCLUDED.name,
+         region             = EXCLUDED.region,
+         location           = EXCLUDED.location,
+         smpms_vendor       = EXCLUDED.smpms_vendor,
+         dist_region        = EXCLUDED.dist_region,
+         county             = EXCLUDED.county,
+         lat                = EXCLUDED.lat,
+         lng                = EXCLUDED.lng,
+         response_cluster   = EXCLUDED.response_cluster,
+         security_region    = EXCLUDED.security_region,
+         security_company   = COALESCE(EXCLUDED.security_company, sites.security_company),
+         monitoring_company = COALESCE(EXCLUDED.monitoring_company, sites.monitoring_company)
        RETURNING (xmax = 0) AS inserted`,
       [
         code, name, region, location,
@@ -159,6 +165,8 @@ export async function importSites(rows = []) {
         num(raw.lat), num(raw.lng),
         (raw.cluster || "").toString().trim() || null,
         (raw.sec || "").toString().trim() || null,
+        (raw.secco || "").toString().trim() || null,
+        (raw.monco || "").toString().trim() || null,
       ]
     );
     if (out[0]?.inserted) imported++; else updated++;

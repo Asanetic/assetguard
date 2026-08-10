@@ -7,6 +7,7 @@ import {
   getSite, updateSite, deleteSite, getSiteByCode,
 } from "../../../apiUtils/dataControl/sites.js";
 import { requireAdmin } from "../../../apiUtils/authUtils/session.js";
+import { logAudit } from "../../../apiUtils/dataControl/audit.js";
 
 export async function GET(request, { params }) {
   const gate = requireAdmin(request);
@@ -43,6 +44,10 @@ export async function PATCH(request, { params }) {
     }
     const site = await updateSite(id, body);
     if (!site) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    logAudit(request, {
+      action: "Site updated", category: "Sites",
+      detail: `Updated site ${site.code} ${site.name}`,
+    });
     return NextResponse.json({ site });
   } catch (err) {
     console.error("[sites PATCH] error", err);
@@ -62,6 +67,10 @@ export async function DELETE(request, { params }) {
     const site = await getSite(id);
     if (!site) return NextResponse.json({ error: "Not found" }, { status: 404 });
     await deleteSite(id);
+    logAudit(request, {
+      action: "Site deleted", category: "Sites",
+      detail: `Deleted site ${site.code} ${site.name} (${site.devices || 0} devices)`,
+    });
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[sites DELETE] error", err);

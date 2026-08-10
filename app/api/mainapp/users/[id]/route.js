@@ -12,12 +12,14 @@ import {
   setRole,
   setRegions,
   setPasswordById,
+  updateUserProfile,
   deleteUser,
   findUserById,
 } from "../../../apiUtils/dataControl/users.js";
 import { hashPassword } from "../../../apiUtils/authUtils/password.js";
 import { notifyApproved, notifyRejected } from "../../../apiUtils/notify/notifications.js";
 import { requireAdmin } from "../../../apiUtils/authUtils/session.js";
+import { logAudit } from "../../../apiUtils/dataControl/audit.js";
 
 export async function PATCH(request, { params }) {
   const gate = requireAdmin(request);
@@ -49,12 +51,12 @@ export async function PATCH(request, { params }) {
         if (!role)
           return NextResponse.json({ error: "Pick a role to approve" }, { status: 400 });
         result = await approveUser(id, { role, regions, approvedBy: gate.user.sub });
-        // Notify the user (email + SMS) that they're approved.
-        try { const u = await findUserById(id); if (u) await notifyApproved(u); } catch {}
+        // Notify the user (email + SMS) in the background — don't block the response.
+        findUserById(id).then((u) => u && notifyApproved(u)).catch(() => {});
         break;
       case "reject":
         result = await setStatus(id, "Rejected");
-        try { const u = await findUserById(id); if (u) await notifyRejected(u); } catch {}
+        findUserById(id).then((u) => u && notifyRejected(u)).catch(() => {});
         break;
       case "suspend":
         result = await setStatus(id, "Suspended");
@@ -69,10 +71,29 @@ export async function PATCH(request, { params }) {
       case "setRegions":
         result = await setRegions(id, regions);
         break;
+      case "update":
+        result = await updateUserProfile(id, {
+          name: body.name, email: body.email, phone: body.phone,
+          companyId: body.company_id || null,
+        });
+        break;
       default:
         return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
     if (!result) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    // Audit the specific action (fire-and-forget).
+    const who = result.name || result.email || `user #${id}`;
+    const AUD = {
+      approve: { action: "User approved", detail: `Approved ${who} and assigned ${role}` },
+      reject: { action: "User rejected", detail: `Rejected ${who}` },
+      suspend: { action: "User suspended", detail: `Suspended ${who}` },
+      activate: { action: "User activated", detail: `Activated ${who}` },
+      setRole: { action: "Role changed", detail: `Changed ${who} role to ${role}` },
+      setRegions: { action: "Regions changed", detail: `Updated region scope for ${who}` },
+      setPassword: { action: "Password reset", detail: `Reset password for ${who}` },
+      update: { action: "User updated", detail: `Updated profile for ${who}` },
+    }[action];
+    if (AUD) logAudit(request, { ...AUD, category: "Users" });
     return NextResponse.json({ user: result });
   } catch (err) {
     console.error("[users PATCH] error", err);
@@ -94,7 +115,12 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ error: "You can't delete your own account" }, { status: 400 });
 
   try {
+    const victim = await findUserById(id);
     await deleteUser(id);
+    logAudit(request, {
+      action: "User deleted", category: "Users",
+      detail: `Deleted ${victim ? (victim.name || victim.email) : `user #${id}`}`,
+    });
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[users DELETE] error", err);

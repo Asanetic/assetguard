@@ -3,7 +3,8 @@
    slide-out drawer menu. Full-window. */
 
 .shell {
-  min-height: 100vh;
+  height: 100vh;         /* fixed viewport frame — the page itself never scrolls */
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: #f1f5f9;
@@ -48,7 +49,7 @@
   min-height: 0;
 }
 
-/* ---- Rail (collapsed sidebar) ---- */
+/* ---- Rail (collapsed sidebar) — fixed, never scrolls with content ---- */
 .rail {
   width: 64px;
   background: #14315d;
@@ -58,6 +59,9 @@
   padding: 10px 0;
   gap: 4px;
   flex: none;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .burger {
   background: transparent;

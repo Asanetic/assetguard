@@ -2,9 +2,16 @@
    Full "Add site" form — colors, fonts, spacing and section chips mirror the
    prototype (assetguard_web_add_site_v4). */
 
-.page { color: #0f274a; max-width: 1180px; }
+/* No width cap — the Add site form always fills the full content width. */
+.page { color: #0f274a; }
 
-.head { display: flex; align-items: center; }
+/* full-width two-column layout: medium sections sit side by side so the form
+   fills the page instead of hugging the left. Each .col is a normal block so
+   its sections stack with their own margins; align-items:start top-aligns them. */
+.cols { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; align-items: start; }
+.col { min-width: 0; }
+
+.head { display: flex; align-items: center; position: sticky; top: 0; z-index: 6; background: #fff; padding-bottom: 10px; }
 .title { font-size: 24px; font-weight: 700; color: #0f274a; }
 .sub { font-size: 13.5px; color: #64748b; margin-top: 3px; }
 
@@ -124,6 +131,9 @@ select.in { cursor: pointer; }
 }
 .addTeam i { font-size: 12px; vertical-align: -1px; }
 
+@media (max-width: 1040px) {
+  .cols { grid-template-columns: 1fr; }
+}
 @media (max-width: 760px) {
   .g3, .g2 { grid-template-columns: 1fr; }
 }

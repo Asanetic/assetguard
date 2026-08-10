@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { importSites } from "../../../apiUtils/dataControl/sites.js";
 import { requireAdmin } from "../../../apiUtils/authUtils/session.js";
+import { logAudit } from "../../../apiUtils/dataControl/audit.js";
 
 export async function POST(request) {
   const gate = requireAdmin(request);
@@ -35,6 +36,10 @@ export async function POST(request) {
 
   try {
     const result = await importSites(rows);
+    logAudit(request, {
+      action: "Sites imported", category: "Sites",
+      detail: `Imported ${rows.length} site${rows.length === 1 ? "" : "s"} from spreadsheet`,
+    });
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     console.error("[sites import] error", err);

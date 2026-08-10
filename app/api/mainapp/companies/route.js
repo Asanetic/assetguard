@@ -4,6 +4,7 @@
 import { NextResponse } from "next/server";
 import { listCompanies, createCompany, findCompanyByName } from "../../apiUtils/dataControl/companies.js";
 import { requireAdmin } from "../../apiUtils/authUtils/session.js";
+import { logAudit } from "../../apiUtils/dataControl/audit.js";
 
 export async function GET(request) {
   const gate = requireAdmin(request);
@@ -40,6 +41,10 @@ export async function POST(request) {
     if (await findCompanyByName(name))
       return NextResponse.json({ error: "That company already exists" }, { status: 409 });
     const company = await createCompany({ name, purposes, contactEmail, phone });
+    logAudit(request, {
+      action: "Company registered", category: "Companies",
+      detail: `Registered ${company.name} (${(company.purposes || purposes).join(", ")})`,
+    });
     return NextResponse.json({ company }, { status: 201 });
   } catch (err) {
     console.error("[companies POST] error", err);

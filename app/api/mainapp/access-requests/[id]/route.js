@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { setAccessRequestStatus } from "../../../apiUtils/dataControl/accessRequests.js";
 import { notifyAccessDeclined } from "../../../apiUtils/notify/notifications.js";
 import { requireAdmin } from "../../../apiUtils/authUtils/session.js";
+import { logAudit } from "../../../apiUtils/dataControl/audit.js";
 
 export async function PATCH(request, { params }) {
   const gate = requireAdmin(request);
@@ -24,10 +25,15 @@ export async function PATCH(request, { params }) {
   try {
     const req = await setAccessRequestStatus(id, status);
     if (!req) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    // Notify the requester (email + SMS) that their request was declined.
+    // Notify the requester (email + SMS) in the background — don't block the response.
     if (body.action === "decline") {
-      try { await notifyAccessDeclined({ name: req.name, email: req.email, phone: req.phone }); } catch {}
+      notifyAccessDeclined({ name: req.name, email: req.email, phone: req.phone }).catch(() => {});
     }
+    logAudit(request, {
+      action: body.action === "decline" ? "Access request declined" : "Access request handled",
+      category: "Users",
+      detail: `${body.action === "decline" ? "Declined" : "Handled"} access request from ${req.name || req.email || "unknown"}`,
+    });
     return NextResponse.json({ request: req });
   } catch (err) {
     console.error("[access-requests PATCH] error", err);

@@ -6,6 +6,7 @@ import {
   listSites, createSite, getSiteByCode,
 } from "../../apiUtils/dataControl/sites.js";
 import { requireAdmin } from "../../apiUtils/authUtils/session.js";
+import { logAudit } from "../../apiUtils/dataControl/audit.js";
 
 export async function GET(request) {
   const gate = requireAdmin(request);
@@ -52,7 +53,8 @@ export async function POST(request) {
     // Full Add-site fields:
     smpms_vendor = null, dist_region = null, county = null,
     lat = null, lng = null, coordinates = null, response_cluster = null,
-    security_region = null, country = null, details = null,
+    security_region = null, country = null,
+    security_company = null, monitoring_company = null, details = null,
   } = body || {};
   let { code } = body || {};
 
@@ -88,7 +90,12 @@ export async function POST(request) {
       smpms_vendor, dist_region, county,
       lat: latN, lng: lngN,
       response_cluster, security_region, country,
+      security_company, monitoring_company,
       details: details || null,
+    });
+    logAudit(request, {
+      action: "Site added", category: "Sites",
+      detail: `Added site ${site.code} ${site.name}`,
     });
     return NextResponse.json({ site }, { status: 201 });
   } catch (err) {

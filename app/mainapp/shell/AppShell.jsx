@@ -32,10 +32,6 @@ const MENU = [
       { key: "all_alarms", label: "All alarms", href: "/mainapp/alarms" },
     ] },
   { key: "playback", label: "Playback", icon: "ti-player-play", color: "#8B5CF6", href: "/mainapp/playback" },
-  { key: "field", label: "Field Response", icon: "ti-run", color: "#EC4899", children: [
-      { key: "response", label: "Response teams", href: "/mainapp/response" },
-      { key: "noc", label: "NOC teams", href: "/mainapp/noc" },
-    ] },
   { key: "notifications", label: "Notifications", icon: "ti-bell", color: "#0EA5E9", href: "/mainapp/notifications" },
   { key: "logs", label: "Device logs", icon: "ti-file-text", color: "#64748B", href: "/mainapp/logs" },
   { key: "reports", label: "Reports", icon: "ti-report-analytics", color: "#059669", href: "/mainapp/reports" },
@@ -44,7 +40,11 @@ const MENU = [
       { key: "users", label: "Users & Roles", href: "/mainapp/admin/users" },
       { key: "access", label: "Access control", href: "/mainapp/admin/access" },
       { key: "companies", label: "Companies", href: "/mainapp/admin/companies" },
+      { key: "response", label: "Response teams", href: "/mainapp/response" },
+      { key: "noc", label: "NOC teams", href: "/mainapp/noc" },
       { key: "settings", label: "Settings", href: "/mainapp/admin/settings" },
+      { key: "maps", label: "Google Maps", href: "/mainapp/admin/maps" },
+      { key: "messaging", label: "Email & SMS", href: "/mainapp/admin/messaging" },
       { key: "audit", label: "Audit logs", href: "/mainapp/admin/audit" },
     ] },
 ];
