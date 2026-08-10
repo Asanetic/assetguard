@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./viewsite.module.css";
-import { fetchMapsConfig, loadGoogleMaps } from "../../../lib/googleMaps.js";
+import { fetchMapsConfig, loadGoogleMaps, sitePinIcon } from "../../../lib/googleMaps.js";
 
 // Status pill colours (prototype agStatusColour).
 const STATUS = {
@@ -88,10 +88,15 @@ export default function ViewSite({ id }) {
         const maps = await loadGoogleMaps(cfg);
         if (cancelled || !mapRef.current) return;
         const map = new maps.Map(mapRef.current, {
-          center: coords, zoom: Math.max(Number(cfg.defaultZoom) || 14, 14),
-          mapTypeId: cfg.mapType || "roadmap", disableDefaultUI: false, streetViewControl: false,
+          center: coords, zoom: 15,
+          mapTypeId: cfg.mapType || "roadmap", streetViewControl: false, fullscreenControl: true,
+          mapTypeControl: true,
+          mapTypeControlOptions: { style: maps.MapTypeControlStyle.HORIZONTAL_BAR, position: maps.ControlPosition.BOTTOM_LEFT },
         });
-        new maps.Marker({ position: coords, map, title: site.name });
+        new maps.Marker({ position: coords, map, title: site.name, icon: sitePinIcon(maps, site.status) });
+        // ensure it renders at the right size after mount
+        maps.event.trigger(map, "resize");
+        map.setCenter(coords);
         setMapState({ status: "ok", msg: "" });
       } catch (err) {
         if (!cancelled) setMapState({ status: "error", msg: err.message || "Map failed to load." });
@@ -142,14 +147,11 @@ export default function ViewSite({ id }) {
         </div>
       </div>
 
-      {/* map */}
+      {/* map — one stable element the loader draws into; the placeholder overlays until it's ready */}
       <div className={styles.mapBox}>
-        {mapState.status === "ok" ? (
-          <div ref={mapRef} className={styles.mapReal} />
-        ) : (
+        <div ref={mapRef} className={styles.mapReal} />
+        {mapState.status !== "ok" ? (
           <>
-            {/* keep the map div mounted so the loader can draw into it */}
-            <div ref={mapRef} className={styles.mapReal} style={{ display: mapState.status === "idle" ? "block" : "none" }} />
             <svg className={styles.mapSvg} viewBox="0 0 900 300" preserveAspectRatio="none" aria-hidden="true">
               <rect width="900" height="300" fill="#eaf1e6" />
               <path d="M0 110 C200 90 430 130 900 100" stroke="#fff" strokeWidth="5" fill="none" />
@@ -158,7 +160,7 @@ export default function ViewSite({ id }) {
             </svg>
             <div className={styles.pin}><i className="ti ti-map-pin" /></div>
           </>
-        )}
+        ) : null}
         {coords ? (
           <span className={styles.coordBadge}>
             <i className="ti ti-current-location" />{coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}

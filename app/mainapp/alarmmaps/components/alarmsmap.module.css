@@ -1,0 +1,93 @@
+/* app/mainapp/alarmmaps/components/alarmsmap.module.css
+   Asset Alarms landing — a faithful port of the prototype: a left alarm panel
+   beside a full-height Google Map, severity-coloured pins, pulsing rings on
+   OPEN (unacknowledged) alarms, a severity legend and a per-alarm popup. */
+
+.page { height: 100vh; margin: -22px -28px -40px; position: relative; overflow: hidden; background: #eaf1e6; color: #0f274a; }
+.grid { display: grid; grid-template-columns: 340px 1fr; height: 100%; transition: grid-template-columns .22s ease; }
+.gridCollapsed { grid-template-columns: 0px 1fr; }
+
+/* panel */
+.panel { background: #fff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.panelHead { padding: 16px 16px 10px; border-bottom: 1px solid #eef2f7; flex: none; }
+.titleRow { display: flex; align-items: center; justify-content: space-between; }
+.title { font-size: 17px; font-weight: 800; color: #0f274a; }
+.openBadge { background: #fee2e2; color: #dc2626; border-radius: 999px; font-size: 11px; font-weight: 800; padding: 3px 9px; }
+.search { position: relative; margin-top: 11px; }
+.search i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 15px; color: #94a3b8; }
+.searchInput { width: 100%; box-sizing: border-box; height: 36px; padding: 0 11px 0 34px; border: 1px solid #e2e8f0; border-radius: 9px; font-size: 13px; font-family: inherit; color: #0f274a; background: #fff; outline: none; }
+.searchInput:focus { border-color: #2e6cf5; box-shadow: 0 0 0 3px rgba(46,108,245,.14); }
+.chips { display: flex; gap: 6px; margin-top: 11px; overflow-x: auto; padding-bottom: 2px; }
+.chip { flex: none; white-space: nowrap; border: 1px solid #e2e8f0; background: #fff; color: #475569; border-radius: 999px; padding: 5px 12px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.chipOn { background: #14315d; color: #fff; border-color: #14315d; }
+
+.list { flex: 1; overflow-y: auto; min-height: 0; padding: 8px 16px 16px; }
+.list::-webkit-scrollbar { width: 6px; }
+.list::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
+.card { border: 1px solid #eef2f7; border-radius: 12px; padding: 11px 12px; margin-bottom: 9px; background: #fff; cursor: pointer; }
+.card:hover { border-color: #cbd5e1; box-shadow: 0 2px 10px rgba(15,23,42,.06); }
+.cardOn { border-color: #2e6cf5; box-shadow: 0 0 0 3px rgba(46,108,245,.12); }
+.cardTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.cardName { font-size: 12.5px; font-weight: 800; color: #0f274a; }
+.stPill { border-radius: 999px; font-size: 9.5px; font-weight: 800; padding: 2px 8px; white-space: nowrap; flex: none; }
+.stOpen { background: #fee2e2; color: #dc2626; }
+.stAck { background: #fef3c7; color: #92400e; }
+.cardSub { font-size: 11px; color: #64748b; margin-top: 3px; }
+.cardMeta { display: flex; align-items: center; gap: 10px; margin-top: 7px; flex-wrap: wrap; }
+.sev { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; }
+.sev .dot { width: 9px; height: 9px; border-radius: 50%; }
+.time { font-size: 10px; color: #94a3b8; font-weight: 600; }
+.view { font-size: 10px; color: #cbd5e1; margin-left: auto; display: flex; align-items: center; gap: 3px; }
+.emptyList { color: #94a3b8; font-size: 12px; padding: 16px 4px; }
+
+/* handle */
+.handle { position: absolute; top: 50%; transform: translateY(-50%); width: 26px; height: 56px; z-index: 6; background: #fff; border: 1px solid #e2e8f0; border-left: 0; border-radius: 0 10px 10px 0; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 2px 0 6px rgba(15,23,42,.06); transition: left .22s ease; }
+.handle:hover { color: #2e6cf5; }
+
+/* map */
+.mapWrap { position: relative; min-width: 0; }
+.mapReal { position: absolute; inset: 0; }
+.mapOverlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #64748b; font-size: 13px; text-align: center; padding: 24px; background: #eaf1e6; z-index: 2; }
+.mapOverlay i { font-size: 40px; color: #cbd5e1; }
+.mapOverlay a { color: #2e6cf5; font-weight: 700; text-decoration: none; }
+.mapOverlay code { background: #f1f5f9; border-radius: 5px; padding: 1px 6px; font-size: 11.5px; }
+
+/* legend */
+.legend { position: absolute; top: 14px; right: 14px; z-index: 5; display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+.legChip { display: inline-flex; align-items: center; gap: 6px; background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 11.5px; font-weight: 700; color: #0f274a; box-shadow: 0 2px 8px rgba(15,23,42,.12); }
+.legChip .dot { width: 9px; height: 9px; border-radius: 50%; }
+
+/* pulsing rings for OPEN alarms (colour set per-point via --wave-color) */
+.wave { position: absolute; width: 0; height: 0; z-index: 1; pointer-events: none; }
+.wave::before, .wave::after, .wave i {
+  content: ""; position: absolute; left: 0; top: 0; width: 46px; height: 46px; margin: -23px 0 0 -23px;
+  border-radius: 50%; border: 2.5px solid var(--wave-color, #ef4444); box-sizing: border-box;
+  animation: agAlarmWave 1.8s ease-out infinite;
+}
+.wave::after { animation-delay: .6s; }
+@keyframes agAlarmWave { 0% { transform: scale(.55); opacity: .9; } 100% { transform: scale(1.5); opacity: 0; } }
+
+/* popup */
+.popup { position: absolute; width: 240px; z-index: 10; transform: translate(-50%, -100%); }
+.popCard { background: #fff; border-radius: 12px; box-shadow: 0 12px 30px rgba(15,23,42,.22); overflow: hidden; }
+.popHead { color: #fff; padding: 11px 13px; position: relative; }
+.popX { position: absolute; top: 8px; right: 9px; background: transparent; border: 0; color: #fff; cursor: pointer; font-size: 14px; width: 20px; height: 20px; padding: 0; }
+.popName { font-size: 13px; font-weight: 800; padding-right: 18px; }
+.popDev { font-size: 10.5px; opacity: .92; margin-top: 1px; }
+.popBody { padding: 11px 13px; font-size: 11px; color: #475569; }
+.popRow { display: flex; justify-content: space-between; padding: 3px 0; }
+.popLbl { color: #94a3b8; }
+.popVal { color: #0f274a; font-weight: 700; }
+.popSerial { color: #94a3b8; font-weight: 600; }
+.popActions { display: flex; gap: 7px; margin-top: 9px; }
+.popAck { flex: 1; background: #14315d; color: #fff; border: 0; border-radius: 8px; padding: 8px 0; font-size: 11px; font-weight: 800; cursor: pointer; font-family: inherit; }
+.popAck:hover { background: #0f274a; }
+.popOpen { flex: 1; color: #fff; border: 0; border-radius: 8px; padding: 8px 0; font-size: 11px; font-weight: 800; cursor: pointer; font-family: inherit; }
+.popTail { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid #fff; filter: drop-shadow(0 3px 2px rgba(15,23,42,.14)); }
+
+/* mute buzzer FAB */
+.mute { position: absolute; bottom: 18px; right: 16px; width: 46px; height: 46px; border-radius: 50%; background: #fff; border: 0; color: #dc2626; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 8; box-shadow: 0 2px 10px rgba(15,23,42,.2); }
+.muteRing { position: absolute; inset: -6px; border-radius: 50%; border: 2px solid rgba(220,38,38,.4); animation: agMuteRing 2s ease-out infinite; }
+@keyframes agMuteRing { 0% { transform: scale(.85); opacity: 1; } 100% { transform: scale(1.3); opacity: 0; } }
+
+.toast { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: #0f274a; color: #fff; border-radius: 10px; padding: 9px 16px; font-size: 12.5px; font-weight: 700; z-index: 11; white-space: nowrap; box-shadow: 0 10px 30px rgba(15,23,42,.25); }

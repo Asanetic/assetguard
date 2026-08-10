@@ -1,0 +1,71 @@
+/* app/mainapp/track/components/track.module.css
+   Track Device — a real Google Map pursuit view: a moving target device with
+   live transmitting waves, the operator's own moving position, in-app Google
+   Directions routing, and turn-by-turn guidance on a separate blue speaker. */
+
+.page { height: 100%; margin: -22px -28px -40px; position: relative; overflow: hidden; background: #eaf1e6; color: #0f274a; }
+.mapReal { position: absolute; inset: 0; }
+.mapOverlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #64748b; font-size: 13px; text-align: center; padding: 24px; background: #eaf1e6; z-index: 2; }
+.mapOverlay i { font-size: 40px; color: #cbd5e1; }
+.mapOverlay a { color: #2e6cf5; font-weight: 700; text-decoration: none; }
+.mapOverlay code { background: #f1f5f9; border-radius: 5px; padding: 1px 6px; font-size: 11.5px; }
+
+/* top chips */
+.chips { position: absolute; top: 16px; right: 16px; z-index: 9; display: flex; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: #fff; border-radius: 999px; padding: 7px 13px; font-size: 12.5px; font-weight: 700; color: #0f274a; box-shadow: 0 2px 8px rgba(15,23,42,.12); white-space: nowrap; }
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+.live { background: #10b981; animation: tdLive 1.4s ease-in-out infinite; }
+@keyframes tdLive { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+.back { position: absolute; top: 16px; left: 16px; z-index: 9; width: 38px; height: 38px; border-radius: 10px; background: #fff; border: 1px solid #e2e8f0; color: #334155; box-shadow: 0 2px 6px rgba(15,23,42,.1); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.back:hover { color: #2e6cf5; border-color: #2e6cf5; }
+
+/* transmitting / location waves (colour per-point via --wave-color) */
+.wave { position: absolute; width: 0; height: 0; z-index: 1; pointer-events: none; }
+.wave::before, .wave::after, .wave i {
+  content: ""; position: absolute; left: 0; top: 0; width: 48px; height: 48px; margin: -24px 0 0 -24px;
+  border-radius: 50%; border: 2px solid var(--wave-color, #2e6cf5); box-sizing: border-box;
+  animation: tdWave 2.4s ease-out infinite;
+}
+.wave::after { animation-delay: .8s; }
+@keyframes tdWave { 0% { transform: scale(.5); opacity: .75; } 100% { transform: scale(1.7); opacity: 0; } }
+
+/* device popup */
+.popup { position: absolute; width: 270px; z-index: 8; transform: translate(-50%, calc(-100% - 30px)); }
+.popCard { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(15,23,42,.2); }
+.popHead { background: #14315d; padding: 11px 13px; position: relative; }
+.popX { position: absolute; top: 8px; right: 8px; background: transparent; border: 0; color: #b9c7de; cursor: pointer; font-size: 15px; }
+.popName { font-size: 13.5px; font-weight: 800; color: #fff; padding-right: 18px; }
+.popSite { font-size: 11px; color: #b9c7de; margin-top: 2px; }
+.popBody { padding: 11px 13px; }
+.breach { background: #fef3c7; color: #92400e; border-radius: 8px; padding: 7px 9px; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 9px; }
+.popRow { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 6px; }
+.popK { color: #94a3b8; font-weight: 600; }
+.popV { color: #0f274a; font-weight: 800; }
+.popBtns { display: flex; gap: 7px; margin-top: 4px; }
+.popBtn { background: #fff; color: #334155; border: 1px solid #e2e8f0; border-radius: 9px; padding: 8px 0; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; flex: 1; }
+.popBtn:hover { border-color: #2e6cf5; color: #2e6cf5; }
+.popTail { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid #fff; filter: drop-shadow(0 3px 2px rgba(15,23,42,.14)); }
+
+/* bottom bar */
+.bar { position: absolute; left: 16px; right: 16px; bottom: 16px; background: #fff; border-radius: 16px; box-shadow: 0 8px 26px rgba(15,23,42,.16); padding: 14px 18px; display: flex; align-items: center; gap: 22px; z-index: 6; flex-wrap: wrap; }
+.stat { min-width: 0; }
+.statK { font-size: 10.5px; color: #94a3b8; font-weight: 700; letter-spacing: .4px; }
+.statV { font-size: 17px; font-weight: 800; color: #0f274a; }
+.sep { width: 1px; height: 32px; background: #eef2f7; }
+.apiTag { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; color: #94a3b8; font-weight: 600; }
+.apiTag .dot { width: 6px; height: 6px; border-radius: 50%; background: #4285f4; }
+.spacer { flex: 1; }
+.share { width: 40px; height: 40px; border-radius: 10px; background: #fff; border: 1px solid #e2e8f0; color: #334155; box-shadow: 0 2px 6px rgba(15,23,42,.1); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+.share:hover { color: #2e6cf5; border-color: #2e6cf5; }
+.directions { background: #2e6cf5; color: #fff; border: 0; border-radius: 12px; padding: 12px 20px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(46,108,245,.35); }
+.directions:hover { background: #1e56db; }
+.directionsStop { background: #dc2626; box-shadow: 0 4px 14px rgba(220,38,38,.35); }
+.directionsStop:hover { background: #b91c1c; }
+
+.toast { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); background: #0f274a; color: #fff; border-radius: 10px; padding: 9px 16px; font-size: 12.5px; font-weight: 700; z-index: 11; white-space: nowrap; box-shadow: 0 10px 30px rgba(15,23,42,.25); }
+
+/* NB: the custom map controls (my-location + blue guidance speaker) are
+   imperatively-created DOM buttons pushed into map.controls, so they are styled
+   inline in the component — a CSS-module class can't target them (the names
+   would be hashed) and a global block isn't allowed in pure CSS Modules. */

@@ -20,7 +20,7 @@
 // State is in-memory (like the prototype). Nothing here is wired to the DB yet.
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./settings.module.css";
 import {
   TZ_BY_COUNTRY, SEED_COUNTRIES, SEED_COUNTIES, SEED_DIST_REGIONS,
@@ -55,6 +55,30 @@ const TAB_LABEL = { country: "Countries", county: "Counties", dist: "Distributio
 export default function SystemSettings() {
   /* ---- Company ---- */
   const [org, setOrg] = useState(() => structuredClone(SEED_ORG));
+
+  // Load the persisted client company (so edits here flow into Add-site).
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/mainapp/org", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive && d?.org) setOrg((o) => ({ ...o, ...d.org })); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  // Persist the company block. Returns true on success.
+  async function saveOrg() {
+    try {
+      const res = await fetch("/api/mainapp/org", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: org.name, domain: org.domain, country: org.country,
+          manager: org.manager, assistant1: org.assistant1, assistant2: org.assistant2,
+        }),
+      });
+      return res.ok;
+    } catch { return false; }
+  }
 
   /* ---- Locations ---- */
   const [countries, setCountries] = useState(() => SEED_COUNTRIES.map((c) => ({ ...c })));
@@ -508,7 +532,10 @@ export default function SystemSettings() {
       <div className={`${styles.card} ${styles.saveBar}`}>
         <span className={`${styles.saveNote} ${saveNote.tone === "ok" ? styles.saveOk : saveNote.tone === "warn" ? styles.saveWarn : ""}`}>{saveNote.text}</span>
         <button type="button" className={styles.btn2} onClick={() => flashNote("Reset would restore factory defaults — confirm in the backend.", "warn")}>Reset to defaults</button>
-        <button type="button" className={styles.btn} onClick={() => flashNote("Settings saved — applied across the system.", "ok")}>Save settings</button>
+        <button type="button" className={styles.btn} onClick={async () => {
+          const ok = await saveOrg();
+          flashNote(ok ? "Settings saved — company applied across every site." : "Saved locally — company could not be persisted.", ok ? "ok" : "warn");
+        }}>Save settings</button>
       </div>
 
       {/* ---- delete-move dialog ---- */}

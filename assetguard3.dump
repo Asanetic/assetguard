@@ -1,0 +1,3152 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict GBb9qMelBKvV7tAcRB7z93m9HslgB9um2V3mUUpEoYN0HYE5XIdeLu6pF9QOOGo
+
+-- Dumped from database version 18.4
+-- Dumped by pg_dump version 18.4
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: access_requests; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.access_requests (
+    id bigint NOT NULL,
+    req_no text,
+    name text NOT NULL,
+    email text,
+    phone text,
+    company text,
+    problem text,
+    status text DEFAULT 'New'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.access_requests OWNER TO postgres;
+
+--
+-- Name: access_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.access_requests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.access_requests_id_seq OWNER TO postgres;
+
+--
+-- Name: access_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.access_requests_id_seq OWNED BY public.access_requests.id;
+
+
+--
+-- Name: alarms; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.alarms (
+    id text NOT NULL,
+    name text NOT NULL,
+    priority text DEFAULT 'Low'::text NOT NULL,
+    device_id text,
+    site text,
+    serial text,
+    status text DEFAULT 'Open'::text NOT NULL,
+    lat double precision,
+    lng double precision,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.alarms OWNER TO postgres;
+
+--
+-- Name: app_config; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.app_config (
+    key text NOT NULL,
+    value jsonb NOT NULL,
+    updated_by text,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.app_config OWNER TO postgres;
+
+--
+-- Name: audit_logs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.audit_logs (
+    id bigint NOT NULL,
+    ts timestamp with time zone DEFAULT now() NOT NULL,
+    actor_name text NOT NULL,
+    actor_role text,
+    action text NOT NULL,
+    category text DEFAULT 'System'::text NOT NULL,
+    detail text,
+    ip text
+);
+
+
+ALTER TABLE public.audit_logs OWNER TO postgres;
+
+--
+-- Name: audit_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.audit_logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.audit_logs_id_seq OWNER TO postgres;
+
+--
+-- Name: audit_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.audit_logs_id_seq OWNED BY public.audit_logs.id;
+
+
+--
+-- Name: companies; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.companies (
+    id bigint NOT NULL,
+    code text,
+    name text NOT NULL,
+    purposes text[] DEFAULT '{}'::text[] NOT NULL,
+    contact_email text,
+    phone text,
+    status text DEFAULT 'Active'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.companies OWNER TO postgres;
+
+--
+-- Name: companies_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.companies_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.companies_id_seq OWNER TO postgres;
+
+--
+-- Name: companies_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.companies_id_seq OWNED BY public.companies.id;
+
+
+--
+-- Name: device_logs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.device_logs (
+    id bigint NOT NULL,
+    device_id bigint,
+    site_id bigint,
+    imei text NOT NULL,
+    received_at timestamp with time zone DEFAULT now() NOT NULL,
+    device_time timestamp with time zone,
+    fix text,
+    lat double precision,
+    lng double precision,
+    speed double precision,
+    course integer,
+    status_hex text,
+    event text,
+    mcc integer,
+    mnc integer,
+    lac bigint,
+    cell_id bigint,
+    raw text,
+    src_ip text,
+    src_port integer
+);
+
+
+ALTER TABLE public.device_logs OWNER TO postgres;
+
+--
+-- Name: device_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.device_logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.device_logs_id_seq OWNER TO postgres;
+
+--
+-- Name: device_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.device_logs_id_seq OWNED BY public.device_logs.id;
+
+
+--
+-- Name: devices; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.devices (
+    id bigint NOT NULL,
+    device_id text,
+    imei text NOT NULL,
+    sim text,
+    site_id bigint,
+    orientation text,
+    status text DEFAULT 'Testing'::text NOT NULL,
+    battery integer,
+    data_left text,
+    last_seen timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    config jsonb,
+    firmware text
+);
+
+
+ALTER TABLE public.devices OWNER TO postgres;
+
+--
+-- Name: devices_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.devices_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.devices_id_seq OWNER TO postgres;
+
+--
+-- Name: devices_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.devices_id_seq OWNED BY public.devices.id;
+
+
+--
+-- Name: missed_alarms; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.missed_alarms (
+    id text NOT NULL,
+    kind text DEFAULT 'recording'::text NOT NULL,
+    device text,
+    note text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.missed_alarms OWNER TO postgres;
+
+--
+-- Name: missed_alarms_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.missed_alarms_seq
+    START WITH 1001
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.missed_alarms_seq OWNER TO postgres;
+
+--
+-- Name: modules; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.modules (
+    id bigint NOT NULL,
+    name text NOT NULL,
+    key text NOT NULL,
+    grp text NOT NULL,
+    type text NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    sort integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.modules OWNER TO postgres;
+
+--
+-- Name: modules_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.modules_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.modules_id_seq OWNER TO postgres;
+
+--
+-- Name: modules_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.modules_id_seq OWNED BY public.modules.id;
+
+
+--
+-- Name: playback_routes; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.playback_routes (
+    device_id text NOT NULL,
+    route_date date NOT NULL,
+    points jsonb NOT NULL,
+    waypoints jsonb NOT NULL,
+    start_sec integer DEFAULT 0 NOT NULL,
+    total_km numeric DEFAULT 0 NOT NULL,
+    duration_min integer DEFAULT 0 NOT NULL,
+    max_speed integer DEFAULT 0 NOT NULL,
+    stops integer DEFAULT 0 NOT NULL,
+    stop_min integer DEFAULT 0 NOT NULL,
+    total_km_day numeric DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.playback_routes OWNER TO postgres;
+
+--
+-- Name: raw_logs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.raw_logs (
+    id bigint NOT NULL,
+    received_at timestamp with time zone DEFAULT now() NOT NULL,
+    direction text,
+    src_ip text,
+    src_port integer,
+    data text,
+    bytes integer
+);
+
+
+ALTER TABLE public.raw_logs OWNER TO postgres;
+
+--
+-- Name: raw_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.raw_logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.raw_logs_id_seq OWNER TO postgres;
+
+--
+-- Name: raw_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.raw_logs_id_seq OWNED BY public.raw_logs.id;
+
+
+--
+-- Name: role_permissions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.role_permissions (
+    role_key text NOT NULL,
+    module_key text NOT NULL,
+    perm_key text NOT NULL
+);
+
+
+ALTER TABLE public.role_permissions OWNER TO postgres;
+
+--
+-- Name: roles; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.roles (
+    key text NOT NULL,
+    name text NOT NULL,
+    icon text,
+    bg text,
+    fg text,
+    description text,
+    sort integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.roles OWNER TO postgres;
+
+--
+-- Name: sites; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.sites (
+    id bigint NOT NULL,
+    code text NOT NULL,
+    name text NOT NULL,
+    region text,
+    location text,
+    devices integer DEFAULT 0 NOT NULL,
+    status text DEFAULT 'Pending'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    smpms_vendor text,
+    dist_region text,
+    county text,
+    lat numeric(9,6),
+    lng numeric(9,6),
+    response_cluster text,
+    security_region text,
+    security_company text,
+    monitoring_company text
+);
+
+
+ALTER TABLE public.sites OWNER TO postgres;
+
+--
+-- Name: sites_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.sites_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.sites_id_seq OWNER TO postgres;
+
+--
+-- Name: sites_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.sites_id_seq OWNED BY public.sites.id;
+
+
+--
+-- Name: unknown_logs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.unknown_logs (
+    id bigint NOT NULL,
+    imei text,
+    received_at timestamp with time zone DEFAULT now() NOT NULL,
+    raw text,
+    src_ip text,
+    src_port integer
+);
+
+
+ALTER TABLE public.unknown_logs OWNER TO postgres;
+
+--
+-- Name: unknown_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.unknown_logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.unknown_logs_id_seq OWNER TO postgres;
+
+--
+-- Name: unknown_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.unknown_logs_id_seq OWNED BY public.unknown_logs.id;
+
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.users (
+    id bigint NOT NULL,
+    name text NOT NULL,
+    email text,
+    phone text,
+    company_id bigint,
+    role text,
+    status text DEFAULT 'Pending'::text NOT NULL,
+    password text NOT NULL,
+    regions text[] DEFAULT '{}'::text[] NOT NULL,
+    email_verified boolean DEFAULT false NOT NULL,
+    phone_verified boolean DEFAULT false NOT NULL,
+    approved_by bigint,
+    approved_at timestamp with time zone,
+    last_seen timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.users OWNER TO postgres;
+
+--
+-- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.users_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.users_id_seq OWNER TO postgres;
+
+--
+-- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
+
+
+--
+-- Name: verification_codes; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.verification_codes (
+    id bigint NOT NULL,
+    channel text NOT NULL,
+    target text NOT NULL,
+    code text NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    consumed boolean DEFAULT false NOT NULL,
+    attempts integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.verification_codes OWNER TO postgres;
+
+--
+-- Name: verification_codes_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.verification_codes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.verification_codes_id_seq OWNER TO postgres;
+
+--
+-- Name: verification_codes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.verification_codes_id_seq OWNED BY public.verification_codes.id;
+
+
+--
+-- Name: access_requests id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.access_requests ALTER COLUMN id SET DEFAULT nextval('public.access_requests_id_seq'::regclass);
+
+
+--
+-- Name: audit_logs id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.audit_logs ALTER COLUMN id SET DEFAULT nextval('public.audit_logs_id_seq'::regclass);
+
+
+--
+-- Name: companies id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.companies ALTER COLUMN id SET DEFAULT nextval('public.companies_id_seq'::regclass);
+
+
+--
+-- Name: device_logs id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.device_logs ALTER COLUMN id SET DEFAULT nextval('public.device_logs_id_seq'::regclass);
+
+
+--
+-- Name: devices id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.devices ALTER COLUMN id SET DEFAULT nextval('public.devices_id_seq'::regclass);
+
+
+--
+-- Name: modules id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.modules ALTER COLUMN id SET DEFAULT nextval('public.modules_id_seq'::regclass);
+
+
+--
+-- Name: raw_logs id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.raw_logs ALTER COLUMN id SET DEFAULT nextval('public.raw_logs_id_seq'::regclass);
+
+
+--
+-- Name: sites id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sites ALTER COLUMN id SET DEFAULT nextval('public.sites_id_seq'::regclass);
+
+
+--
+-- Name: unknown_logs id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.unknown_logs ALTER COLUMN id SET DEFAULT nextval('public.unknown_logs_id_seq'::regclass);
+
+
+--
+-- Name: users id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+
+--
+-- Name: verification_codes id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.verification_codes ALTER COLUMN id SET DEFAULT nextval('public.verification_codes_id_seq'::regclass);
+
+
+--
+-- Data for Name: access_requests; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.access_requests (id, req_no, name, email, phone, company, problem, status, created_at) FROM stdin;
+1	REQ-001	Peter Kamau	p.kamau@symphony.co.ke	+254 722 145 880	Symphony Technologies Limited	My phone number failed to verify — the SMS code never arrives on my line.	Declined	2026-08-08 15:27:26.913727+03
+3	REQ-003	Joseph Mwangi	j.mwangi@falconguard.co.ke	+254 711 640 220	Falcon Guard Ltd	My company is not on the registration list, so I cannot finish signing up.	New	2026-08-08 15:27:26.913727+03
+4	REQ-004	kiran jeremy	kirongoeric@gmail.com	+254702380624	Twiga Distributors	email verification not working	Declined	2026-08-08 15:31:41.714794+03
+2	REQ-002	Aisha Hassan	a.hassan@falconguard.co.ke	+254 733 902 411	Falcon Guard Ltd	The email verification code never arrived, I have tried four times from the control room.	Handled	2026-08-08 15:27:26.913727+03
+5	REQ-005	Aisha Jumwa	iotop@symphony.co.ke	+254756228115	Symphony Technologies Limited	my number cannot get verified	Handled	2026-08-09 09:54:59.86916+03
+\.
+
+
+--
+-- Data for Name: alarms; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.alarms (id, name, priority, device_id, site, serial, status, lat, lng, created_at) FROM stdin;
+ALM-2026-0081	Disturbance	Critical	001_NairobiHeadquarters_V	Nairobi Headquarters	863957075001481	Open	-1.2643	36.815	2026-08-10 15:19:41.632389+03
+ALM-2026-0082	Geofence Violation	Critical	002_MombasaBranch_H	Mombasa Branch	863957075002190	Open	-4.0435	39.6682	2026-08-10 15:10:41.632389+03
+ALM-2026-0078	Device Offline	High	003_KisumuOffice_V	Kisumu Office	863957075003327	Open	-0.0887	34.771	2026-08-10 14:47:41.632389+03
+ALM-2026-0077	Low Battery â€” 12%	High	003_KisumuOffice_V	Kisumu Office	863957075003327	Acknowledged	-0.0947	34.765	2026-08-10 14:21:41.632389+03
+ALM-2026-0076	High Temperature â€” 58Â°C	High	007_GarissaSubstation_H	Garissa Substation	863957075007742	Open	-0.4536	39.6461	2026-08-10 14:21:41.632389+03
+ALM-2026-0075	Low Data â€” 0.1 GB left	Medium	003_KisumuOffice_V	Kisumu Office	863957075003327	Open	-0.0977	34.762	2026-08-10 13:21:41.632389+03
+ALM-2026-0074	Notification Failed To Send	Medium	005_EldoretStation_V	Eldoret Station	863957075005519	Acknowledged	0.5143	35.2698	2026-08-10 12:21:41.632389+03
+ALM-2026-0073	Disturbance â€” tech on site	Low	004_NakuruDepot_H	Nakuru Depot	863957075004234	Open	-0.3031	36.08	2026-08-10 12:21:41.632389+03
+ALM-2026-0070	Low Battery â€” resolved after recharge	High	008_MalindiYard_V	Malindi Yard	863957075008856	Closed	-3.2192	40.1169	2026-08-09 15:37:33.194216+03
+ALM-2026-0069	Geofence Violation â€” false trigger	Critical	004_NakuruDepot_H	Nakuru Depot	863957075004234	Closed	-0.3031	36.08	2026-08-09 15:37:33.194216+03
+ALM-2026-0079	Critical Motion â€” 84 km/h on Waiyaki Way	Critical	001_NairobiHeadquarters_V	Nairobi Headquarters	863957075001481	Acknowledged	-1.261	36.8035	2026-08-10 15:21:21.632389+03
+ALM-2026-0080	Geofence Violation â€” left Westlands zone	Critical	001_NairobiHeadquarters_V	Nairobi Headquarters	863957075001481	Acknowledged	-1.2703	36.8075	2026-08-10 15:20:41.632389+03
+\.
+
+
+--
+-- Data for Name: app_config; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.app_config (key, value, updated_by, updated_at) FROM stdin;
+maps	{"apiKey": "AIzaSyC_-ZPtpZ9X0j290vwJbLRQLIlst-f835s", "mapType": "roadmap", "libraries": ["places"], "defaultZoom": 7, "defaultCenter": {"lat": -1.2864, "lng": 36.8172}}	Grace Wambui	2026-08-10 08:52:21.842953+03
+\.
+
+
+--
+-- Data for Name: audit_logs; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.audit_logs (id, ts, actor_name, actor_role, action, category, detail, ip) FROM stdin;
+1	2026-07-15 09:41:22+03	Jane Wanjiku	Administrator	User approved	Users	Approved REG-2043 Mercy Achieng and assigned Field Responder	196.201.14.32
+2	2026-07-15 09:12:04+03	Grace Wambui	Super Admin	Site deleted	Sites	Deleted site THK-WH-006 Thika Warehouse (0 devices)	196.201.14.9
+3	2026-07-15 08:55:47+03	Kevin Ouma	NOC	Alarm closed	Alarms	Closed ALM-3391 perimeter breach at Nairobi Headquarters	41.90.7.220
+4	2026-07-15 08:40:10+03	James Mwangi	Administrator	Device added	Devices	Registered device 004_NakuruDepot_V (IMEI 352093â€¦34580)	196.201.14.32
+5	2026-07-14 17:22:33+03	Alice Njeri	Company Manager	Role changed	Users	Changed Nancy Wairimu from NOC to suspended	196.201.14.51
+6	2026-08-10 08:27:09.670243+03	Grace Wambui	superadmin	User suspended	Users	Suspended user #10	::1
+7	2026-08-10 08:52:21.866017+03	Grace Wambui	superadmin	Maps configuration updated	System	Google Maps key set · roadmap, zoom 7, libraries: places	::1
+8	2026-08-10 12:01:37.963332+03	Grace Wambui	superadmin	Sites imported	Sites	Imported 500 sites from spreadsheet	::1
+9	2026-08-10 13:07:10.41919+03	Grace Wambui	superadmin	Batch site operation	Sites	Transferred region → Western on 1 site	::1
+10	2026-08-10 14:31:40.3314+03	Grace Wambui	superadmin	Devices imported	Devices	Imported 3 devices from spreadsheet	::1
+11	2026-08-10 14:57:24.955416+03	Grace Wambui	superadmin	Reassigned site	Devices	Reassigned site → 620623 on 1 device	::1
+12	2026-08-10 14:57:57.585393+03	Grace Wambui	superadmin	Changed status	Devices	Changed status → Live on 2 devices	::1
+13	2026-08-10 15:03:34.548045+03	Grace Wambui	superadmin	Devices imported	Devices	Imported 3 devices from spreadsheet	::1
+14	2026-08-10 15:38:05.853213+03	Grace Wambui	superadmin	Alarm acknowledged	Alarms	Critical Motion â€” 84 km/h on Waiyaki Way (ALM-2026-0079) on 001_NairobiHeadquarters_V	::1
+15	2026-08-10 15:38:12.09777+03	Grace Wambui	superadmin	Alarm acknowledged	Alarms	Geofence Violation â€” left Westlands zone (ALM-2026-0080) on 001_NairobiHeadquarters_V	::1
+\.
+
+
+--
+-- Data for Name: companies; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.companies (id, code, name, purposes, contact_email, phone, status, created_at) FROM stdin;
+1	CMP-001	Symphony Technologies Limited	{Client,NOC}	ops@symphony.com	+254 712 000 111	Active	2026-08-07 16:10:38.510916+03
+2	CMP-002	Falcon Guard Ltd	{Response}	dispatch@falconguard.co.ke	+254 711 100 200	Active	2026-08-07 16:10:38.510916+03
+3	CMP-003	Symphony NOC	{NOC}	noc@symphonynoc.co.ke	+254 715 111 222	Active	2026-08-07 16:10:38.510916+03
+4	CMP-004	Savanna Freight Co.	{Client}	fleet@savanna.co.ke	+254 722 640 118	Active	2026-08-07 16:10:38.510916+03
+5	CMP-005	Acme Logistics Ltd	{Client}	ops@acme.co.ke	+254 722 111 222	Active	2026-08-07 16:10:38.510916+03
+6	CMP-006	Twiga Distributors	{Client}	ops@twiga.co.ke	+254 733 444 555	Active	2026-08-07 16:10:38.510916+03
+7	CMP-007	Baraka Motors Group	{Client}	ops@baraka.co.ke	+254 711 777 999	Active	2026-08-07 16:10:38.510916+03
+8	CMP-008	famtec	{NOC}	iot@symphony.co.ke	+254706320905	Active	2026-08-09 22:31:27.4497+03
+9	CMP-009	G4S	{Response,NOC}	ops@ke.g4s.com	+254 711 070 000	Active	2026-08-09 22:32:28.563322+03
+10	CMP-010	Netis	{"SMPMS vendor"}	\N	\N	Active	2026-08-09 22:32:28.567805+03
+11	CMP-011	Egypro.	{"SMPMS vendor"}	\N	\N	Active	2026-08-09 22:32:28.570128+03
+12	CMP-012	I Engineering.	{"SMPMS vendor"}	\N	\N	Active	2026-08-09 22:32:28.572597+03
+\.
+
+
+--
+-- Data for Name: device_logs; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.device_logs (id, device_id, site_id, imei, received_at, device_time, fix, lat, lng, speed, course, status_hex, event, mcc, mnc, lac, cell_id, raw, src_ip, src_port) FROM stdin;
+\.
+
+
+--
+-- Data for Name: devices; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.devices (id, device_id, imei, sim, site_id, orientation, status, battery, data_left, last_seen, created_at, config, firmware) FROM stdin;
+1	009_AthiRiverPlant_V	863957075080470	\N	6	Vertical	Live	90	3.8GB	2026-08-10 13:34:39.504621+03	2026-08-10 13:38:32.72075+03	\N	v2.4.1
+2	001_NairobiHeadquarters_V	352093000034561	111	1	Vertical	Live	87	2.1GB	2026-08-10 13:36:39.508683+03	2026-08-10 13:38:39.508683+03	\N	v2.3.8
+3	001_NairobiHeadquarters_H	352093000034562	112	1	Horizontal	Live	92	3.4GB	2026-08-10 13:36:39.508683+03	2026-08-10 13:38:39.508683+03	\N	v2.3.8
+4	002_MombasaBranch_H	352093000034567	113	2	Horizontal	Live	65	0.8GB	2026-08-10 13:35:39.508683+03	2026-08-10 13:38:39.508683+03	\N	v2.4.1
+5	002_MombasaBranch_V	352093000034568	114	2	Vertical	Live	74	4.2GB	2026-08-10 13:35:39.508683+03	2026-08-10 13:38:39.508683+03	\N	v2.4.1
+6	003_KisumuOffice_V	352093000034573	115	3	Vertical	Offline	12	0.1GB	2026-08-10 09:38:39.508683+03	2026-08-10 13:38:39.508683+03	\N	v2.3.8
+7	004_NakuruDepot_H	352093000034578	116	4	Horizontal	Live	95	4.9GB	2026-08-10 13:37:39.508683+03	2026-08-10 13:38:39.508683+03	\N	v2.3.8
+8	004_NakuruDepot_V	352093000034579	117	4	Vertical	Live	81	3.0GB	2026-08-10 13:37:39.508683+03	2026-08-10 13:38:39.508683+03	\N	v2.3.8
+9	005_EldoretStation_H	352093000034584	118	5	Horizontal	Maintenance	55	1.5GB	2026-08-10 13:08:39.508683+03	2026-08-10 13:38:39.508683+03	\N	v2.2.5
+10	005_EldoretStation_V	352093000034585	119	5	Vertical	Testing	60	2.0GB	2026-08-10 13:26:39.508683+03	2026-08-10 13:38:39.508683+03	\N	v2.2.5
+11	009_AthiRiverPlant_H	352093000034600	121	6	Horizontal	Live	85	2.5GB	2026-08-10 13:34:39.508683+03	2026-08-10 13:38:39.508683+03	\N	v2.4.1
+12	006_ThikaWarehouse_V	352093000034606	122	7	Vertical	Inactive	0	0.0GB	2026-08-07 13:38:39.508683+03	2026-08-10 13:38:39.508683+03	\N	v2.3.8
+13	007_GarissaSubstation_V	352093000034607	123	8	Vertical	Inactive	0	0.0GB	2026-08-06 13:38:39.508683+03	2026-08-10 13:38:39.508683+03	\N	v2.3.8
+14	008_MalindiYard_V	352093000034608	124	9	Vertical	Inactive	0	0.0GB	2026-08-05 13:38:39.508683+03	2026-08-10 13:38:39.508683+03	\N	v2.3.8
+17	619142_Ngarariga_H	352093100034563	\N	13	Horizontal	Live	\N	\N	\N	2026-08-10 14:31:40.325917+03	\N	v2.3.8
+16	619142_Ngarariga_V	352093100034562	\N	18	Vertical	Live	\N	\N	\N	2026-08-10 14:31:40.323963+03	\N	v2.3.8
+15	001_NairobiHeadquarters_V2	352093100034561	0712345678	1	Vertical	Testing	\N	\N	\N	2026-08-10 14:31:40.318248+03	\N	v2.3.8
+19	619846_Madiany_V	352093100034565	712345679	23	Vertical	Testing	\N	\N	\N	2026-08-10 15:03:34.537767+03	\N	v2.3.8
+20	619846_Madiany_H	352093100034564	712345679	23	Horizontal	Testing	\N	\N	\N	2026-08-10 15:03:34.542955+03	\N	v2.3.8
+\.
+
+
+--
+-- Data for Name: missed_alarms; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.missed_alarms (id, kind, device, note, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: modules; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.modules (id, name, key, grp, type, active, sort) FROM stdin;
+1	Sites Map	sites_map	Sites	Page	t	1
+2	All Sites	sites_all	Sites	Page	t	2
+3	View Site	site_view	Sites	Page	t	3
+4	Group Sites	sites_group	Sites	Page	t	4
+5	Add Site	site_add	Sites	Button	t	5
+6	Site Coordinates	site_coords	Sites	Data Point	t	6
+7	Devices Map	devices_map	Devices	Page	t	7
+8	All Devices	devices_all	Devices	Page	t	8
+9	View Device	device_view	Devices	Page	t	9
+10	Group Devices	devices_group	Devices	Page	t	10
+11	Add Device	device_add	Devices	Button	t	11
+12	Capture	capture	Devices	Page	t	12
+13	Device Battery	device_battery	Devices	Data Point	t	13
+14	Device Signal	device_signal	Devices	Data Point	t	14
+15	Alarms Map	alarms_map	Alarms	Page	t	15
+16	All Alarms	alarms_all	Alarms	Page	t	16
+17	Alarm Detail	alarm_detail	Alarms	Page	t	17
+18	Missed Alarms	alarms_missed	Alarms	Page	t	18
+19	Acknowledge Alarm	alarm_ack	Alarms	Button	t	19
+20	Respond to Alarm	alarm_respond	Alarms	Button	t	20
+21	Close Alarm	alarm_close	Alarms	Button	t	21
+22	Flag False Alarm	alarm_false	Alarms	Button	t	22
+23	Alarm Priority	alarm_priority	Alarms	Data Point	t	23
+24	Live Response	response	Response	Page	t	24
+25	Dispatch Team	response_dispatch	Response	Button	t	25
+26	Complete Response	response_complete	Response	Button	t	26
+27	Missions	missions	Response	Page	t	27
+28	Record Mission	mission_record	Response	Button	t	28
+29	Mission Photos	mission_photos	Response	Data Point	t	29
+30	Track Device	device_track	Track	Page	t	30
+31	Route Playback	playback	Track	Page	t	31
+32	Playback Speed	playback_speed	Track	Button	t	32
+33	Route History	route_history	Track	Data Point	t	33
+34	Reports	reports	Reports	Page	t	34
+35	Export PDF	report_pdf	Reports	Button	t	35
+36	Export DOCX	report_docx	Reports	Button	t	36
+37	SLA Compliance	sla	Reports	Data Point	t	37
+38	Alarm Lifecycle	alarm_lifecycle	Reports	Data Point	t	38
+39	Dashboard	dashboard	Admin	Page	t	39
+40	Users & Roles	users_roles	Admin	Page	t	40
+41	Assign Role	role_assign	Admin	Button	t	41
+42	Pending Approvals	approvals	Admin	Page	t	42
+43	Approve User	user_approve	Admin	Button	t	43
+44	Reject User	user_reject	Admin	Button	t	44
+45	Access Control	access_control	Admin	Page	t	45
+46	Notifications	notifications	Admin	Page	t	46
+47	All Notifications	notifications_all	Admin	Page	t	47
+48	Device Logs & Ports	device_logs	Admin	Page	t	48
+49	Raw Port Data	port_raw	Admin	Data Point	t	49
+50	Parsed Port Data	port_parsed	Admin	Data Point	t	50
+\.
+
+
+--
+-- Data for Name: playback_routes; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.playback_routes (device_id, route_date, points, waypoints, start_sec, total_km, duration_min, max_speed, stops, stop_min, total_km_day) FROM stdin;
+001_NairobiHeadquarters_V	2026-07-07	[{"t": 0, "lat": -1.2649, "lng": 36.8058, "spd": 0}, {"t": 300, "lat": -1.27, "lng": 36.809, "spd": 35}, {"t": 900, "lat": -1.278, "lng": 36.811, "spd": 55}, {"t": 1500, "lat": -1.288, "lng": 36.8118, "spd": 40}, {"t": 1800, "lat": -1.296, "lng": 36.8118, "spd": 0}, {"t": 2280, "lat": -1.296, "lng": 36.8118, "spd": 0}, {"t": 2700, "lat": -1.2915, "lng": 36.8175, "spd": 50}, {"t": 3200, "lat": -1.287, "lng": 36.8215, "spd": 62}, {"t": 3480, "lat": -1.2841, "lng": 36.8233, "spd": 0}]	[{"t": 0, "lat": -1.2649, "lng": 36.8058, "kind": "start", "label": "Westlands, Nairobi"}, {"t": 1800, "lat": -1.296, "lng": 36.8118, "kind": "stop", "label": "Upper Hill (Stop)", "stop_min": 8}, {"t": 3480, "lat": -1.2841, "lng": 36.8233, "kind": "end", "label": "CBD Environs"}]	25200	5.4	58	62	1	8	12.4
+\.
+
+
+--
+-- Data for Name: raw_logs; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.raw_logs (id, received_at, direction, src_ip, src_port, data, bytes) FROM stdin;
+1	2026-08-09 12:08:54.516798+03	in	test	0	[3G*863957075080470*006A*UD,310726,175332,A,1.541982,S,37.261975,E,0.00,248,0,22,100,73,0,0,00000008,1,255,639,2,10073,15720975,155]	132
+2	2026-08-09 12:09:13.27812+03	in	test	0	another data raw set	20
+3	2026-08-09 12:14:01.406246+03	in	127.0.0.1	62318	[3G*863957075080470*006A*UD,090826,091401,A,1.541982,S,37.261975,E,0.00,248,0,22,100,73,0,0,00000008,1,255,639,2,10073,15720975,155]	132
+4	2026-08-09 12:14:01.413638+03	out	127.0.0.1	62318	update_firmware:frimware.apk	28
+5	2026-08-09 12:15:10.447068+03	out	127.0.0.1	62318	update the status of hardware test	34
+6	2026-08-09 12:16:37.558098+03	in	127.0.0.1	57405	heartbeat	9
+7	2026-08-09 12:16:37.564374+03	out	127.0.0.1	57405	update_firmware:frimware.apk	28
+\.
+
+
+--
+-- Data for Name: role_permissions; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.role_permissions (role_key, module_key, perm_key) FROM stdin;
+superadmin	sites_map	view
+superadmin	sites_map	add
+superadmin	sites_map	edit
+superadmin	sites_map	delete
+superadmin	sites_map	approve
+superadmin	sites_map	export
+superadmin	sites_map	reports
+superadmin	sites_map	dash
+admin	sites_map	view
+admin	sites_map	add
+admin	sites_map	edit
+admin	sites_map	delete
+admin	sites_map	approve
+admin	sites_map	export
+admin	sites_map	reports
+admin	sites_map	dash
+company_mgr	sites_map	view
+asst_mgr	sites_map	view
+sec_country	sites_map	view
+sec_country_asst	sites_map	view
+sec_regional	sites_map	view
+sec_regional_asst	sites_map	view
+field_resp	sites_map	view
+noc	sites_map	view
+superadmin	sites_all	view
+superadmin	sites_all	add
+superadmin	sites_all	edit
+superadmin	sites_all	delete
+superadmin	sites_all	approve
+superadmin	sites_all	export
+superadmin	sites_all	reports
+superadmin	sites_all	dash
+admin	sites_all	view
+admin	sites_all	add
+admin	sites_all	edit
+admin	sites_all	delete
+admin	sites_all	approve
+admin	sites_all	export
+admin	sites_all	reports
+admin	sites_all	dash
+company_mgr	sites_all	view
+asst_mgr	sites_all	view
+sec_country	sites_all	view
+sec_country_asst	sites_all	view
+sec_regional	sites_all	view
+sec_regional_asst	sites_all	view
+field_resp	sites_all	view
+noc	sites_all	view
+superadmin	site_view	view
+superadmin	site_view	add
+superadmin	site_view	edit
+superadmin	site_view	delete
+superadmin	site_view	approve
+superadmin	site_view	export
+superadmin	site_view	reports
+superadmin	site_view	dash
+admin	site_view	view
+admin	site_view	add
+admin	site_view	edit
+admin	site_view	delete
+admin	site_view	approve
+admin	site_view	export
+admin	site_view	reports
+admin	site_view	dash
+company_mgr	site_view	view
+asst_mgr	site_view	view
+sec_country	site_view	view
+sec_country_asst	site_view	view
+sec_regional	site_view	view
+sec_regional_asst	site_view	view
+field_resp	site_view	view
+noc	site_view	view
+superadmin	sites_group	view
+superadmin	sites_group	add
+superadmin	sites_group	edit
+superadmin	sites_group	delete
+superadmin	sites_group	approve
+superadmin	sites_group	export
+superadmin	sites_group	reports
+superadmin	sites_group	dash
+admin	sites_group	view
+admin	sites_group	add
+admin	sites_group	edit
+admin	sites_group	delete
+admin	sites_group	approve
+admin	sites_group	export
+admin	sites_group	reports
+admin	sites_group	dash
+company_mgr	sites_group	view
+asst_mgr	sites_group	view
+sec_country	sites_group	view
+sec_country_asst	sites_group	view
+sec_regional	sites_group	view
+sec_regional_asst	sites_group	view
+field_resp	sites_group	view
+noc	sites_group	view
+superadmin	site_add	view
+superadmin	site_add	add
+superadmin	site_add	edit
+superadmin	site_add	delete
+superadmin	site_add	approve
+superadmin	site_add	export
+superadmin	site_add	reports
+superadmin	site_add	dash
+admin	site_add	view
+admin	site_add	add
+admin	site_add	edit
+admin	site_add	delete
+admin	site_add	approve
+admin	site_add	export
+admin	site_add	reports
+admin	site_add	dash
+company_mgr	site_add	view
+asst_mgr	site_add	view
+sec_country	site_add	view
+sec_country_asst	site_add	view
+sec_regional	site_add	view
+sec_regional_asst	site_add	view
+field_resp	site_add	view
+noc	site_add	view
+superadmin	site_coords	view
+superadmin	site_coords	add
+superadmin	site_coords	edit
+superadmin	site_coords	delete
+superadmin	site_coords	approve
+superadmin	site_coords	export
+superadmin	site_coords	reports
+superadmin	site_coords	dash
+admin	site_coords	view
+admin	site_coords	add
+admin	site_coords	edit
+admin	site_coords	delete
+admin	site_coords	approve
+admin	site_coords	export
+admin	site_coords	reports
+admin	site_coords	dash
+company_mgr	site_coords	view
+asst_mgr	site_coords	view
+sec_country	site_coords	view
+sec_country_asst	site_coords	view
+sec_regional	site_coords	view
+sec_regional_asst	site_coords	view
+field_resp	site_coords	view
+noc	site_coords	view
+superadmin	devices_map	view
+superadmin	devices_map	add
+superadmin	devices_map	edit
+superadmin	devices_map	delete
+superadmin	devices_map	approve
+superadmin	devices_map	export
+superadmin	devices_map	reports
+superadmin	devices_map	dash
+admin	devices_map	view
+admin	devices_map	add
+admin	devices_map	edit
+admin	devices_map	delete
+admin	devices_map	approve
+admin	devices_map	export
+admin	devices_map	reports
+admin	devices_map	dash
+company_mgr	devices_map	view
+asst_mgr	devices_map	view
+sec_country	devices_map	view
+sec_country_asst	devices_map	view
+sec_regional	devices_map	view
+sec_regional_asst	devices_map	view
+field_resp	devices_map	view
+noc	devices_map	view
+superadmin	devices_all	view
+superadmin	devices_all	add
+superadmin	devices_all	edit
+superadmin	devices_all	delete
+superadmin	devices_all	approve
+superadmin	devices_all	export
+superadmin	devices_all	reports
+superadmin	devices_all	dash
+admin	devices_all	view
+admin	devices_all	add
+admin	devices_all	edit
+admin	devices_all	delete
+admin	devices_all	approve
+admin	devices_all	export
+admin	devices_all	reports
+admin	devices_all	dash
+company_mgr	devices_all	view
+asst_mgr	devices_all	view
+sec_country	devices_all	view
+sec_country_asst	devices_all	view
+sec_regional	devices_all	view
+sec_regional_asst	devices_all	view
+field_resp	devices_all	view
+noc	devices_all	view
+superadmin	device_view	view
+superadmin	device_view	add
+superadmin	device_view	edit
+superadmin	device_view	delete
+superadmin	device_view	approve
+superadmin	device_view	export
+superadmin	device_view	reports
+superadmin	device_view	dash
+admin	device_view	view
+admin	device_view	add
+admin	device_view	edit
+admin	device_view	delete
+admin	device_view	approve
+admin	device_view	export
+admin	device_view	reports
+admin	device_view	dash
+company_mgr	device_view	view
+asst_mgr	device_view	view
+sec_country	device_view	view
+sec_country_asst	device_view	view
+sec_regional	device_view	view
+sec_regional_asst	device_view	view
+field_resp	device_view	view
+noc	device_view	view
+superadmin	devices_group	view
+superadmin	devices_group	add
+superadmin	devices_group	edit
+superadmin	devices_group	delete
+superadmin	devices_group	approve
+superadmin	devices_group	export
+superadmin	devices_group	reports
+superadmin	devices_group	dash
+admin	devices_group	view
+admin	devices_group	add
+admin	devices_group	edit
+admin	devices_group	delete
+admin	devices_group	approve
+admin	devices_group	export
+admin	devices_group	reports
+admin	devices_group	dash
+company_mgr	devices_group	view
+asst_mgr	devices_group	view
+sec_country	devices_group	view
+sec_country_asst	devices_group	view
+sec_regional	devices_group	view
+sec_regional_asst	devices_group	view
+field_resp	devices_group	view
+noc	devices_group	view
+superadmin	device_add	view
+superadmin	device_add	add
+superadmin	device_add	edit
+superadmin	device_add	delete
+superadmin	device_add	approve
+superadmin	device_add	export
+superadmin	device_add	reports
+superadmin	device_add	dash
+admin	device_add	view
+admin	device_add	add
+admin	device_add	edit
+admin	device_add	delete
+admin	device_add	approve
+admin	device_add	export
+admin	device_add	reports
+admin	device_add	dash
+company_mgr	device_add	view
+asst_mgr	device_add	view
+sec_country	device_add	view
+sec_country_asst	device_add	view
+sec_regional	device_add	view
+sec_regional_asst	device_add	view
+field_resp	device_add	view
+noc	device_add	view
+superadmin	capture	view
+superadmin	capture	add
+superadmin	capture	edit
+superadmin	capture	delete
+superadmin	capture	approve
+superadmin	capture	export
+superadmin	capture	reports
+superadmin	capture	dash
+admin	capture	view
+admin	capture	add
+admin	capture	edit
+admin	capture	delete
+admin	capture	approve
+admin	capture	export
+admin	capture	reports
+admin	capture	dash
+company_mgr	capture	view
+asst_mgr	capture	view
+sec_country	capture	view
+sec_country_asst	capture	view
+sec_regional	capture	view
+sec_regional_asst	capture	view
+field_resp	capture	view
+noc	capture	view
+superadmin	device_battery	view
+superadmin	device_battery	add
+superadmin	device_battery	edit
+superadmin	device_battery	delete
+superadmin	device_battery	approve
+superadmin	device_battery	export
+superadmin	device_battery	reports
+superadmin	device_battery	dash
+admin	device_battery	view
+admin	device_battery	add
+admin	device_battery	edit
+admin	device_battery	delete
+admin	device_battery	approve
+admin	device_battery	export
+admin	device_battery	reports
+admin	device_battery	dash
+company_mgr	device_battery	view
+asst_mgr	device_battery	view
+sec_country	device_battery	view
+sec_country_asst	device_battery	view
+sec_regional	device_battery	view
+sec_regional_asst	device_battery	view
+field_resp	device_battery	view
+noc	device_battery	view
+superadmin	device_signal	view
+superadmin	device_signal	add
+superadmin	device_signal	edit
+superadmin	device_signal	delete
+superadmin	device_signal	approve
+superadmin	device_signal	export
+superadmin	device_signal	reports
+superadmin	device_signal	dash
+admin	device_signal	view
+admin	device_signal	add
+admin	device_signal	edit
+admin	device_signal	delete
+admin	device_signal	approve
+admin	device_signal	export
+admin	device_signal	reports
+admin	device_signal	dash
+company_mgr	device_signal	view
+asst_mgr	device_signal	view
+sec_country	device_signal	view
+sec_country_asst	device_signal	view
+sec_regional	device_signal	view
+sec_regional_asst	device_signal	view
+field_resp	device_signal	view
+noc	device_signal	view
+superadmin	alarms_map	view
+superadmin	alarms_map	add
+superadmin	alarms_map	edit
+superadmin	alarms_map	delete
+superadmin	alarms_map	approve
+superadmin	alarms_map	export
+superadmin	alarms_map	reports
+superadmin	alarms_map	dash
+admin	alarms_map	view
+admin	alarms_map	add
+admin	alarms_map	edit
+admin	alarms_map	delete
+admin	alarms_map	approve
+admin	alarms_map	export
+admin	alarms_map	reports
+admin	alarms_map	dash
+company_mgr	alarms_map	view
+asst_mgr	alarms_map	view
+sec_country	alarms_map	view
+sec_country_asst	alarms_map	view
+sec_regional	alarms_map	view
+sec_regional_asst	alarms_map	view
+field_resp	alarms_map	view
+noc	alarms_map	view
+superadmin	alarms_all	view
+superadmin	alarms_all	add
+superadmin	alarms_all	edit
+superadmin	alarms_all	delete
+superadmin	alarms_all	approve
+superadmin	alarms_all	export
+superadmin	alarms_all	reports
+superadmin	alarms_all	dash
+admin	alarms_all	view
+admin	alarms_all	add
+admin	alarms_all	edit
+admin	alarms_all	delete
+admin	alarms_all	approve
+admin	alarms_all	export
+admin	alarms_all	reports
+admin	alarms_all	dash
+company_mgr	alarms_all	view
+asst_mgr	alarms_all	view
+sec_country	alarms_all	view
+sec_country_asst	alarms_all	view
+sec_regional	alarms_all	view
+sec_regional_asst	alarms_all	view
+field_resp	alarms_all	view
+noc	alarms_all	view
+superadmin	alarm_detail	view
+superadmin	alarm_detail	add
+superadmin	alarm_detail	edit
+superadmin	alarm_detail	delete
+superadmin	alarm_detail	approve
+superadmin	alarm_detail	export
+superadmin	alarm_detail	reports
+superadmin	alarm_detail	dash
+admin	alarm_detail	view
+admin	alarm_detail	add
+admin	alarm_detail	edit
+admin	alarm_detail	delete
+admin	alarm_detail	approve
+admin	alarm_detail	export
+admin	alarm_detail	reports
+admin	alarm_detail	dash
+company_mgr	alarm_detail	view
+asst_mgr	alarm_detail	view
+sec_country	alarm_detail	view
+sec_country_asst	alarm_detail	view
+sec_regional	alarm_detail	view
+sec_regional_asst	alarm_detail	view
+field_resp	alarm_detail	view
+noc	alarm_detail	view
+superadmin	alarms_missed	view
+superadmin	alarms_missed	add
+superadmin	alarms_missed	edit
+superadmin	alarms_missed	delete
+superadmin	alarms_missed	approve
+superadmin	alarms_missed	export
+superadmin	alarms_missed	reports
+superadmin	alarms_missed	dash
+admin	alarms_missed	view
+admin	alarms_missed	add
+admin	alarms_missed	edit
+admin	alarms_missed	delete
+admin	alarms_missed	approve
+admin	alarms_missed	export
+admin	alarms_missed	reports
+admin	alarms_missed	dash
+company_mgr	alarms_missed	view
+asst_mgr	alarms_missed	view
+sec_country	alarms_missed	view
+sec_country_asst	alarms_missed	view
+sec_regional	alarms_missed	view
+sec_regional_asst	alarms_missed	view
+field_resp	alarms_missed	view
+noc	alarms_missed	view
+superadmin	alarm_ack	view
+superadmin	alarm_ack	add
+superadmin	alarm_ack	edit
+superadmin	alarm_ack	delete
+superadmin	alarm_ack	approve
+superadmin	alarm_ack	export
+superadmin	alarm_ack	reports
+superadmin	alarm_ack	dash
+admin	alarm_ack	view
+admin	alarm_ack	add
+admin	alarm_ack	edit
+admin	alarm_ack	delete
+admin	alarm_ack	approve
+admin	alarm_ack	export
+admin	alarm_ack	reports
+admin	alarm_ack	dash
+company_mgr	alarm_ack	view
+asst_mgr	alarm_ack	view
+sec_country	alarm_ack	view
+sec_country_asst	alarm_ack	view
+sec_regional	alarm_ack	view
+sec_regional_asst	alarm_ack	view
+field_resp	alarm_ack	view
+noc	alarm_ack	view
+superadmin	alarm_respond	view
+superadmin	alarm_respond	add
+superadmin	alarm_respond	edit
+superadmin	alarm_respond	delete
+superadmin	alarm_respond	approve
+superadmin	alarm_respond	export
+superadmin	alarm_respond	reports
+superadmin	alarm_respond	dash
+admin	alarm_respond	view
+admin	alarm_respond	add
+admin	alarm_respond	edit
+admin	alarm_respond	delete
+admin	alarm_respond	approve
+admin	alarm_respond	export
+admin	alarm_respond	reports
+admin	alarm_respond	dash
+company_mgr	alarm_respond	view
+asst_mgr	alarm_respond	view
+sec_country	alarm_respond	view
+sec_country_asst	alarm_respond	view
+sec_regional	alarm_respond	view
+sec_regional_asst	alarm_respond	view
+field_resp	alarm_respond	view
+noc	alarm_respond	view
+superadmin	alarm_close	view
+superadmin	alarm_close	add
+superadmin	alarm_close	edit
+superadmin	alarm_close	delete
+superadmin	alarm_close	approve
+superadmin	alarm_close	export
+superadmin	alarm_close	reports
+superadmin	alarm_close	dash
+admin	alarm_close	view
+admin	alarm_close	add
+admin	alarm_close	edit
+admin	alarm_close	delete
+admin	alarm_close	approve
+admin	alarm_close	export
+admin	alarm_close	reports
+admin	alarm_close	dash
+company_mgr	alarm_close	view
+asst_mgr	alarm_close	view
+sec_country	alarm_close	view
+sec_country_asst	alarm_close	view
+sec_regional	alarm_close	view
+sec_regional_asst	alarm_close	view
+field_resp	alarm_close	view
+noc	alarm_close	view
+superadmin	alarm_false	view
+superadmin	alarm_false	add
+superadmin	alarm_false	edit
+superadmin	alarm_false	delete
+superadmin	alarm_false	approve
+superadmin	alarm_false	export
+superadmin	alarm_false	reports
+superadmin	alarm_false	dash
+admin	alarm_false	view
+admin	alarm_false	add
+admin	alarm_false	edit
+admin	alarm_false	delete
+admin	alarm_false	approve
+admin	alarm_false	export
+admin	alarm_false	reports
+admin	alarm_false	dash
+company_mgr	alarm_false	view
+asst_mgr	alarm_false	view
+sec_country	alarm_false	view
+sec_country_asst	alarm_false	view
+sec_regional	alarm_false	view
+sec_regional_asst	alarm_false	view
+field_resp	alarm_false	view
+noc	alarm_false	view
+superadmin	alarm_priority	view
+superadmin	alarm_priority	add
+superadmin	alarm_priority	edit
+superadmin	alarm_priority	delete
+superadmin	alarm_priority	approve
+superadmin	alarm_priority	export
+superadmin	alarm_priority	reports
+superadmin	alarm_priority	dash
+admin	alarm_priority	view
+admin	alarm_priority	add
+admin	alarm_priority	edit
+admin	alarm_priority	delete
+admin	alarm_priority	approve
+admin	alarm_priority	export
+admin	alarm_priority	reports
+admin	alarm_priority	dash
+company_mgr	alarm_priority	view
+asst_mgr	alarm_priority	view
+sec_country	alarm_priority	view
+sec_country_asst	alarm_priority	view
+sec_regional	alarm_priority	view
+sec_regional_asst	alarm_priority	view
+field_resp	alarm_priority	view
+noc	alarm_priority	view
+superadmin	response	view
+superadmin	response	add
+superadmin	response	edit
+superadmin	response	delete
+superadmin	response	approve
+superadmin	response	export
+superadmin	response	reports
+superadmin	response	dash
+admin	response	view
+admin	response	add
+admin	response	edit
+admin	response	delete
+admin	response	approve
+admin	response	export
+admin	response	reports
+admin	response	dash
+company_mgr	response	view
+asst_mgr	response	view
+sec_country	response	view
+sec_country_asst	response	view
+sec_regional	response	view
+sec_regional_asst	response	view
+field_resp	response	view
+noc	response	view
+superadmin	response_dispatch	view
+superadmin	response_dispatch	add
+superadmin	response_dispatch	edit
+superadmin	response_dispatch	delete
+superadmin	response_dispatch	approve
+superadmin	response_dispatch	export
+superadmin	response_dispatch	reports
+superadmin	response_dispatch	dash
+admin	response_dispatch	view
+admin	response_dispatch	add
+admin	response_dispatch	edit
+admin	response_dispatch	delete
+admin	response_dispatch	approve
+admin	response_dispatch	export
+admin	response_dispatch	reports
+admin	response_dispatch	dash
+company_mgr	response_dispatch	view
+asst_mgr	response_dispatch	view
+sec_country	response_dispatch	view
+sec_country_asst	response_dispatch	view
+sec_regional	response_dispatch	view
+sec_regional_asst	response_dispatch	view
+field_resp	response_dispatch	view
+noc	response_dispatch	view
+superadmin	response_complete	view
+superadmin	response_complete	add
+superadmin	response_complete	edit
+superadmin	response_complete	delete
+superadmin	response_complete	approve
+superadmin	response_complete	export
+superadmin	response_complete	reports
+superadmin	response_complete	dash
+admin	response_complete	view
+admin	response_complete	add
+admin	response_complete	edit
+admin	response_complete	delete
+admin	response_complete	approve
+admin	response_complete	export
+admin	response_complete	reports
+admin	response_complete	dash
+company_mgr	response_complete	view
+asst_mgr	response_complete	view
+sec_country	response_complete	view
+sec_country_asst	response_complete	view
+sec_regional	response_complete	view
+sec_regional_asst	response_complete	view
+field_resp	response_complete	view
+noc	response_complete	view
+superadmin	missions	view
+superadmin	missions	add
+superadmin	missions	edit
+superadmin	missions	delete
+superadmin	missions	approve
+superadmin	missions	export
+superadmin	missions	reports
+superadmin	missions	dash
+admin	missions	view
+admin	missions	add
+admin	missions	edit
+admin	missions	delete
+admin	missions	approve
+admin	missions	export
+admin	missions	reports
+admin	missions	dash
+company_mgr	missions	view
+asst_mgr	missions	view
+sec_country	missions	view
+sec_country_asst	missions	view
+sec_regional	missions	view
+sec_regional_asst	missions	view
+field_resp	missions	view
+noc	missions	view
+superadmin	mission_record	view
+superadmin	mission_record	add
+superadmin	mission_record	edit
+superadmin	mission_record	delete
+superadmin	mission_record	approve
+superadmin	mission_record	export
+superadmin	mission_record	reports
+superadmin	mission_record	dash
+admin	mission_record	view
+admin	mission_record	add
+admin	mission_record	edit
+admin	mission_record	delete
+admin	mission_record	approve
+admin	mission_record	export
+admin	mission_record	reports
+admin	mission_record	dash
+company_mgr	mission_record	view
+asst_mgr	mission_record	view
+sec_country	mission_record	view
+sec_country_asst	mission_record	view
+sec_regional	mission_record	view
+sec_regional_asst	mission_record	view
+field_resp	mission_record	view
+noc	mission_record	view
+superadmin	mission_photos	view
+superadmin	mission_photos	add
+superadmin	mission_photos	edit
+superadmin	mission_photos	delete
+superadmin	mission_photos	approve
+superadmin	mission_photos	export
+superadmin	mission_photos	reports
+superadmin	mission_photos	dash
+admin	mission_photos	view
+admin	mission_photos	add
+admin	mission_photos	edit
+admin	mission_photos	delete
+admin	mission_photos	approve
+admin	mission_photos	export
+admin	mission_photos	reports
+admin	mission_photos	dash
+company_mgr	mission_photos	view
+asst_mgr	mission_photos	view
+sec_country	mission_photos	view
+sec_country_asst	mission_photos	view
+sec_regional	mission_photos	view
+sec_regional_asst	mission_photos	view
+field_resp	mission_photos	view
+noc	mission_photos	view
+superadmin	device_track	view
+superadmin	device_track	add
+superadmin	device_track	edit
+superadmin	device_track	delete
+superadmin	device_track	approve
+superadmin	device_track	export
+superadmin	device_track	reports
+superadmin	device_track	dash
+admin	device_track	view
+admin	device_track	add
+admin	device_track	edit
+admin	device_track	delete
+admin	device_track	approve
+admin	device_track	export
+admin	device_track	reports
+admin	device_track	dash
+company_mgr	device_track	view
+asst_mgr	device_track	view
+sec_country	device_track	view
+sec_country_asst	device_track	view
+sec_regional	device_track	view
+sec_regional_asst	device_track	view
+field_resp	device_track	view
+noc	device_track	view
+superadmin	playback	view
+superadmin	playback	add
+superadmin	playback	edit
+superadmin	playback	delete
+superadmin	playback	approve
+superadmin	playback	export
+superadmin	playback	reports
+superadmin	playback	dash
+admin	playback	view
+admin	playback	add
+admin	playback	edit
+admin	playback	delete
+admin	playback	approve
+admin	playback	export
+admin	playback	reports
+admin	playback	dash
+company_mgr	playback	view
+asst_mgr	playback	view
+sec_country	playback	view
+sec_country_asst	playback	view
+sec_regional	playback	view
+sec_regional_asst	playback	view
+field_resp	playback	view
+noc	playback	view
+superadmin	playback_speed	view
+superadmin	playback_speed	add
+superadmin	playback_speed	edit
+superadmin	playback_speed	delete
+superadmin	playback_speed	approve
+superadmin	playback_speed	export
+superadmin	playback_speed	reports
+superadmin	playback_speed	dash
+admin	playback_speed	view
+admin	playback_speed	add
+admin	playback_speed	edit
+admin	playback_speed	delete
+admin	playback_speed	approve
+admin	playback_speed	export
+admin	playback_speed	reports
+admin	playback_speed	dash
+company_mgr	playback_speed	view
+asst_mgr	playback_speed	view
+sec_country	playback_speed	view
+sec_country_asst	playback_speed	view
+sec_regional	playback_speed	view
+sec_regional_asst	playback_speed	view
+field_resp	playback_speed	view
+noc	playback_speed	view
+superadmin	route_history	view
+superadmin	route_history	add
+superadmin	route_history	edit
+superadmin	route_history	delete
+superadmin	route_history	approve
+superadmin	route_history	export
+superadmin	route_history	reports
+superadmin	route_history	dash
+admin	route_history	view
+admin	route_history	add
+admin	route_history	edit
+admin	route_history	delete
+admin	route_history	approve
+admin	route_history	export
+admin	route_history	reports
+admin	route_history	dash
+company_mgr	route_history	view
+asst_mgr	route_history	view
+sec_country	route_history	view
+sec_country_asst	route_history	view
+sec_regional	route_history	view
+sec_regional_asst	route_history	view
+field_resp	route_history	view
+noc	route_history	view
+superadmin	reports	view
+superadmin	reports	add
+superadmin	reports	edit
+superadmin	reports	delete
+superadmin	reports	approve
+superadmin	reports	export
+superadmin	reports	reports
+superadmin	reports	dash
+admin	reports	view
+admin	reports	add
+admin	reports	edit
+admin	reports	delete
+admin	reports	approve
+admin	reports	export
+admin	reports	reports
+admin	reports	dash
+company_mgr	reports	view
+asst_mgr	reports	view
+sec_country	reports	view
+sec_country_asst	reports	view
+sec_regional	reports	view
+sec_regional_asst	reports	view
+field_resp	reports	view
+noc	reports	view
+superadmin	report_pdf	view
+superadmin	report_pdf	add
+superadmin	report_pdf	edit
+superadmin	report_pdf	delete
+superadmin	report_pdf	approve
+superadmin	report_pdf	export
+superadmin	report_pdf	reports
+superadmin	report_pdf	dash
+admin	report_pdf	view
+admin	report_pdf	add
+admin	report_pdf	edit
+admin	report_pdf	delete
+admin	report_pdf	approve
+admin	report_pdf	export
+admin	report_pdf	reports
+admin	report_pdf	dash
+company_mgr	report_pdf	view
+asst_mgr	report_pdf	view
+sec_country	report_pdf	view
+sec_country_asst	report_pdf	view
+sec_regional	report_pdf	view
+sec_regional_asst	report_pdf	view
+field_resp	report_pdf	view
+noc	report_pdf	view
+superadmin	report_docx	view
+superadmin	report_docx	add
+superadmin	report_docx	edit
+superadmin	report_docx	delete
+superadmin	report_docx	approve
+superadmin	report_docx	export
+superadmin	report_docx	reports
+superadmin	report_docx	dash
+admin	report_docx	view
+admin	report_docx	add
+admin	report_docx	edit
+admin	report_docx	delete
+admin	report_docx	approve
+admin	report_docx	export
+admin	report_docx	reports
+admin	report_docx	dash
+company_mgr	report_docx	view
+asst_mgr	report_docx	view
+sec_country	report_docx	view
+sec_country_asst	report_docx	view
+sec_regional	report_docx	view
+sec_regional_asst	report_docx	view
+field_resp	report_docx	view
+noc	report_docx	view
+superadmin	sla	view
+superadmin	sla	add
+superadmin	sla	edit
+superadmin	sla	delete
+superadmin	sla	approve
+superadmin	sla	export
+superadmin	sla	reports
+superadmin	sla	dash
+admin	sla	view
+admin	sla	add
+admin	sla	edit
+admin	sla	delete
+admin	sla	approve
+admin	sla	export
+admin	sla	reports
+admin	sla	dash
+company_mgr	sla	view
+asst_mgr	sla	view
+sec_country	sla	view
+sec_country_asst	sla	view
+sec_regional	sla	view
+sec_regional_asst	sla	view
+field_resp	sla	view
+noc	sla	view
+superadmin	alarm_lifecycle	view
+superadmin	alarm_lifecycle	add
+superadmin	alarm_lifecycle	edit
+superadmin	alarm_lifecycle	delete
+superadmin	alarm_lifecycle	approve
+superadmin	alarm_lifecycle	export
+superadmin	alarm_lifecycle	reports
+superadmin	alarm_lifecycle	dash
+admin	alarm_lifecycle	view
+admin	alarm_lifecycle	add
+admin	alarm_lifecycle	edit
+admin	alarm_lifecycle	delete
+admin	alarm_lifecycle	approve
+admin	alarm_lifecycle	export
+admin	alarm_lifecycle	reports
+admin	alarm_lifecycle	dash
+company_mgr	alarm_lifecycle	view
+asst_mgr	alarm_lifecycle	view
+sec_country	alarm_lifecycle	view
+sec_country_asst	alarm_lifecycle	view
+sec_regional	alarm_lifecycle	view
+sec_regional_asst	alarm_lifecycle	view
+field_resp	alarm_lifecycle	view
+noc	alarm_lifecycle	view
+superadmin	dashboard	view
+superadmin	dashboard	add
+superadmin	dashboard	edit
+superadmin	dashboard	delete
+superadmin	dashboard	approve
+superadmin	dashboard	export
+superadmin	dashboard	reports
+superadmin	dashboard	dash
+admin	dashboard	view
+admin	dashboard	add
+admin	dashboard	edit
+admin	dashboard	delete
+admin	dashboard	approve
+admin	dashboard	export
+admin	dashboard	reports
+admin	dashboard	dash
+company_mgr	dashboard	view
+asst_mgr	dashboard	view
+sec_country	dashboard	view
+sec_country_asst	dashboard	view
+sec_regional	dashboard	view
+sec_regional_asst	dashboard	view
+field_resp	dashboard	view
+noc	dashboard	view
+superadmin	users_roles	view
+superadmin	users_roles	add
+superadmin	users_roles	edit
+superadmin	users_roles	delete
+superadmin	users_roles	approve
+superadmin	users_roles	export
+superadmin	users_roles	reports
+superadmin	users_roles	dash
+admin	users_roles	view
+admin	users_roles	add
+admin	users_roles	edit
+admin	users_roles	delete
+admin	users_roles	approve
+admin	users_roles	export
+admin	users_roles	reports
+admin	users_roles	dash
+company_mgr	users_roles	view
+asst_mgr	users_roles	view
+sec_country	users_roles	view
+sec_country_asst	users_roles	view
+sec_regional	users_roles	view
+sec_regional_asst	users_roles	view
+field_resp	users_roles	view
+noc	users_roles	view
+superadmin	role_assign	view
+superadmin	role_assign	add
+superadmin	role_assign	edit
+superadmin	role_assign	delete
+superadmin	role_assign	approve
+superadmin	role_assign	export
+superadmin	role_assign	reports
+superadmin	role_assign	dash
+admin	role_assign	view
+admin	role_assign	add
+admin	role_assign	edit
+admin	role_assign	delete
+admin	role_assign	approve
+admin	role_assign	export
+admin	role_assign	reports
+admin	role_assign	dash
+company_mgr	role_assign	view
+asst_mgr	role_assign	view
+sec_country	role_assign	view
+sec_country_asst	role_assign	view
+sec_regional	role_assign	view
+sec_regional_asst	role_assign	view
+field_resp	role_assign	view
+noc	role_assign	view
+superadmin	approvals	view
+superadmin	approvals	add
+superadmin	approvals	edit
+superadmin	approvals	delete
+superadmin	approvals	approve
+superadmin	approvals	export
+superadmin	approvals	reports
+superadmin	approvals	dash
+admin	approvals	view
+admin	approvals	add
+admin	approvals	edit
+admin	approvals	delete
+admin	approvals	approve
+admin	approvals	export
+admin	approvals	reports
+admin	approvals	dash
+company_mgr	approvals	view
+asst_mgr	approvals	view
+sec_country	approvals	view
+sec_country_asst	approvals	view
+sec_regional	approvals	view
+sec_regional_asst	approvals	view
+field_resp	approvals	view
+noc	approvals	view
+superadmin	user_approve	view
+superadmin	user_approve	add
+superadmin	user_approve	edit
+superadmin	user_approve	delete
+superadmin	user_approve	approve
+superadmin	user_approve	export
+superadmin	user_approve	reports
+superadmin	user_approve	dash
+admin	user_approve	view
+admin	user_approve	add
+admin	user_approve	edit
+admin	user_approve	delete
+admin	user_approve	approve
+admin	user_approve	export
+admin	user_approve	reports
+admin	user_approve	dash
+company_mgr	user_approve	view
+asst_mgr	user_approve	view
+sec_country	user_approve	view
+sec_country_asst	user_approve	view
+sec_regional	user_approve	view
+sec_regional_asst	user_approve	view
+field_resp	user_approve	view
+noc	user_approve	view
+superadmin	user_reject	view
+superadmin	user_reject	add
+superadmin	user_reject	edit
+superadmin	user_reject	delete
+superadmin	user_reject	approve
+superadmin	user_reject	export
+superadmin	user_reject	reports
+superadmin	user_reject	dash
+admin	user_reject	view
+admin	user_reject	add
+admin	user_reject	edit
+admin	user_reject	delete
+admin	user_reject	approve
+admin	user_reject	export
+admin	user_reject	reports
+admin	user_reject	dash
+company_mgr	user_reject	view
+asst_mgr	user_reject	view
+sec_country	user_reject	view
+sec_country_asst	user_reject	view
+sec_regional	user_reject	view
+sec_regional_asst	user_reject	view
+field_resp	user_reject	view
+noc	user_reject	view
+superadmin	access_control	view
+superadmin	access_control	add
+superadmin	access_control	edit
+superadmin	access_control	delete
+superadmin	access_control	approve
+superadmin	access_control	export
+superadmin	access_control	reports
+superadmin	access_control	dash
+admin	access_control	view
+admin	access_control	add
+admin	access_control	edit
+admin	access_control	delete
+admin	access_control	approve
+admin	access_control	export
+admin	access_control	reports
+admin	access_control	dash
+company_mgr	access_control	view
+asst_mgr	access_control	view
+sec_country	access_control	view
+sec_country_asst	access_control	view
+sec_regional	access_control	view
+sec_regional_asst	access_control	view
+field_resp	access_control	view
+noc	access_control	view
+superadmin	notifications	view
+superadmin	notifications	add
+superadmin	notifications	edit
+superadmin	notifications	delete
+superadmin	notifications	approve
+superadmin	notifications	export
+superadmin	notifications	reports
+superadmin	notifications	dash
+admin	notifications	view
+admin	notifications	add
+admin	notifications	edit
+admin	notifications	delete
+admin	notifications	approve
+admin	notifications	export
+admin	notifications	reports
+admin	notifications	dash
+company_mgr	notifications	view
+asst_mgr	notifications	view
+sec_country	notifications	view
+sec_country_asst	notifications	view
+sec_regional	notifications	view
+sec_regional_asst	notifications	view
+field_resp	notifications	view
+noc	notifications	view
+superadmin	notifications_all	view
+superadmin	notifications_all	add
+superadmin	notifications_all	edit
+superadmin	notifications_all	delete
+superadmin	notifications_all	approve
+superadmin	notifications_all	export
+superadmin	notifications_all	reports
+superadmin	notifications_all	dash
+admin	notifications_all	view
+admin	notifications_all	add
+admin	notifications_all	edit
+admin	notifications_all	delete
+admin	notifications_all	approve
+admin	notifications_all	export
+admin	notifications_all	reports
+admin	notifications_all	dash
+company_mgr	notifications_all	view
+asst_mgr	notifications_all	view
+sec_country	notifications_all	view
+sec_country_asst	notifications_all	view
+sec_regional	notifications_all	view
+sec_regional_asst	notifications_all	view
+field_resp	notifications_all	view
+noc	notifications_all	view
+superadmin	device_logs	view
+superadmin	device_logs	add
+superadmin	device_logs	edit
+superadmin	device_logs	delete
+superadmin	device_logs	approve
+superadmin	device_logs	export
+superadmin	device_logs	reports
+superadmin	device_logs	dash
+admin	device_logs	view
+admin	device_logs	add
+admin	device_logs	edit
+admin	device_logs	delete
+admin	device_logs	approve
+admin	device_logs	export
+admin	device_logs	reports
+admin	device_logs	dash
+company_mgr	device_logs	view
+asst_mgr	device_logs	view
+sec_country	device_logs	view
+sec_country_asst	device_logs	view
+sec_regional	device_logs	view
+sec_regional_asst	device_logs	view
+field_resp	device_logs	view
+noc	device_logs	view
+superadmin	port_raw	view
+superadmin	port_raw	add
+superadmin	port_raw	edit
+superadmin	port_raw	delete
+superadmin	port_raw	approve
+superadmin	port_raw	export
+superadmin	port_raw	reports
+superadmin	port_raw	dash
+admin	port_raw	view
+admin	port_raw	add
+admin	port_raw	edit
+admin	port_raw	delete
+admin	port_raw	approve
+admin	port_raw	export
+admin	port_raw	reports
+admin	port_raw	dash
+company_mgr	port_raw	view
+asst_mgr	port_raw	view
+sec_country	port_raw	view
+sec_country_asst	port_raw	view
+sec_regional	port_raw	view
+sec_regional_asst	port_raw	view
+field_resp	port_raw	view
+noc	port_raw	view
+superadmin	port_parsed	view
+superadmin	port_parsed	add
+superadmin	port_parsed	edit
+superadmin	port_parsed	delete
+superadmin	port_parsed	approve
+superadmin	port_parsed	export
+superadmin	port_parsed	reports
+superadmin	port_parsed	dash
+admin	port_parsed	view
+admin	port_parsed	add
+admin	port_parsed	edit
+admin	port_parsed	delete
+admin	port_parsed	approve
+admin	port_parsed	export
+admin	port_parsed	reports
+admin	port_parsed	dash
+company_mgr	port_parsed	view
+asst_mgr	port_parsed	view
+sec_country	port_parsed	view
+sec_country_asst	port_parsed	view
+sec_regional	port_parsed	view
+sec_regional_asst	port_parsed	view
+field_resp	port_parsed	view
+noc	port_parsed	view
+\.
+
+
+--
+-- Data for Name: roles; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.roles (key, name, icon, bg, fg, description, sort) FROM stdin;
+superadmin	Super Admin	ti-crown	#EDE9FE	#6D28D9	Full platform control across all companies	1
+admin	Admin	ti-shield-cog	#DBE7FE	#1E56DB	Manage sites, devices, users and approvals	2
+company_mgr	Company Manager	ti-briefcase	#D1FAE5	#047857	Oversees their company's sites and teams	3
+asst_mgr	Assistant Manager	ti-user-cog	#D1FAE5	#059669	Supports the company manager on daily ops	4
+sec_country	Security Company Country Manager	ti-shield-check	#FEE2E2	#B91C1C	National lead for the security provider	5
+sec_country_asst	Assistant Security Country Manager	ti-user-shield	#FEE2E2	#EF4444	Supports the country manager for the security provider	6
+sec_regional	Security Company Regional Manager	ti-shield-half	#FEE2E2	#DC2626	Regional lead for the security provider	7
+sec_regional_asst	Assistant Security Regional Manager	ti-user-shield	#FEE2E2	#F87171	Supports the regional manager for a security region	8
+field_resp	Field Response	ti-run	#FEF3C7	#B45309	Responds on the ground to live alarms	9
+field_tech	Field Technician	ti-tool	#E0F2FE	#0284C7	Installs and services devices on site	10
+noc	NOC Personnel	ti-headset	#E0F2FE	#0369A1	Monitors the 24/7 operations centre	11
+\.
+
+
+--
+-- Data for Name: sites; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.sites (id, code, name, region, location, devices, status, created_at, smpms_vendor, dist_region, county, lat, lng, response_cluster, security_region, security_company, monitoring_company) FROM stdin;
+10	KRC-DP-010	Kericho Depot	Rift Valley	Kericho	0	Pending	2026-08-09 10:49:44.414631+03	Symphony	Rift Valley	Kericho	-0.368900	35.286100	Cluster A	Rift Valley	\N	\N
+11	2345	THIKA FALLS	UPPER EASTERN	NAIROBI	0	Pending	2026-08-09 10:49:44.431451+03	NETIS	UPPER EASTERN	NAIROBI	-0.230300	323.000000	Cluster ALLSOPS	THIKA ROAD	\N	\N
+12	618970	Athi_River_Portland	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.035735+03	Netis	Eastern	Machakos	-1.437400	36.967372	Kitengela cluster	Eastern	G4S	Symphony NOC
+13	619142	Ngarariga	Upper Central	Kiambu	0	Pending	2026-08-10 12:01:37.043984+03	Egypro.	Upper Central	Kiambu	-1.086905	36.627437	Naivasha Mai mahiu Suswa Cluster	Upper Central	G4S	Symphony NOC
+14	622708	NAIRAGIE ENKARE MARKET	Lower Central Rift	Narok	0	Pending	2026-08-10 12:01:37.046121+03	Egypro.	Lower Central Rift	Narok	-1.044383	36.162360	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+15	621098	Olasisiti ATC	Lower Central Rift	Narok	0	Pending	2026-08-10 12:01:37.048008+03	Egypro.	Lower Central Rift	Narok	-1.072647	36.239023	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+16	622619	Ilkirragarien	Lower Central Rift	Narok	0	Pending	2026-08-10 12:01:37.049887+03	Egypro.	Lower Central Rift	Narok	-0.991250	36.179650	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+17	619696	Ntulelei	Lower Central Rift	Narok	0	Pending	2026-08-10 12:01:37.051749+03	Egypro.	Lower Central Rift	Narok	-1.097105	36.082235	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+18	620623	Suswa ATC	Lower Central Rift	Narok	0	Pending	2026-08-10 12:01:37.053574+03	Egypro.	Lower Central Rift	Narok	-1.051342	36.331757	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+19	619856	Mai_Mahiu	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.055388+03	Egypro.	Lower Central Rift	Nakuru	-0.987272	36.576885	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+20	621319	MAHI MAHIU TOWN	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.057232+03	Egypro.	Lower Central Rift	Nakuru	-0.982693	36.587445	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+21	619832	Ngere	South Rift	Siaya	0	Pending	2026-08-10 12:01:37.059089+03	Egypro.	South Rift	Siaya	-0.144477	34.456517	Bondo Cluster	South Rift	G4S	Symphony NOC
+22	619847	Nyangoma	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.061412+03	Egypro.	Upper Western	Siaya	-0.167418	34.170413	Bondo Cluster	Upper Western	G4S	Symphony NOC
+23	619846	Madiany	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.063506+03	Egypro.	Upper Western	Siaya	-0.292221	34.338207	Bondo Cluster	Upper Western	G4S	Symphony NOC
+24	620644	DIENYA	South Rift	Siaya	0	Pending	2026-08-10 12:01:37.067289+03	Egypro.	South Rift	Siaya	-0.000776	34.405766	Bondo Cluster	South Rift	G4S	Symphony NOC
+25	619833	Nyilima_Kandaria	South Rift	Siaya	0	Pending	2026-08-10 12:01:37.069129+03	Egypro.	South Rift	Siaya	-0.103144	34.419637	Bondo Cluster	South Rift	G4S	Symphony NOC
+26	618741	Nyilima Market	South Rift	Siaya	0	Pending	2026-08-10 12:01:37.07081+03	Egypro.	South Rift	Siaya	-0.147470	34.386320	Bondo Cluster	South Rift	G4S	Symphony NOC
+27	619848	Gobei	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.07678+03	Egypro.	Upper Western	Siaya	-0.095042	34.327912	Bondo Cluster	Upper Western	G4S	Symphony NOC
+28	621056	Wangarot ATC	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.078666+03	Egypro.	Upper Western	Siaya	-0.125689	34.313989	Bondo Cluster	Upper Western	G4S	Symphony NOC
+29	670070	Gagra	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.080387+03	Egypro.	Upper Western	Siaya	-0.237139	34.328588	Bondo Cluster	Upper Western	G4S	Symphony NOC
+30	622155	Ndira ATC	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.082094+03	Egypro.	Upper Western	Siaya	-0.073610	34.321455	Bondo Cluster	Upper Western	G4S	Symphony NOC
+31	622442	Lwak	South Rift	Siaya	0	Pending	2026-08-10 12:01:37.083848+03	Egypro.	South Rift	Siaya	-0.139800	34.361930	Bondo Cluster	South Rift	G4S	Symphony NOC
+32	622036	Lenya ATC	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.085593+03	Egypro.	Upper Western	Siaya	-0.153003	34.121286	Bondo Cluster	Upper Western	G4S	Symphony NOC
+33	619834	Got_Kachieng	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.087223+03	Egypro.	Upper Western	Siaya	-0.206918	34.254262	Bondo Cluster	Upper Western	G4S	Symphony NOC
+34	622451	Ajigo ATC	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.088954+03	Egypro.	Upper Western	Siaya	-0.065981	34.314068	Bondo Cluster	Upper Western	G4S	Symphony NOC
+35	620573	Gombe	South Rift	Siaya	0	Pending	2026-08-10 12:01:37.090878+03	Egypro.	South Rift	Siaya	0.005626	34.481313	Bondo Cluster	South Rift	G4S	Symphony NOC
+36	620754	Uhendo	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.092757+03	Egypro.	Upper Western	Siaya	-0.224678	34.209532	Bondo Cluster	Upper Western	G4S	Symphony NOC
+37	622160	Kambare	South Rift	Siaya	0	Pending	2026-08-10 12:01:37.09452+03	Egypro.	South Rift	Siaya	-0.031270	34.461256	Bondo Cluster	South Rift	G4S	Symphony NOC
+38	670054	Matera	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.096225+03	Egypro.	Upper Western	Siaya	-0.006901	34.245728	Bondo Cluster	Upper Western	G4S	Symphony NOC
+39	670130	Gem_Ndori	South Rift	Siaya	0	Pending	2026-08-10 12:01:37.098226+03	Egypro.	South Rift	Siaya	-0.030228	34.437621	Bondo Cluster	South Rift	G4S	Symphony NOC
+40	620896	KOTIENO-NAYA	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.100114+03	Egypro.	Upper Western	Siaya	-0.360215	34.302937	Bondo Cluster	Upper Western	G4S	Symphony NOC
+41	619844	Unyolo	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.101874+03	Egypro.	Upper Western	Siaya	0.090350	34.206417	Bondo Siaya Cluster	Upper Western	G4S	Symphony NOC
+42	619855	Kadenge	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.103508+03	Egypro.	Upper Western	Siaya	0.017197	34.178835	Bondo Siaya Cluster	Upper Western	G4S	Symphony NOC
+43	619843	Ting'Wang'I	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.105205+03	Egypro.	Upper Western	Siaya	-0.004571	34.294094	Bondo Siaya Cluster	Upper Western	G4S	Symphony NOC
+44	620529	Usigu	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.106876+03	Egypro.	Upper Western	Siaya	-0.037189	34.105474	Bondo Siaya Cluster	Upper Western	G4S	Symphony NOC
+45	670127	Nyagondo	South Rift	Siaya	0	Pending	2026-08-10 12:01:37.108603+03	Egypro.	South Rift	Siaya	0.050740	34.413450	Bondo Siaya Cluster	South Rift	G4S	Symphony NOC
+1	NBI-HQ-001	Nairobi Headquarters	Nairobi	Westlands, Nairobi	14	Live	2026-08-09 10:31:54.621224+03	\N	\N	\N	-1.267300	36.811000	\N	\N	\N	\N
+3	KSM-OF-003	Kisumu Office	Western	Milimani, Kisumu	4	Testing	2026-08-09 10:31:54.621224+03	\N	\N	\N	-0.091700	34.768000	\N	\N	\N	\N
+4	NKR-DP-004	Nakuru Depot	Rift Valley	Industrial Area, Nakuru	7	Live	2026-08-09 10:31:54.621224+03	\N	\N	\N	-0.303100	36.080000	\N	\N	\N	\N
+7	THK-WH-006	Thika Warehouse	Nairobi	Thika Road, Thika	0	Pending	2026-08-09 10:31:54.621224+03	\N	\N	\N	-1.033300	37.069300	\N	\N	\N	\N
+8	GRS-SB-007	Garissa Substation	North Eastern	Garissa Town	5	Offline	2026-08-09 10:31:54.621224+03	\N	\N	\N	-0.453600	39.646100	\N	\N	\N	\N
+9	MLD-YD-008	Malindi Yard	Coast	Malindi, Kilifi	6	Inactive	2026-08-09 10:31:54.621224+03	\N	\N	\N	-3.219200	40.116900	\N	\N	\N	\N
+6	ATR-PL-009	Athi River Plant	Eastern	Athi River, Machakos	8	SMPMS	2026-08-09 10:31:54.621224+03	\N	\N	\N	-1.456500	36.978400	\N	\N	\N	\N
+46	619840	Ukwala	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.110299+03	Egypro.	Upper Western	Siaya	0.191905	34.190028	Bondo Siaya Cluster	Upper Western	G4S	Symphony NOC
+47	619841	Sidindi	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.117509+03	Egypro.	Upper Western	Siaya	0.153177	34.390537	Bondo Siaya Cluster	Upper Western	G4S	Symphony NOC
+48	619845	Ng'iya	South Rift	Siaya	0	Pending	2026-08-10 12:01:37.119314+03	Egypro.	South Rift	Siaya	0.038833	34.374457	Bondo Siaya Cluster	South Rift	G4S	Symphony NOC
+49	619854	Bondo_Guba	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.121143+03	Egypro.	Upper Western	Siaya	-0.102303	34.275641	Bondo Siaya Cluster	Upper Western	G4S	Symphony NOC
+50	620411	Siaya Awelo	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.122998+03	Egypro.	Upper Western	Siaya	0.053553	34.277220	Bondo Siaya Cluster	Upper Western	G4S	Symphony NOC
+51	620435	Ambira ATC	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.124701+03	Egypro.	Upper Western	Siaya	0.165972	34.240807	Bondo Siaya Cluster	Upper Western	G4S	Symphony NOC
+52	620439	Rang'ala ATC	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.126458+03	Egypro.	Upper Western	Siaya	0.151372	34.338847	Bondo Siaya Cluster	Upper Western	G4S	Symphony NOC
+53	620641	Madungu ATC	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.128181+03	Egypro.	Upper Western	Siaya	0.199645	34.388574	Bondo Siaya Cluster	Upper Western	G4S	Symphony NOC
+54	621243	Osieko	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.129917+03	Egypro.	Upper Western	Siaya	-0.030604	34.017843	Bondo Siaya Cluster	Upper Western	G4S	Symphony NOC
+55	619711	Khachonge	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.131645+03	Egypro.	Upper Western	Bungoma	0.690435	34.623103	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+56	620586	Kimatuni	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.133375+03	Egypro.	Upper Western	Bungoma	0.497973	34.456580	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+57	619708	Chebukwa	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.135109+03	Egypro.	Upper Western	Bungoma	0.636157	34.568792	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+58	620334	Bungoma South_ATC	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.136864+03	Egypro.	Upper Western	Bungoma	0.556193	34.555433	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+59	622469	Tuuti_Kanduyi	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.138638+03	Egypro.	Upper Western	Bungoma	0.604560	34.541657	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+60	619725	Bumula	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.140396+03	Egypro.	Upper Western	Bungoma	0.559930	34.422288	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+61	619722	Ejinja	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.14214+03	Egypro.	Upper Western	Bungoma	0.416065	34.454030	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+62	620543	Buyofu	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.144015+03	Egypro.	Upper Western	Bungoma	0.481230	34.392130	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+63	618737	Bungoma Kewa	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.145777+03	Egypro.	Upper Western	Bungoma	0.543247	34.557973	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+64	622409	Siritanyi Bungoma	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.147512+03	Egypro.	Upper Western	Bungoma	0.566340	34.532330	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+65	619710	Kanduyi	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.149298+03	Egypro.	Upper Western	Bungoma	0.595995	34.551052	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+66	619707	Chwele	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.153377+03	Egypro.	Upper Western	Bungoma	0.743647	34.561195	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+67	619712	Kibisi	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.155536+03	Egypro.	Upper Western	Bungoma	0.683687	34.877818	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+68	620410	Kimwaga	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.157268+03	Egypro.	Upper Western	Bungoma	0.597078	34.444508	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+69	620473	Miendo	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.158978+03	Egypro.	Upper Western	Bungoma	0.677130	34.682460	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+70	621551	Bungoma Cereals	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.160693+03	Egypro.	Upper Western	Bungoma	0.571940	34.562370	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+71	621827	BUNGOMA_BUEMA_ATC	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.162426+03	Egypro.	Upper Western	Bungoma	0.596020	34.520430	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+72	622602	Ranje Bungoma	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.164063+03	Egypro.	Upper Western	Bungoma	0.548660	34.577640	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+73	622627	Muyayi Bungoma	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.165787+03	Egypro.	Upper Western	Bungoma	0.579440	34.576100	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+74	622791	Bumula town	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.167594+03	Egypro.	Upper Western	Bungoma	0.547000	34.463590	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+75	622561	Kisiwa	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.169369+03	Egypro.	Upper Western	Bungoma	0.647310	34.560090	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+76	670118	MILUKI	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.171058+03	Egypro.	Upper Western	Bungoma	0.640116	34.498437	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+77	670168	Namuyemba ATC	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.172746+03	Egypro.	Upper Western	Bungoma	0.585416	34.536818	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+78	670216	Tulumba	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.174407+03	Egypro.	Upper Western	Bungoma	0.565000	34.494780	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+79	670192	Chiliba ATC	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.176223+03	Egypro.	Upper Western	Bungoma	0.527689	34.421990	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+80	619714	Bokoli	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.178084+03	Egypro.	Upper Western	Bungoma	0.733642	34.674727	Bungoma Cluster	Upper Western	G4S	Symphony NOC
+81	619743	Ruambwa_2	Upper Western	Busia	0	Pending	2026-08-10 12:01:37.179883+03	Egypro.	Upper Western	Busia	0.133422	34.106233	Busia Cluster	Upper Western	G4S	Symphony NOC
+82	619742	Sio_Port	Upper Western	Busia	0	Pending	2026-08-10 12:01:37.181582+03	Egypro.	Upper Western	Busia	0.210019	34.041033	Busia Cluster	Upper Western	G4S	Symphony NOC
+83	620585	Mungatsi	Upper Western	Busia	0	Pending	2026-08-10 12:01:37.183305+03	Egypro.	Upper Western	Busia	0.470617	34.318865	Busia Cluster	Upper Western	G4S	Symphony NOC
+84	619723	Mundika	Upper Western	Busia	0	Pending	2026-08-10 12:01:37.185077+03	Egypro.	Upper Western	Busia	0.418247	34.145897	Busia Cluster	Upper Western	G4S	Symphony NOC
+85	618160	Lunganyiro	Upper Western	Busia	0	Pending	2026-08-10 12:01:37.186826+03	Egypro.	Upper Western	Busia	0.428820	34.398273	Busia Cluster	Upper Western	G4S	Symphony NOC
+86	619739	Bumala	Upper Western	Busia	0	Pending	2026-08-10 12:01:37.188491+03	Egypro.	Upper Western	Busia	0.302777	34.200583	Busia Cluster	Upper Western	G4S	Symphony NOC
+87	620474	Segero New	Upper Western	Busia	0	Pending	2026-08-10 12:01:37.190221+03	Egypro.	Upper Western	Busia	0.499483	34.267547	Busia Cluster	Upper Western	G4S	Symphony NOC
+88	620417	Nambale ATC	Upper Western	Busia	0	Pending	2026-08-10 12:01:37.192005+03	Egypro.	Upper Western	Busia	0.480840	34.222923	Busia Cluster	Upper Western	G4S	Symphony NOC
+89	670053	Madende	Upper Western	Busia	0	Pending	2026-08-10 12:01:37.193923+03	Egypro.	Upper Western	Busia	0.480368	34.359511	Busia Cluster	Upper Western	G4S	Symphony NOC
+90	622640	Nambale_Magarita	Upper Western	Busia	0	Pending	2026-08-10 12:01:37.195576+03	Egypro.	Upper Western	Busia	0.452815	34.232769	Busia Cluster	Upper Western	G4S	Symphony NOC
+91	618738	Ligosi	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.197396+03	Egypro.	Upper Western	Siaya	0.235030	34.231240	Busia Cluster	Upper Western	G4S	Symphony NOC
+92	621246	Jera ATC	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.199074+03	Egypro.	Upper Western	Siaya	0.286530	34.263540	Busia Cluster	Upper Western	G4S	Symphony NOC
+93	670094	God Rembo	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.200809+03	Egypro.	Upper Western	Siaya	0.251985	34.135761	Busia Cluster	Upper Western	G4S	Symphony NOC
+94	622717	Bulwani Market	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.202683+03	Egypro.	Upper Western	Bungoma	0.359650	34.312960	Busia Cluster	Upper Western	G4S	Symphony NOC
+95	619479	Eldoret_Polytechnic	North Rift	Uasin Gishu	0	Pending	2026-08-10 12:01:37.204356+03	Egypro.	North Rift	Uasin Gishu	0.486842	35.262572	Eldoret Cluster	North Rift	G4S	Symphony NOC
+96	618024	Eldoret West Campus	North Rift	Uasin Gishu	0	Pending	2026-08-10 12:01:37.206035+03	Egypro.	North Rift	Uasin Gishu	0.559867	35.242030	Eldoret Cluster	North Rift	G4S	Symphony NOC
+97	619485	Eldoret_Testmony	North Rift	Uasin Gishu	0	Pending	2026-08-10 12:01:37.20775+03	Egypro.	North Rift	Uasin Gishu	0.500785	35.283743	Eldoret Cluster	North Rift	G4S	Symphony NOC
+98	620507	Tapsagoi Cheplaskei	North Rift	Uasin Gishu	0	Pending	2026-08-10 12:01:37.209531+03	Egypro.	North Rift	Uasin Gishu	0.574210	35.043610	Eldoret Cluster	North Rift	G4S	Symphony NOC
+99	620743	Sinonin	North Rift	Uasin Gishu	0	Pending	2026-08-10 12:01:37.211286+03	Egypro.	North Rift	Uasin Gishu	0.705045	35.222935	Eldoret Cluster	North Rift	G4S	Symphony NOC
+100	619488	Eldoret_Rail_Station	North Rift	Uasin Gishu	0	Pending	2026-08-10 12:01:37.212986+03	Egypro.	North Rift	Uasin Gishu	0.522672	35.275807	Eldoret Cluster	North Rift	G4S	Symphony NOC
+101	619480	Soy	North Rift	Uasin Gishu	0	Pending	2026-08-10 12:01:37.214678+03	Egypro.	North Rift	Uasin Gishu	0.684990	35.150998	Eldoret Cluster	North Rift	G4S	Symphony NOC
+102	621304	Eldoret Polytechnic	North Rift	Uasin Gishu	0	Pending	2026-08-10 12:01:37.216371+03	Egypro.	North Rift	Uasin Gishu	0.474780	35.271720	Eldoret Cluster	North Rift	G4S	Symphony NOC
+103	622573	Soy_Nangili	North Rift	Uasin Gishu	0	Pending	2026-08-10 12:01:37.218311+03	Egypro.	North Rift	Uasin Gishu	0.710770	35.158740	Eldoret Cluster	North Rift	G4S	Symphony NOC
+104	618100	Soy CDMA	North Rift	Uasin Gishu	0	Pending	2026-08-10 12:01:37.220057+03	Egypro.	North Rift	Uasin Gishu	0.682445	35.183482	Eldoret Cluster	North Rift	G4S	Symphony NOC
+105	619076	Kianyaga	Lower Central	Kirinyaga	0	Pending	2026-08-10 12:01:37.221766+03	I Engineering.	Lower Central	Kirinyaga	-0.494872	37.352927	Embu Cluster	Lower Central	G4S	Symphony NOC
+106	620717	KIWANJA ISIOLO	Upper Eastern	Isiolo	0	Pending	2026-08-10 12:01:37.223483+03	I Engineering.	Upper Eastern	Isiolo	0.435332	37.600523	Isiolo Cluster	Upper Eastern	G4S	Symphony NOC
+107	620433	Misango Hill	Upper Western	Kakamega	0	Pending	2026-08-10 12:01:37.225196+03	Egypro.	Upper Western	Kakamega	0.148519	34.664197	Kakamega Cluster	Upper Western	G4S	Symphony NOC
+108	670120	Nasianda_Scheme	North Rift	Kakamega	0	Pending	2026-08-10 12:01:37.22691+03	Egypro.	North Rift	Kakamega	0.756301	35.123701	Kakamega Cluster	North Rift	G4S	Symphony NOC
+109	622468	Khaunga	Upper Western	Kakamega	0	Pending	2026-08-10 12:01:37.228771+03	Egypro.	Upper Western	Kakamega	0.376609	34.583977	Kakamega Cluster	Upper Western	G4S	Symphony NOC
+110	622840	Navakholo Market	Upper Western	Kakamega	0	Pending	2026-08-10 12:01:37.230768+03	Egypro.	Upper Western	Kakamega	0.414276	34.680962	Kakamega Cluster	Upper Western	G4S	Symphony NOC
+111	670238	Lusweti ATC	North Rift	Kakamega	0	Pending	2026-08-10 12:01:37.232573+03	Egypro.	North Rift	Kakamega	0.719938	35.131259	Kakamega Cluster	North Rift	G4S	Symphony NOC
+112	619822	Shianda	Upper Western	Kakamega	0	Pending	2026-08-10 12:01:37.234578+03	Egypro.	Upper Western	Kakamega	0.319650	34.574400	Kakamega Cluster	Upper Western	G4S	Symphony NOC
+113	618076	Shinyalu	Upper Western	Uasin Gishu	0	Pending	2026-08-10 12:01:37.236319+03	Egypro.	Upper Western	Uasin Gishu	0.225065	34.815990	Kakamega Cluster	Upper Western	G4S	Symphony NOC
+114	619749	Bukhaywa	Upper Western	Kakamega	0	Pending	2026-08-10 12:01:37.238233+03	Egypro.	Upper Western	Kakamega	0.354979	34.833424	Kakamega Cluster	Upper Western	G4S	Symphony NOC
+115	670191	Ingolomosio	Upper Western	Kakamega	0	Pending	2026-08-10 12:01:37.239914+03	Egypro.	Upper Western	Kakamega	0.366745	34.934635	Kakamega Cluster	Upper Western	G4S	Symphony NOC
+116	621572	Kakamega_Matende	Upper Western	Kakamega	0	Pending	2026-08-10 12:01:37.241568+03	Egypro.	Upper Western	Kakamega	0.262289	34.754912	Kakamega Cluster	Upper Western	G4S	Symphony NOC
+117	622353	Shalom Hotel Mumias	Upper Western	Kakamega	0	Pending	2026-08-10 12:01:37.243268+03	Egypro.	Upper Western	Kakamega	0.343550	34.490700	Kakamega Cluster	Upper Western	G4S	Symphony NOC
+118	670059	Malava_Shititira	Upper Western	Kakamega	0	Pending	2026-08-10 12:01:37.244868+03	Egypro.	Upper Western	Kakamega	0.445710	34.875120	Kakamega Cluster	Upper Western	G4S	Symphony NOC
+119	620650	Mahira	Upper Western	Kakamega	0	Pending	2026-08-10 12:01:37.246527+03	Egypro.	Upper Western	Kakamega	0.405005	34.805502	Kakamega Cluster	Upper Western	G4S	Symphony NOC
+120	621997	Ruai_Bondeni ATC	Nairobi East	Nairobi	0	Pending	2026-08-10 12:01:37.248183+03	Netis	Nairobi East	Nairobi	-1.264266	37.011831	Kangundo road	Nairobi East	G4S	Symphony NOC
+121	622431	Roy Hauliers- Aiport North Rd	Nairobi East	Nairobi	0	Pending	2026-08-10 12:01:37.24999+03	Netis	Nairobi East	Nairobi	-1.320641	36.905656	Kangundo road	Nairobi East	G4S	Symphony NOC
+122	622028	Tala Boys ATC	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.251697+03	Netis	Eastern	Machakos	-1.270630	37.298605	Kangundo road	Eastern	G4S	Symphony NOC
+123	620764	Ruai_Gituamba	Nairobi East	Nairobi	0	Pending	2026-08-10 12:01:37.253529+03	Netis	Nairobi East	Nairobi	-1.266238	37.020757	Kangundo road	Nairobi East	G4S	Symphony NOC
+124	619007	Tala	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.255287+03	Netis	Eastern	Machakos	-1.248302	37.290712	Kangundo road	Eastern	G4S	Symphony NOC
+125	620503	Muthwani	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.256994+03	Netis	Eastern	Machakos	-1.399329	37.177352	Kangundo road	Eastern	G4S	Symphony NOC
+126	622810	Road C_Industrial Area	Nairobi East	Nairobi	0	Pending	2026-08-10 12:01:37.258727+03	Netis	Nairobi East	Nairobi	-1.327615	36.859961	Kangundo road	Nairobi East	G4S	Symphony NOC
+127	620484	Kamulu_Deliverance	Nairobi East	Machakos	0	Pending	2026-08-10 12:01:37.260502+03	Netis	Nairobi East	Machakos	-1.279912	37.010307	Kangundo road	Nairobi East	G4S	Symphony NOC
+128	622290	Athi_Market	Nairobi East	Machakos	0	Pending	2026-08-10 12:01:37.262317+03	Netis	Nairobi East	Machakos	-1.265160	37.086730	Kangundo road	Nairobi East	G4S	Symphony NOC
+129	622377	Kamulu Kasarani Technical	Nairobi East	Nairobi	0	Pending	2026-08-10 12:01:37.264069+03	Netis	Nairobi East	Nairobi	-1.295580	37.060290	Kangundo road	Nairobi East	G4S	Symphony NOC
+130	622874	Kenol_JED	Lower Central	Murang'a	0	Pending	2026-08-10 12:01:37.265984+03	I Engineering.	Lower Central	Murang'a	-0.936732	37.123934	Muranga cluster	Lower Central	G4S	Symphony NOC
+131	670097	Ithanga_Matunda	Lower Central	Murang'a	0	Pending	2026-08-10 12:01:37.267746+03	I Engineering.	Lower Central	Murang'a	-1.044130	37.335770	Muranga cluster	Lower Central	G4S	Symphony NOC
+132	670206	Kabati_Kakuzi_Dam_Estate	Lower Central	Murang'a	0	Pending	2026-08-10 12:01:37.269745+03	I Engineering.	Lower Central	Murang'a	-0.951587	37.121426	Muranga cluster	Lower Central	G4S	Symphony NOC
+133	670248	Gacharage-ini	Lower Central	Murang'a	0	Pending	2026-08-10 12:01:37.271566+03	I Engineering.	Lower Central	Murang'a	-0.628826	36.868706	Muranga cluster	Lower Central	G4S	Symphony NOC
+134	619814	Kisumu_Tido	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.273402+03	Egypro.	South Rift	Kisumu	-0.085647	34.800980	Kisumu 1	South Rift	G4S	Symphony NOC
+135	619773	Kisumu_Manyatta_Skyway	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.275111+03	Egypro.	South Rift	Kisumu	-0.088300	34.778400	Kisumu 1	South Rift	G4S	Symphony NOC
+136	619808	Wathorego	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.276829+03	Egypro.	South Rift	Kisumu	-0.061210	34.804927	Kisumu 1	South Rift	G4S	Symphony NOC
+137	622648	Urudi Primary	Lower Western	KISUMU	0	Pending	2026-08-10 12:01:37.278683+03	Egypro.	Lower Western	KISUMU	-0.286088	34.952824	Kisumu 1	Lower Western	G4S	Symphony NOC
+138	618752	Ahero Junction	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.280459+03	Egypro.	South Rift	Kisumu	-0.172385	34.933507	Kisumu 1	South Rift	G4S	Symphony NOC
+139	622003	Onjiko Boya	South Rift	KISUMU	0	Pending	2026-08-10 12:01:37.282092+03	Egypro.	South Rift	KISUMU	-0.166170	34.949940	Kisumu 1	South Rift	G4S	Symphony NOC
+140	618599	Nyando_Wangaya	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.283794+03	Egypro.	South Rift	Kisumu	-0.143363	35.020200	Kisumu 1	South Rift	G4S	Symphony NOC
+141	670208	Kanyipola_Primary_School	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.285489+03	Egypro.	South Rift	Kisumu	-0.175779	35.028405	Kisumu 1	South Rift	G4S	Symphony NOC
+142	622653	Oren ATC	South Rift	KISUMU	0	Pending	2026-08-10 12:01:37.287202+03	Egypro.	South Rift	KISUMU	-0.188399	35.018749	Kisumu 1	South Rift	G4S	Symphony NOC
+143	621616	Kisumu_Arina_Primary_School	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.288928+03	Egypro.	South Rift	Kisumu	-0.091329	34.775540	Kisumu 1	South Rift	G4S	Symphony NOC
+144	620367	Kisumu Day	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.290665+03	Egypro.	South Rift	Kisumu	-0.101678	34.767733	Kisumu 1	South Rift	G4S	Symphony NOC
+145	622156	Buoye_Catholic_Shrine	South Rift	KISUMU	0	Pending	2026-08-10 12:01:37.292316+03	Egypro.	South Rift	KISUMU	-0.142162	34.807584	Kisumu 1	South Rift	G4S	Symphony NOC
+146	618600	Nyando Kochieng	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.294042+03	Egypro.	South Rift	Kisumu	-0.152955	34.866088	Kisumu 1	South Rift	G4S	Symphony NOC
+147	620432	Miriu Nyakwere	Lower Western	Kisumu	0	Pending	2026-08-10 12:01:37.29579+03	Egypro.	Lower Western	Kisumu	-0.345988	34.797245	Kisumu 1	Lower Western	G4S	Symphony NOC
+148	670308	Kisumu Ogwedhi	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.297811+03	Egypro.	South Rift	Kisumu	-0.156415	34.841744	Kisumu 1	South Rift	G4S	Symphony NOC
+149	621800	Number Okana ATC	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.2995+03	Egypro.	South Rift	Kisumu	-0.154396	34.858149	Kisumu 1	South Rift	G4S	Symphony NOC
+150	619790	Kisumu_Elgons_Estate	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.301233+03	Egypro.	South Rift	Kisumu	-0.075277	34.797818	Kisumu 1	South Rift	G4S	Symphony NOC
+151	621263	Kisumu_Tido_new	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.30536+03	Egypro.	South Rift	Kisumu	-0.089542	34.801987	Kisumu 1	South Rift	G4S	Symphony NOC
+152	619810	Kisumu_Kolwa	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.307246+03	Egypro.	South Rift	Kisumu	-0.113225	34.798130	Kisumu 1	South Rift	G4S	Symphony NOC
+153	621916	Kisumu_Nyalunya	South Rift	KISUMU	0	Pending	2026-08-10 12:01:37.308997+03	Egypro.	South Rift	KISUMU	-0.118230	34.812230	Kisumu 1	South Rift	G4S	Symphony NOC
+154	620702	Katolo	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.310795+03	Egypro.	South Rift	Kisumu	-0.217750	35.045270	Kisumu 1	South Rift	G4S	Symphony NOC
+155	619669	Katito	Lower Western	Homa Bay	0	Pending	2026-08-10 12:01:37.312799+03	Egypro.	Lower Western	Homa Bay	-0.272170	34.970640	Kisumu 1	Lower Western	G4S	Symphony NOC
+156	619666	Kusa	Lower Western	Kisumu	0	Pending	2026-08-10 12:01:37.31457+03	Egypro.	Lower Western	Kisumu	-0.335285	34.851875	Kisumu 1	Lower Western	G4S	Symphony NOC
+157	622307	Harambee_Market	Lower Western	KISUMU	0	Pending	2026-08-10 12:01:37.316382+03	Egypro.	Lower Western	KISUMU	-0.316792	34.896765	Kisumu 1	Lower Western	G4S	Symphony NOC
+158	619625	Pap_Onditi	Lower Western	Kisumu	0	Pending	2026-08-10 12:01:37.318166+03	Egypro.	Lower Western	Kisumu	-0.305102	34.919827	Kisumu 1	Lower Western	G4S	Symphony NOC
+159	619785	Kisumu_Airport	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.320103+03	Egypro.	South Rift	Kisumu	-0.086405	34.739607	Kisumu 2	South Rift	G4S	Symphony NOC
+160	619772	Lihanda_West_Gem	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.321792+03	Egypro.	South Rift	Kisumu	0.028458	34.528987	Kisumu 2	South Rift	G4S	Symphony NOC
+161	619780	Majengo	South Rift	Vihiga	0	Pending	2026-08-10 12:01:37.323524+03	Egypro.	South Rift	Vihiga	0.033729	34.708532	Kisumu 2	South Rift	G4S	Symphony NOC
+162	619789	Kisumu_Nyawita	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.325292+03	Egypro.	South Rift	Kisumu	-0.085808	34.771353	Kisumu 2	South Rift	G4S	Symphony NOC
+163	619795	Kisumu_Chiga	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.32703+03	Egypro.	South Rift	Kisumu	-0.069680	34.858410	Kisumu 2	South Rift	G4S	Symphony NOC
+164	619813	Kajulu_Osiepe	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.328857+03	Egypro.	South Rift	Kisumu	-0.040550	34.791870	Kisumu 2	South Rift	G4S	Symphony NOC
+165	619805	Maseno	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.330663+03	Egypro.	South Rift	Kisumu	-0.009420	34.592550	Kisumu 2	South Rift	G4S	Symphony NOC
+166	619776	Luanda	South Rift	Vihiga	0	Pending	2026-08-10 12:01:37.332438+03	Egypro.	South Rift	Vihiga	0.025814	34.583808	Kisumu 2	South Rift	G4S	Symphony NOC
+167	621323	Kisumu Kanyawegi	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.334107+03	Egypro.	South Rift	Kisumu	-0.109942	34.631545	Kisumu 2	South Rift	G4S	Symphony NOC
+168	621618	Ayoti_Distributors_Busia_Rd	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.335767+03	Egypro.	South Rift	Kisumu	-0.073616	34.692677	Kisumu 2	South Rift	G4S	Symphony NOC
+169	622632	Lela ATC	South Rift	KISUMU	0	Pending	2026-08-10 12:01:37.337534+03	Egypro.	South Rift	KISUMU	-0.028589	34.609908	Kisumu 2	South Rift	G4S	Symphony NOC
+170	622599	Kokode	South Rift	KISUMU	0	Pending	2026-08-10 12:01:37.339403+03	Egypro.	South Rift	KISUMU	-0.016937	34.796200	Kisumu 2	South Rift	G4S	Symphony NOC
+171	621619	Kisumu_Kudho	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.341112+03	Egypro.	South Rift	Kisumu	-0.077072	34.763604	Kisumu 2	South Rift	G4S	Symphony NOC
+172	622157	Obambo Mlimani	South Rift	KISUMU	0	Pending	2026-08-10 12:01:37.342754+03	Egypro.	South Rift	KISUMU	-0.098049	34.616046	Kisumu 2	South Rift	G4S	Symphony NOC
+173	622645	Kwach	Upper Western	Siaya	0	Pending	2026-08-10 12:01:37.344493+03	Egypro.	Upper Western	Siaya	0.004838	34.111567	Kisumu 2	Upper Western	G4S	Symphony NOC
+174	622636	Barkorwa ATC	South Rift	KISUMU	0	Pending	2026-08-10 12:01:37.346359+03	Egypro.	South Rift	KISUMU	-0.067734	34.514307	Kisumu 2	South Rift	G4S	Symphony NOC
+175	621375	Kisumu_East	South Rift	KISUMU	0	Pending	2026-08-10 12:01:37.348259+03	Egypro.	South Rift	KISUMU	-0.068750	34.737830	Kisumu 2	South Rift	G4S	Symphony NOC
+176	621251	Mamboleo_Jakisii_Stage	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.350131+03	Egypro.	South Rift	Kisumu	-0.053337	34.791868	Kisumu 2	South Rift	G4S	Symphony NOC
+177	622038	Ogal	South Rift	KISUMU	0	Pending	2026-08-10 12:01:37.35182+03	Egypro.	South Rift	KISUMU	-0.134721	34.584800	Kisumu 2	South Rift	G4S	Symphony NOC
+178	620522	Bodi Hill	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.353693+03	Egypro.	South Rift	Kisumu	-0.147565	34.523007	Kisumu 2	South Rift	G4S	Symphony NOC
+179	622631	Ojola ATC	South Rift	KISUMU	0	Pending	2026-08-10 12:01:37.355448+03	Egypro.	South Rift	KISUMU	-0.078510	34.644595	Kisumu 2	South Rift	G4S	Symphony NOC
+180	670188	Akingli ATC	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.357156+03	Egypro.	South Rift	Kisumu	-0.053318	34.717612	Kisumu 2	South Rift	G4S	Symphony NOC
+181	619768	Daraja Mbili	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.358757+03	Egypro.	South Rift	Kisumu	-0.054690	34.635000	Kisumu 2	South Rift	G4S	Symphony NOC
+182	620351	Kajulu_Mwembe_Mmoja	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.360502+03	Egypro.	South Rift	Kisumu	-0.039272	34.759190	Kisumu 2	South Rift	G4S	Symphony NOC
+183	619548	Kiminini	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.362136+03	Egypro.	North Rift	Trans-Nzoia	0.890822	34.926208	Kitale Cluster	North Rift	G4S	Symphony NOC
+184	620800	Kitale Chetoto Primary	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.363819+03	Egypro.	North Rift	Trans-Nzoia	1.015560	34.989630	Kitale Cluster	North Rift	G4S	Symphony NOC
+185	620647	Netima_Musakasa	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.365472+03	Egypro.	Upper Western	Bungoma	0.649800	34.464490	Kitale Cluster	Upper Western	G4S	Symphony NOC
+186	620514	Kiminini Ndalu	North Rift	Bungoma	0	Pending	2026-08-10 12:01:37.36709+03	Egypro.	North Rift	Bungoma	0.839937	34.934592	Kitale Cluster	North Rift	G4S	Symphony NOC
+187	622049	Kimilili Town	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.368697+03	Egypro.	Upper Western	Bungoma	0.782510	34.718400	Kitale Cluster	Upper Western	G4S	Symphony NOC
+188	619553	Tongareni	North Rift	Bungoma	0	Pending	2026-08-10 12:01:37.370301+03	Egypro.	North Rift	Bungoma	0.780587	35.009508	Kitale Cluster	North Rift	G4S	Symphony NOC
+189	620508	Birunda	North Rift	Bungoma	0	Pending	2026-08-10 12:01:37.371896+03	Egypro.	North Rift	Bungoma	0.960532	34.929705	Kitale Cluster	North Rift	G4S	Symphony NOC
+190	620583	Chesamisi	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.373455+03	Egypro.	Upper Western	Bungoma	0.840325	34.789692	Kitale Cluster	Upper Western	G4S	Symphony NOC
+191	670215	Ambichi	North Rift	Bungoma	0	Pending	2026-08-10 12:01:37.375115+03	Egypro.	North Rift	Bungoma	0.790090	34.992180	Kitale Cluster	North Rift	G4S	Symphony NOC
+192	620546	Ikatini	Lower Central	Machakos	0	Pending	2026-08-10 12:01:37.376739+03	I Engineering.	Lower Central	Machakos	-1.069460	37.520836	Machakos Cluster 1	Lower Central	G4S	Symphony NOC
+193	670033	Kambi Mawe Primary	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.37848+03	Netis	Eastern	Makueni	-1.852334	37.660271	Wote Cluster	Eastern	G4S	Symphony NOC
+194	621202	Kitui Kalundu Safcom	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.380213+03	Netis	Eastern	Kitui	-1.354330	38.009910	Kitui Cluster	Eastern	G4S	Symphony NOC
+195	619028	Matiliku	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.381995+03	Netis	Eastern	Makueni	-1.948972	37.532285	Wote Cluster	Eastern	G4S	Symphony NOC
+196	621088	KATANGINI ATC	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.383617+03	Netis	Eastern	Makueni	-1.746317	37.722590	Wote Cluster	Eastern	G4S	Symphony NOC
+197	618961	Mbitini	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.385255+03	Netis	Eastern	Kitui	-1.607453	38.097020	Kitui Cluster	Eastern	G4S	Symphony NOC
+198	619024	Wote Kmtc	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.386848+03	Netis	Eastern	Makueni	-1.797915	37.618715	Wote Cluster	Eastern	G4S	Symphony NOC
+199	621920	Kaumoni ATC	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.388494+03	Netis	Eastern	Makueni	-1.733254	37.573589	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+200	621127	KASYALA ATC	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.390149+03	Netis	Eastern	Kitui	-1.276727	38.031052	Kitui Cluster	Eastern	G4S	Symphony NOC
+201	621170	Kanyangi	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.391973+03	Netis	Eastern	Kitui	-1.764489	37.904743	Wote Cluster	Eastern	G4S	Symphony NOC
+202	619029	Mavindini	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.393739+03	Netis	Eastern	Makueni	-1.816230	37.788628	Wote Cluster	Eastern	G4S	Symphony NOC
+203	620492	Tulila	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.395411+03	Netis	Eastern	Machakos	-1.570145	37.699607	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+204	619027	Masue_Hill	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.397058+03	Netis	Eastern	Makueni	-2.009473	37.456555	Wote Cluster	Eastern	G4S	Symphony NOC
+205	621078	Kyoani ATC	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.398696+03	Netis	Eastern	Kitui	-1.941820	38.195550	Wote Cluster	Eastern	G4S	Symphony NOC
+206	621172	Kyatune	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.400277+03	Netis	Eastern	Kitui	-1.766017	38.102718	Wote Cluster	Eastern	G4S	Symphony NOC
+207	620975	Uviluni Primary School	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.401879+03	Netis	Eastern	Makueni	-1.750683	37.672810	Wote Cluster	Eastern	G4S	Symphony NOC
+208	618965	Nthongoni	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.403532+03	Netis	Eastern	Kitui	-1.628227	37.836892	Wote Cluster	Eastern	G4S	Symphony NOC
+209	620477	Yikithuki	Coast	Makueni	0	Pending	2026-08-10 12:01:37.405172+03	Netis	Coast	Makueni	-1.990900	37.856500	Wote Cluster	Coast	G4S	Symphony NOC
+210	619018	Kitise	Coast	Makueni	0	Pending	2026-08-10 12:01:37.406867+03	Netis	Coast	Makueni	-2.055442	37.879770	Wote Cluster	Coast	G4S	Symphony NOC
+211	620569	Mwala ATC	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.408497+03	Netis	Eastern	Machakos	-1.354090	37.445670	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+212	622489	Kyambuko Primary School	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.410103+03	Netis	Eastern	Machakos	-1.522606	37.295836	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+213	621836	Sweet waters_Machakos	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.411782+03	Netis	Eastern	Machakos	-1.493720	37.261100	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+214	618992	Machakos_Masii	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.413471+03	Netis	Eastern	Machakos	-1.461197	37.423783	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+215	620505	Iani Market	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.415142+03	Netis	Eastern	Machakos	-1.544822	37.570888	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+216	621526	Mungala_OUTE	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.416806+03	Netis	Eastern	Machakos	-1.478052	37.254754	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+217	618990	Machakos_Kathiani	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.418487+03	Netis	Eastern	Machakos	-1.427047	37.317615	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+218	618997	Mitaboni	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.420235+03	Netis	Eastern	Machakos	-1.372572	37.249785	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+219	622787	Muvakani_Kisekini	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.421905+03	Netis	Eastern	Machakos	-1.428120	37.266160	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+220	621086	Salama ATC	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.423762+03	Netis	Eastern	Makueni	-1.851505	37.254052	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+221	618998	Mbevo Hill	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.425557+03	Netis	Eastern	Machakos	-1.650060	37.289613	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+222	618995	Machakos_Town	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.427286+03	Netis	Eastern	Machakos	-1.537147	37.266258	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+223	670272	Katheka_Ngunguo	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.428989+03	Netis	Eastern	Machakos	-1.505640	37.188810	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+224	619002	Ngelani	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.430725+03	Netis	Eastern	Machakos	-1.436183	37.213760	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+225	621317	KAVANI HILL MALILI	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.432395+03	Netis	Eastern	Makueni	-1.685016	37.208186	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+226	618205	Machakos Eastliegh	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.434019+03	Netis	Eastern	Machakos	-1.536447	37.265024	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+227	621258	Katoloni ATC	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.43567+03	Netis	Eastern	Machakos	-1.542000	37.262000	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+228	618952	Wilson_Kilima_Kiu	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.437389+03	Netis	Eastern	Kajiado	-1.793870	37.209897	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+229	620594	Mung'ala	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.439283+03	Netis	Eastern	Machakos	-1.483785	37.267503	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+230	620592	Yathui ATC	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.441149+03	Netis	Eastern	Machakos	-1.464392	37.597036	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+231	618207	Kikambuani	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.443015+03	Netis	Eastern	Machakos	-1.271292	37.373510	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+232	670068	Mbembani	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.444788+03	Netis	Eastern	Machakos	-1.622019	37.260986	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+233	620504	Kimutwa	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.446579+03	Netis	Eastern	Machakos	-1.597151	37.263094	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+234	621206	NGIINI ATC	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.448352+03	Netis	Eastern	Makueni	-1.745780	37.245270	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+235	620596	Vota	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.450148+03	Netis	Eastern	Machakos	-1.584777	37.213092	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+236	619012	Kalawani	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.451945+03	Netis	Eastern	Makueni	-1.558378	37.446373	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+237	618978	Kakuyuni	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.453616+03	Netis	Eastern	Machakos	-1.351012	37.349188	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+238	622355	Machakos Kyumbi	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.455342+03	Netis	Eastern	Machakos	-1.561413	37.115310	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+239	621277	Kingoti	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.458481+03	Netis	Eastern	Machakos	-1.226464	37.351268	Kangundo road	Eastern	G4S	Symphony NOC
+240	618066	Myanga	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.460189+03	Egypro.	Upper Western	Bungoma	0.562948	34.389592	Malaba Cluster	Upper Western	G4S	Symphony NOC
+241	619719	Amagoro	Upper Western	Busia	0	Pending	2026-08-10 12:01:37.461836+03	Egypro.	Upper Western	Busia	0.646525	34.521077	Malaba Cluster	Upper Western	G4S	Symphony NOC
+242	619728	Kolanya	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.463596+03	Egypro.	Upper Western	Bungoma	0.719863	34.396185	Malaba Cluster	Upper Western	G4S	Symphony NOC
+243	670214	Tamlega	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.466424+03	Egypro.	Upper Western	Bungoma	0.707410	34.415760	Malaba Cluster	Upper Western	G4S	Symphony NOC
+244	621849	Malindi Majengo Mapya	North Coast	Kilifi	0	Pending	2026-08-10 12:01:37.468108+03	Netis	North Coast	Kilifi	-3.215590	40.103230	Malindi <>Kilifi cluster	North Coast	G4S	Symphony NOC
+245	620812	Coral Key	North Coast	Kilifi	0	Pending	2026-08-10 12:01:37.46976+03	Netis	North Coast	Kilifi	-3.225948	40.122270	Malindi <>Kilifi cluster	North Coast	G4S	Symphony NOC
+246	618861	Kibokoni	North Coast	Kilifi	0	Pending	2026-08-10 12:01:37.471425+03	Netis	North Coast	Kilifi	-3.180687	40.110784	Malindi <>Kilifi cluster	North Coast	G4S	Symphony NOC
+247	618808	Roka	North Coast	Kilifi	0	Pending	2026-08-10 12:01:37.473021+03	Netis	North Coast	Kilifi	-3.385440	39.927743	Malindi <>Kilifi cluster	North Coast	G4S	Symphony NOC
+248	618859	Shella	North Coast	Kilifi	0	Pending	2026-08-10 12:01:37.474678+03	Netis	North Coast	Kilifi	-3.240067	40.121911	Malindi <>Kilifi cluster	North Coast	G4S	Symphony NOC
+249	618825	Sokoke	North Coast	Kilifi	0	Pending	2026-08-10 12:01:37.476395+03	Netis	North Coast	Kilifi	-3.477050	39.897480	Malindi <>Kilifi cluster	North Coast	G4S	Symphony NOC
+250	618812	Tezo	North Coast	Kilifi	0	Pending	2026-08-10 12:01:37.478264+03	Netis	North Coast	Kilifi	-3.534180	39.877910	Malindi <>Kilifi cluster	North Coast	G4S	Symphony NOC
+251	618282	Tezo	North Coast	Kilifi	0	Pending	2026-08-10 12:01:37.480065+03	Netis	North Coast	Kilifi	-3.540450	39.877758	Malindi <>Kilifi cluster	North Coast	G4S	Symphony NOC
+252	618855	Madunguni	North Coast	Kilifi	0	Pending	2026-08-10 12:01:37.481819+03	Netis	North Coast	Kilifi	-3.199138	39.995921	Malindi <>Kilifi cluster	North Coast	G4S	Symphony NOC
+253	619285	Sheki	Upper Eastern	Meru	0	Pending	2026-08-10 12:01:37.483586+03	I Engineering.	Upper Eastern	Meru	0.034425	37.109254	Meru Cluster	Upper Eastern	G4S	Symphony NOC
+254	620658	Kirua Hill_ATC	Upper Eastern	Meru	0	Pending	2026-08-10 12:01:37.485193+03	I Engineering.	Upper Eastern	Meru	0.130255	37.558040	Meru Cluster	Upper Eastern	G4S	Symphony NOC
+255	621392	Karumo ATC	Upper Eastern	Meru	0	Pending	2026-08-10 12:01:37.487044+03	I Engineering.	Upper Eastern	Meru	0.210461	37.776734	Meru Cluster	Upper Eastern	G4S	Symphony NOC
+256	620749	Kihingo ATC	Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.488914+03	Egypro.	Central Rift	Nakuru	-0.437440	35.976170	Molo Cluster	Central Rift	G4S	Symphony NOC
+257	619388	Mau_Summit	Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.490639+03	Egypro.	Central Rift	Nakuru	-0.145427	35.685157	Molo Cluster	Central Rift	G4S	Symphony NOC
+258	620700	Nakuru Baraka	South Rift	Nakuru	0	Pending	2026-08-10 12:01:37.492301+03	Egypro.	South Rift	Nakuru	-0.212813	35.687813	Molo Cluster	South Rift	G4S	Symphony NOC
+259	620636	Kericho_Chagaik	South Rift	Kericho	0	Pending	2026-08-10 12:01:37.493926+03	Egypro.	South Rift	Kericho	-0.306212	35.395032	Molo Cluster	South Rift	G4S	Symphony NOC
+260	620691	Londiani Forest	South Rift	Kericho	0	Pending	2026-08-10 12:01:37.495537+03	Egypro.	South Rift	Kericho	-0.176070	35.597870	Molo Cluster	South Rift	G4S	Symphony NOC
+261	620745	Barao ATC	South Rift	Nakuru	0	Pending	2026-08-10 12:01:37.497233+03	Egypro.	South Rift	Nakuru	-0.433670	35.557910	Molo Cluster	South Rift	G4S	Symphony NOC
+262	620533	Barsiele	South Rift	Kericho	0	Pending	2026-08-10 12:01:37.498831+03	Egypro.	South Rift	Kericho	-0.129910	35.491245	Molo Cluster	South Rift	G4S	Symphony NOC
+263	620449	Molo Bygum	South Rift	Nakuru	0	Pending	2026-08-10 12:01:37.500485+03	Egypro.	South Rift	Nakuru	-0.287412	35.664693	Molo Cluster	South Rift	G4S	Symphony NOC
+264	620744	Muchorwi	South Rift	Nakuru	0	Pending	2026-08-10 12:01:37.502233+03	Egypro.	South Rift	Nakuru	-0.334011	35.692498	Molo Cluster	South Rift	G4S	Symphony NOC
+265	622081	Sukunanga_NOVA	North Rift	Uasin Gishu	0	Pending	2026-08-10 12:01:37.503852+03	Egypro.	North Rift	Uasin Gishu	0.487810	35.298130	Eldoret Cluster	North Rift	G4S	Symphony NOC
+266	619372	Thigio	South Rift	Nakuru	0	Pending	2026-08-10 12:01:37.505504+03	Egypro.	South Rift	Nakuru	-0.348153	35.663341	Molo Cluster	South Rift	G4S	Symphony NOC
+267	619369	Elburgon	South Rift	Nakuru	0	Pending	2026-08-10 12:01:37.507144+03	Egypro.	South Rift	Nakuru	-0.295825	35.803740	Molo Cluster	South Rift	G4S	Symphony NOC
+268	621912	Elburgon Eastleigh ATC	South Rift	Nakuru	0	Pending	2026-08-10 12:01:37.508786+03	Egypro.	South Rift	Nakuru	-0.306110	35.802270	Molo Cluster	South Rift	G4S	Symphony NOC
+269	622565	Project 82 Molo	South Rift	Nakuru	0	Pending	2026-08-10 12:01:37.510414+03	Egypro.	South Rift	Nakuru	-0.263677	35.745215	Molo Cluster	South Rift	G4S	Symphony NOC
+270	620353	Molo Tembea Na Yesu	South Rift	Nakuru	0	Pending	2026-08-10 12:01:37.512055+03	Egypro.	South Rift	Nakuru	-0.252290	35.725690	Molo Cluster	South Rift	G4S	Symphony NOC
+271	619420	Molo	South Rift	Nakuru	0	Pending	2026-08-10 12:01:37.513696+03	Egypro.	South Rift	Nakuru	-0.240490	35.728377	Molo Cluster	South Rift	G4S	Symphony NOC
+272	622236	Molo Tayari II	South Rift	Nakuru	0	Pending	2026-08-10 12:01:37.515354+03	Egypro.	South Rift	Nakuru	-0.240266	35.717350	Molo Cluster	South Rift	G4S	Symphony NOC
+273	618609	Londiani Town	Central Rift	Kericho	0	Pending	2026-08-10 12:01:37.517012+03	Egypro.	Central Rift	Kericho	-0.156118	35.577087	Molo Cluster	Central Rift	G4S	Symphony NOC
+274	619365	Londiani	South Rift	Kericho	0	Pending	2026-08-10 12:01:37.518841+03	Egypro.	South Rift	Kericho	-0.132092	35.583495	Molo Cluster	South Rift	G4S	Symphony NOC
+275	620401	Nyairobi	South Rift	Nandi	0	Pending	2026-08-10 12:01:37.52069+03	Egypro.	South Rift	Nandi	-0.117360	35.408870	Molo Cluster	South Rift	G4S	Symphony NOC
+276	622570	Kipkelion Fort Ternan	South Rift	Kericho	0	Pending	2026-08-10 12:01:37.522478+03	Egypro.	South Rift	Kericho	-0.200570	35.338300	Molo Cluster	South Rift	G4S	Symphony NOC
+277	619797	Kandege	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.524257+03	Egypro.	South Rift	Kisumu	-0.203040	35.304028	Molo Cluster	South Rift	G4S	Symphony NOC
+278	619364	Koyabei	South Rift	Kericho	0	Pending	2026-08-10 12:01:37.526001+03	Egypro.	South Rift	Kericho	-0.214447	35.213757	Molo Cluster	South Rift	G4S	Symphony NOC
+279	619781	Tamu	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.527887+03	Egypro.	South Rift	Kisumu	-0.100775	35.173002	Molo Cluster	South Rift	G4S	Symphony NOC
+280	622842	Mt Kenya Road Nyali	Coast	Mombasa	0	Pending	2026-08-10 12:01:37.529613+03	Netis	Coast	Mombasa	-4.032816	39.717158	Mombasa cluster	Coast	G4S	Symphony NOC
+281	620873	Aga Khan Academy	\N	Mombasa	0	Pending	2026-08-10 12:01:37.531374+03	\N	\N	Mombasa	-4.077370	39.671623	Mombasa cluster	\N	G4S	Symphony NOC
+282	620967	Kongowea ATC	Coast	Mombasa	0	Pending	2026-08-10 12:01:37.533111+03	Netis	Coast	Mombasa	-4.040757	39.682052	Mombasa cluster	Coast	G4S	Symphony NOC
+283	618889	Mombasa_Bombolulu	Coast	Mombasa	0	Pending	2026-08-10 12:01:37.534945+03	Netis	Coast	Mombasa	-4.023217	39.704838	Mombasa cluster	Coast	G4S	Symphony NOC
+284	619039	Mbondoni	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.536674+03	I Engineering.	Eastern	Kitui	-0.969212	37.982617	Kitui Cluster	Eastern	G4S	Symphony NOC
+285	622440	Mwingi _Kanzanzu	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.538323+03	I Engineering.	Eastern	Kitui	-0.938450	38.056860	Kitui Cluster	Eastern	G4S	Symphony NOC
+286	618328	Gachie	Upper Central	Nairobi	0	Pending	2026-08-10 12:01:37.540102+03	I Engineering.	Upper Central	Nairobi	-1.215558	36.768783	Nairobi Kawangware Cluster	Upper Central	G4S	Symphony NOC
+287	619868	Nairobi_Kikuyu_Road	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.541979+03	I Engineering.	CBD	Nairobi	-1.290340	36.749145	Nairobi Kawangware Cluster	CBD	G4S	Symphony NOC
+288	619871	Nairobi_Arboretum	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.543706+03	I Engineering.	CBD	Nairobi	-1.277233	36.804180	Nairobi Kawangware Cluster	CBD	G4S	Symphony NOC
+289	619935	Nairobi_Racecourse	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.545549+03	I Engineering.	CBD	Nairobi	-1.306350	36.732453	Nairobi Kawangware Cluster	CBD	G4S	Symphony NOC
+290	619947	Nairobi_Amboseli_Road	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.547417+03	I Engineering.	CBD	Nairobi	-1.286330	36.757360	Nairobi Kawangware Cluster	CBD	G4S	Symphony NOC
+291	620156	Kawangware Bethel	Upper Central	Nairobi	0	Pending	2026-08-10 12:01:37.549163+03	I Engineering.	Upper Central	Nairobi	-1.280403	36.743587	Nairobi Kawangware Cluster	Upper Central	G4S	Symphony NOC
+292	618933	Isinya New	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.55089+03	Netis	Eastern	Kajiado	-1.774213	36.824638	Namanga Road	Eastern	G4S	Symphony NOC
+293	619052	Ilbisil_Centre	Eastern	Nairobi	0	Pending	2026-08-10 12:01:37.552517+03	Netis	Eastern	Nairobi	-2.100131	36.790578	Namanga Road	Eastern	G4S	Symphony NOC
+294	618934	Kajiado_Town	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.554134+03	Netis	Eastern	Kajiado	-1.840028	36.792437	Namanga Road	Eastern	G4S	Symphony NOC
+295	618951	Tata Kajiado	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.555725+03	Netis	Eastern	Kajiado	-1.964348	36.725158	Namanga Road	Eastern	G4S	Symphony NOC
+296	618929	Ilbsil	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.557408+03	Netis	Eastern	Kajiado	-2.181805	36.849229	Namanga Road	Eastern	G4S	Symphony NOC
+297	618936	Kisaju	Eastern	Nairobi	0	Pending	2026-08-10 12:01:37.559034+03	Netis	Eastern	Nairobi	-1.633804	36.886725	Namanga Road	Eastern	G4S	Symphony NOC
+298	618324	Ongata_Rongai	Lower Central Rift	Nairobi	0	Pending	2026-08-10 12:01:37.560679+03	Netis	Lower Central Rift	Nairobi	-1.396593	36.752800	Namanga Road	Lower Central Rift	G4S	Symphony NOC
+299	618930	Ilmasin	Lower Central Rift	Kajiado	0	Pending	2026-08-10 12:01:37.562345+03	Netis	Lower Central Rift	Kajiado	-1.500931	36.652895	Namanga Road	Lower Central Rift	G4S	Symphony NOC
+300	621340	Milimani Valley Court-Kitengela	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.56431+03	Netis	Eastern	Kajiado	-1.490616	36.935740	Namanga Road	Eastern	G4S	Symphony NOC
+301	621030	Kitengela_Olerai	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.566448+03	Netis	Eastern	Kajiado	-1.525042	36.895014	Namanga Road	Eastern	G4S	Symphony NOC
+302	618932	Isinya	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.56817+03	Netis	Eastern	Kajiado	-1.691389	36.850445	Namanga Road	Eastern	G4S	Symphony NOC
+303	618534	Oleserewa	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.569893+03	Netis	Eastern	Kajiado	-1.723592	36.696027	Namanga Road	Eastern	G4S	Symphony NOC
+304	618947	Olsirua_Hill	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.571631+03	Netis	Eastern	Kajiado	-1.722913	36.695787	Namanga Road	Eastern	G4S	Symphony NOC
+305	618948	Ostrich_Farm	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.573413+03	Netis	Eastern	Kajiado	-1.560553	36.917123	Namanga Road	Eastern	G4S	Symphony NOC
+306	620434	Sirimon	Upper Eastern	Meru	0	Pending	2026-08-10 12:01:37.57541+03	I Engineering.	Upper Eastern	Meru	0.041485	37.223645	Nanyuki Cluster	Upper Eastern	G4S	Symphony NOC
+307	620471	Umande	Upper Eastern	Laikipia	0	Pending	2026-08-10 12:01:37.577277+03	I Engineering.	Upper Eastern	Laikipia	0.109585	37.144128	Nanyuki Cluster	Upper Eastern	G4S	Symphony NOC
+308	620630	Thingithu Nanyuki ATC	Upper Eastern	Laikipia	0	Pending	2026-08-10 12:01:37.579113+03	I Engineering.	Upper Eastern	Laikipia	0.015297	37.060528	Nanyuki Cluster	Upper Eastern	G4S	Symphony NOC
+309	621383	Nanyuki KWS	Upper Eastern	Laikipia	0	Pending	2026-08-10 12:01:37.580872+03	I Engineering.	Upper Eastern	Laikipia	-0.014562	37.091890	Nanyuki Cluster	Upper Eastern	G4S	Symphony NOC
+310	619311	Berguret	Upper Eastern	Laikipia	0	Pending	2026-08-10 12:01:37.582755+03	I Engineering.	Upper Eastern	Laikipia	-0.075200	36.990600	Nanyuki Cluster	Upper Eastern	G4S	Symphony NOC
+311	621654	Nanyuki Likii	Upper Eastern	Laikipia	0	Pending	2026-08-10 12:01:37.584543+03	I Engineering.	Upper Eastern	Laikipia	0.023873	37.079491	Nanyuki Cluster	Upper Eastern	G4S	Symphony NOC
+312	622069	NANYUKI-BARAKA	Upper Eastern	Laikipia	0	Pending	2026-08-10 12:01:37.586188+03	I Engineering.	Upper Eastern	Laikipia	0.000020	37.051760	Nanyuki Cluster	Upper Eastern	G4S	Symphony NOC
+313	622188	Timau_Mia_Moja	Upper Eastern	Laikipia	0	Pending	2026-08-10 12:01:37.587893+03	I Engineering.	Upper Eastern	Laikipia	0.091690	37.219130	Nanyuki Cluster	Upper Eastern	G4S	Symphony NOC
+314	622401	Tharaka University	Upper Eastern	Laikipia	0	Pending	2026-08-10 12:01:37.589535+03	I Engineering.	Upper Eastern	Laikipia	-0.092290	36.989870	Nanyuki Cluster	Upper Eastern	G4S	Symphony NOC
+315	619435	Mairo_Inya	Upper Central	Laikipia	0	Pending	2026-08-10 12:01:37.591267+03	Egypro.	Upper Central	Laikipia	-0.000932	36.420018	Nyahururu/Nyandarua Cluster	Upper Central	G4S	Symphony NOC
+316	619455	Mairo_Inya_Ziwani	Upper Central	Nyandarua	0	Pending	2026-08-10 12:01:37.593041+03	Egypro.	Upper Central	Nyandarua	0.028012	36.401409	Nyahururu/Nyandarua Cluster	Upper Central	G4S	Symphony NOC
+317	621321	Nyahururu Kigumo	Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.594829+03	Egypro.	Central Rift	Nakuru	0.015111	36.310808	Nyahururu/Nyandarua Cluster	Central Rift	G4S	Symphony NOC
+318	620412	Nanyuki Equator Road_ATC	Upper Eastern	Nyeri	0	Pending	2026-08-10 12:01:37.59653+03	I Engineering.	Upper Eastern	Nyeri	-0.006854	37.065767	Nanyuki Cluster	Upper Eastern	G4S	Symphony NOC
+319	620431	Ragati ATC	Upper Eastern	Nyeri	0	Pending	2026-08-10 12:01:37.598296+03	I Engineering.	Upper Eastern	Nyeri	-0.030429	37.067779	Nyeri Cluster	Upper Eastern	G4S	Symphony NOC
+320	620438	Wamagana_ATC	Upper Eastern	Nyeri	0	Pending	2026-08-10 12:01:37.599928+03	I Engineering.	Upper Eastern	Nyeri	-0.476306	36.931650	Nyeri Cluster	Upper Eastern	G4S	Symphony NOC
+321	620609	Gakawa_Kiririshwa	Upper Eastern	Nyeri	0	Pending	2026-08-10 12:01:37.601581+03	I Engineering.	Upper Eastern	Nyeri	-0.111630	37.028468	Nyeri Cluster	Upper Eastern	G4S	Symphony NOC
+322	620611	Kanunga_Hub_ATC	Upper Eastern	Nyeri	0	Pending	2026-08-10 12:01:37.603238+03	I Engineering.	Upper Eastern	Nyeri	-0.568072	36.993312	Nyeri Cluster	Upper Eastern	G4S	Symphony NOC
+323	620612	IHURIRIO	Upper Eastern	Nyeri	0	Pending	2026-08-10 12:01:37.604899+03	I Engineering.	Upper Eastern	Nyeri	-0.550540	36.881130	Nyeri Cluster	Upper Eastern	G4S	Symphony NOC
+324	621156	Ukunda Village ATC	Coast	Kwale	0	Pending	2026-08-10 12:01:37.606567+03	Netis	Coast	Kwale	-4.295898	39.558420	South Coast	Coast	G4S	Symphony NOC
+325	621081	MIHONGANI ATC	Coast	Kwale	0	Pending	2026-08-10 12:01:37.610712+03	Netis	Coast	Kwale	-4.089890	39.635330	South Coast	Coast	G4S	Symphony NOC
+326	618836	Kwale_Town	Coast	Kwale	0	Pending	2026-08-10 12:01:37.612544+03	Netis	Coast	Kwale	-4.174692	39.453525	South Coast	Coast	G4S	Symphony NOC
+327	618355	Thome Muthaiga north	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.614466+03	I Engineering.	CBD	Nairobi	-1.236460	36.866668	Thika Road	CBD	G4S	Symphony NOC
+328	618371	Ruiru membley	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.616268+03	I Engineering.	CBD	Nairobi	-1.166658	36.936102	Thika Road	CBD	G4S	Symphony NOC
+329	618396	Huruma	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.617946+03	I Engineering.	CBD	Nairobi	-1.255743	36.874360	thika Road	CBD	G4S	Symphony NOC
+330	618504	Githurai Akida Bakery	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.619655+03	I Engineering.	CBD	Nairobi	-1.205638	36.918490	Thika road	CBD	G4S	Symphony NOC
+331	619191	Mangu	Lower Central	Kiambu	0	Pending	2026-08-10 12:01:37.621312+03	I Engineering.	Lower Central	Kiambu	-1.075252	37.048542	Thika Road	Lower Central	G4S	Symphony NOC
+332	619192	Juja_Farm	Lower Central	Kiambu	0	Pending	2026-08-10 12:01:37.622962+03	I Engineering.	Lower Central	Kiambu	-1.162812	37.080722	Thika Road	Lower Central	G4S	Symphony NOC
+333	619200	Thika_Makongeni	Lower Central	Kiambu	0	Pending	2026-08-10 12:01:37.624637+03	I Engineering.	Lower Central	Kiambu	-1.057571	37.105321	Thika Road	Lower Central	G4S	Symphony NOC
+334	619203	Murera	Lower Central	Kiambu	0	Pending	2026-08-10 12:01:37.626363+03	I Engineering.	Lower Central	Kiambu	-1.113318	36.955443	Thika Road	Lower Central	G4S	Symphony NOC
+335	619967	Nairobi_Githurai	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.628117+03	I Engineering.	CBD	Nairobi	-1.213892	36.924832	Thika Road	CBD	G4S	Symphony NOC
+336	619983	Kahawa Sukari	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.629866+03	I Engineering.	CBD	Nairobi	-1.205383	36.968880	Thika Road	CBD	G4S	Symphony NOC
+337	620015	Githurai 45 Railway	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.631517+03	I Engineering.	CBD	Nairobi	-1.208152	36.922005	Thika Road	CBD	G4S	Symphony NOC
+338	620028	Kahawa Sukari	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.633235+03	I Engineering.	CBD	Nairobi	-1.195428	36.945328	Thika Road	CBD	G4S	Symphony NOC
+339	619823	Bulimbo	Upper Western	Kakamega	0	Pending	2026-08-10 12:01:37.635035+03	Egypro.	Upper Western	Kakamega	0.439442	34.513352	Webuye Cluster	Upper Western	G4S	Symphony NOC
+340	620316	Lughulu	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.636765+03	Egypro.	Upper Western	Bungoma	0.656750	34.756595	Webuye Cluster	Upper Western	G4S	Symphony NOC
+341	619724	Mutomolo_Centre	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.638492+03	Egypro.	Upper Western	Bungoma	0.521810	34.651600	Webuye Cluster	Upper Western	G4S	Symphony NOC
+342	620582	Makunga	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.640201+03	Egypro.	Upper Western	Bungoma	0.735843	34.837487	Webuye Cluster	Upper Western	G4S	Symphony NOC
+343	621238	Ndivisi	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.64198+03	Egypro.	Upper Western	Bungoma	0.717513	34.798847	Webuye Cluster	Upper Western	G4S	Symphony NOC
+344	619467	Kamukuywa	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.643746+03	Egypro.	Upper Western	Bungoma	0.763210	34.789120	Webuye Cluster	Upper Western	G4S	Symphony NOC
+345	620589	Turbo_Endebess Road	North Rift	Kakamega	0	Pending	2026-08-10 12:01:37.645547+03	Egypro.	North Rift	Kakamega	0.701905	34.983528	Webuye Cluster	North Rift	G4S	Symphony NOC
+346	621989	Matili ATC	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.647335+03	Egypro.	Upper Western	Bungoma	0.753540	34.734150	Webuye Cluster	Upper Western	G4S	Symphony NOC
+347	621275	Maliki	North Rift	Bungoma	0	Pending	2026-08-10 12:01:37.649111+03	Egypro.	North Rift	Bungoma	0.797097	34.842283	Webuye Cluster	North Rift	G4S	Symphony NOC
+348	622242	Webuye East	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.650907+03	Egypro.	Upper Western	Bungoma	0.614830	34.765020	Webuye Cluster	Upper Western	G4S	Symphony NOC
+349	619471	Misikhu	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.652594+03	Egypro.	Upper Western	Bungoma	0.715670	34.755595	Webuye Cluster	Upper Western	G4S	Symphony NOC
+350	620588	Kongoni	North Rift	Kakamega	0	Pending	2026-08-10 12:01:37.654276+03	Egypro.	North Rift	Kakamega	0.788650	35.133048	Webuye Cluster	North Rift	G4S	Symphony NOC
+351	620854	Sango_Mawe tatu	North Rift	Kakamega	0	Pending	2026-08-10 12:01:37.656037+03	Egypro.	North Rift	Kakamega	0.761050	35.096550	Webuye Cluster	North Rift	G4S	Symphony NOC
+352	622629	Kona Mbaya Likuyani	North Rift	Kakamega	0	Pending	2026-08-10 12:01:37.657786+03	Egypro.	North Rift	Kakamega	0.829760	35.091310	Webuye Cluster	North Rift	G4S	Symphony NOC
+353	619753	Lugari	North Rift	Kakamega	0	Pending	2026-08-10 12:01:37.659741+03	Egypro.	North Rift	Kakamega	0.741915	34.899468	Webuye Cluster	North Rift	G4S	Symphony NOC
+354	619721	Kiboochi_Centre	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.661573+03	Egypro.	Upper Western	Bungoma	0.630928	34.641670	Webuye Cluster	Upper Western	G4S	Symphony NOC
+355	620420	Lutacho 2	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.663269+03	Egypro.	Upper Western	Bungoma	0.670585	34.814397	Webuye Cluster	Upper Western	G4S	Symphony NOC
+356	621313	Kaptama	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.66487+03	Egypro.	Upper Western	Bungoma	0.891988	34.762513	Webuye Cluster	Upper Western	G4S	Symphony NOC
+357	621479	Kipyeto_Kapsokwony	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.666539+03	Egypro.	Upper Western	Bungoma	0.843375	34.671040	Webuye Cluster	Upper Western	G4S	Symphony NOC
+358	622243	CHEGULO	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.66827+03	Egypro.	Upper Western	Bungoma	0.490810	34.790850	Webuye Cluster	Upper Western	G4S	Symphony NOC
+359	622628	Kaptola ATC	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.670012+03	Egypro.	Upper Western	Bungoma	0.807842	34.691627	Webuye Cluster	Upper Western	G4S	Symphony NOC
+360	670153	Chebukwabi ATC	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.671801+03	Egypro.	Upper Western	Bungoma	0.797509	34.666849	Webuye Cluster	Upper Western	G4S	Symphony NOC
+361	670183	Lukusi ATC	Upper Western	Bungoma	0	Pending	2026-08-10 12:01:37.673487+03	Egypro.	Upper Western	Bungoma	0.656380	34.814890	Webuye Cluster	Upper Western	G4S	Symphony NOC
+362	619166	Mugeka	Lower Central	Murang'a	0	Pending	2026-08-10 12:01:37.675156+03	I Engineering.	Lower Central	Murang'a	-0.645035	37.092467	Muranga cluster	Lower Central	G4S	Symphony NOC
+363	618555	Kasarani Police Line	Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.677251+03	Egypro.	Central Rift	Nakuru	-0.296295	36.069367	Nakuru Cluster	Central Rift	G4S	Symphony NOC
+364	619949	Nairobi_Sameer_Park	Nairobi East	Nairobi	0	Pending	2026-08-10 12:01:37.679269+03	Netis	Nairobi East	Nairobi	-1.325916	36.867263	Kitengela cluster	Nairobi East	G4S	Symphony NOC
+365	618971	Daystar_Athi_River	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.681366+03	Netis	Eastern	Machakos	-1.444562	37.046135	Kitengela cluster	Eastern	G4S	Symphony NOC
+366	621671	Athi_River_Graylands	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.683055+03	Netis	Eastern	Machakos	-1.446632	37.003982	Kitengela cluster	Eastern	G4S	Symphony NOC
+367	618580	Kenya Farmers Ass	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.685034+03	Egypro.	Lower Central Rift	Nakuru	-1.074688	35.864637	Nakuru Cluster	Lower Central Rift	G4S	Symphony NOC
+368	618581	Naivasha	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.686927+03	Egypro.	Lower Central Rift	Nakuru	-0.713085	36.430580	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+369	618644	Kedong Ranch	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.688665+03	Egypro.	Lower Central Rift	Nakuru	-0.816240	36.395510	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+370	619366	Naivasha Crater Lake	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.690407+03	Egypro.	Lower Central Rift	Nakuru	-0.795790	36.248190	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+371	619391	Oserian	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.692272+03	Egypro.	Lower Central Rift	Nakuru	-0.833158	36.309820	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+372	620937	Naivasha Viwandani	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.693819+03	Egypro.	Lower Central Rift	Nakuru	-0.707115	36.429732	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+373	620964	Kasarani Naivasha	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.695464+03	Egypro.	Lower Central Rift	Nakuru	-0.713687	36.301650	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+374	620965	Maiella	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.697142+03	Egypro.	Lower Central Rift	Nakuru	-0.893912	36.182836	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+375	621052	Songoroi	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.698828+03	Egypro.	Lower Central Rift	Nakuru	-0.621960	36.248158	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+376	621057	Naivasha Site Service	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.700526+03	Egypro.	Lower Central Rift	Nakuru	-0.716613	36.438675	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+377	621114	Naivasha_Kayole_Roho_Safi	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.702121+03	Egypro.	Lower Central Rift	Nakuru	-0.748458	36.461132	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+378	621859	Acquila Farm-Ndabibi	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.703741+03	Egypro.	Lower Central Rift	Nakuru	-0.752940	36.255800	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+379	621927	Ngondi_Naivasha	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.705319+03	Egypro.	Lower Central Rift	Nakuru	-0.822698	36.204086	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+380	621152	Wafoo (New)	Lower Central Rift	Narok	0	Pending	2026-08-10 12:01:37.706939+03	Egypro.	Lower Central Rift	Narok	-0.877078	36.107662	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+381	622846	Kwa Muhia	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.708672+03	Egypro.	Lower Central Rift	Nakuru	-0.829983	36.339180	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+382	620328	Naivasha Maroro	Upper Central	Nakuru	0	Pending	2026-08-10 12:01:37.710461+03	Egypro.	Upper Central	Nakuru	-0.751394	36.473352	Naivasha Mai mahiu Suswa Cluster	Upper Central	G4S	Symphony NOC
+383	618642	Naivasha Flower farm	Lower Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.712065+03	Egypro.	Lower Central Rift	Nakuru	-0.724878	36.436152	Naivasha Mai mahiu Suswa Cluster	Lower Central Rift	G4S	Symphony NOC
+384	621343	Naivasha Kinamba	Upper Central	Nakuru	0	Pending	2026-08-10 12:01:37.713676+03	Egypro.	Upper Central	Nakuru	-0.724350	36.474308	Naivasha Mai mahiu Suswa Cluster	Upper Central	G4S	Symphony NOC
+385	622386	Karati ATC	Upper Central	Nakuru	0	Pending	2026-08-10 12:01:37.715284+03	Egypro.	Upper Central	Nakuru	-0.686954	36.476641	Naivasha Mai mahiu Suswa Cluster	Upper Central	G4S	Symphony NOC
+386	619410	Macha	Upper Central	Nakuru	0	Pending	2026-08-10 12:01:37.717057+03	Egypro.	Upper Central	Nakuru	-0.667673	36.468512	Naivasha Mai mahiu Suswa Cluster	Upper Central	G4S	Symphony NOC
+387	621991	Matunda Town	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.718668+03	Egypro.	North Rift	Trans-Nzoia	0.826390	35.121540	Kitale Cluster	North Rift	G4S	Symphony NOC
+388	619551	Ziwa Sirikwa	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.72042+03	Egypro.	North Rift	Trans-Nzoia	0.851990	35.246518	Kitale Cluster	North Rift	G4S	Symphony NOC
+389	622170	Kapchan	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.7221+03	Egypro.	North Rift	Trans-Nzoia	0.810530	35.185270	Kitale Cluster	North Rift	G4S	Symphony NOC
+390	622815	Murguiywo Moi’s Bridge	North Rift	Bomet	0	Pending	2026-08-10 12:01:37.723887+03	Egypro.	North Rift	Bomet	0.934650	35.200060	Kitale Cluster	North Rift	G4S	Symphony NOC
+391	622841	Kaplamai Center	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.725881+03	Egypro.	North Rift	Trans-Nzoia	0.986211	35.124235	Kitale Cluster	North Rift	G4S	Symphony NOC
+392	670052	Kapchepsir	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.727548+03	Egypro.	North Rift	Trans-Nzoia	0.961640	35.105801	Kitale Cluster	North Rift	G4S	Symphony NOC
+393	622499	Kapkoi-Kibagenge	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.729264+03	Egypro.	North Rift	Trans-Nzoia	0.954180	35.030090	Kitale Cluster	North Rift	G4S	Symphony NOC
+394	621599	Namgoi_Primary	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.730933+03	Egypro.	North Rift	Trans-Nzoia	0.972390	35.034270	Kitale Cluster	North Rift	G4S	Symphony NOC
+395	619560	Kitale_Wamuini	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.73276+03	Egypro.	North Rift	Trans-Nzoia	0.967953	34.980203	Kitale Cluster	North Rift	G4S	Symphony NOC
+396	620615	Big Tree	North Rift	Bungoma	0	Pending	2026-08-10 12:01:37.734589+03	Egypro.	North Rift	Bungoma	0.896210	34.997767	Kitale Cluster	North Rift	G4S	Symphony NOC
+397	619508	Ndalu	North Rift	Bungoma	0	Pending	2026-08-10 12:01:37.736311+03	Egypro.	North Rift	Bungoma	0.843050	34.998348	Kitale Cluster	North Rift	G4S	Symphony NOC
+398	621521	KITALE_MITUME_UMOJA	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.73803+03	Egypro.	North Rift	Trans-Nzoia	1.029630	34.984950	Kitale Cluster	North Rift	G4S	Symphony NOC
+399	621603	Kitale_Benam	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.740051+03	Egypro.	North Rift	Trans-Nzoia	1.031633	34.993222	Kitale Cluster	North Rift	G4S	Symphony NOC
+400	620631	Kitale Lessos	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.741662+03	Egypro.	North Rift	Trans-Nzoia	1.038502	34.991178	Kitale Cluster	North Rift	G4S	Symphony NOC
+401	619557	Matisi	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.743394+03	Egypro.	North Rift	Trans-Nzoia	1.033000	34.974050	Kitale Cluster	North Rift	G4S	Symphony NOC
+402	618897	English_Point	Coast	Mombasa	0	Pending	2026-08-10 12:01:37.744969+03	Netis	Coast	Mombasa	-4.059710	39.694297	Mombasa cluster	Coast	G4S	Symphony NOC
+403	620713	Kithangaini	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.746595+03	Netis	Eastern	Machakos	-1.488687	37.382294	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+404	621548	Tipis Center	Central Rift	Narok	0	Pending	2026-08-10 12:01:37.74825+03	Egypro.	Central Rift	Narok	-0.661420	35.955810	Nakuru Cluster	Central Rift	G4S	Symphony NOC
+405	620577	Lukume	Upper Western	Kakamega	0	Pending	2026-08-10 12:01:37.750677+03	Egypro.	Upper Western	Kakamega	0.390812	34.757268	Kakamega Cluster	Upper Western	G4S	Symphony NOC
+406	621842	Waso Primary School	Upper Eastern	Isiolo	0	Pending	2026-08-10 12:01:37.752389+03	I Engineering.	Upper Eastern	Isiolo	0.334057	37.568170	Isiolo Cluster	Upper Eastern	G4S	Symphony NOC
+407	619409	Enengetia	Central Rift	Narok	0	Pending	2026-08-10 12:01:37.756469+03	Egypro.	Central Rift	Narok	-0.681688	35.918638	Nakuru Cluster	Central Rift	G4S	Symphony NOC
+408	620944	Sigoti	Lower Western	Kisumu	0	Pending	2026-08-10 12:01:37.758326+03	Egypro.	Lower Western	Kisumu	-0.352058	34.959993	Kisii Homabay Cluster	Lower Western	G4S	Symphony NOC
+409	621734	Soko Mjinga	Coast	Mombasa	0	Pending	2026-08-10 12:01:37.760625+03	Netis	Coast	Mombasa	-4.030711	39.680491	Mombasa cluster	Coast	G4S	Symphony NOC
+410	621886	Mombasa Makande ATC	Coast	Mombasa	0	Pending	2026-08-10 12:01:37.762311+03	Netis	Coast	Mombasa	-4.038853	39.654434	Mombasa cluster	Coast	G4S	Symphony NOC
+411	621537	Machakos Eastleigh Hostels	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.764042+03	Netis	Eastern	Machakos	-1.530707	37.278653	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+412	621517	Eldoret_Baharini	North Rift	Uasin Gishu	0	Pending	2026-08-10 12:01:37.765709+03	Egypro.	North Rift	Uasin Gishu	0.585613	35.215890	Eldoret Cluster	North Rift	G4S	Symphony NOC
+413	620584	Ivonda	Upper Western	Kakamega	0	Pending	2026-08-10 12:01:37.767371+03	Egypro.	Upper Western	Kakamega	0.152778	34.754632	Kakamega Cluster	Upper Western	G4S	Symphony NOC
+414	621074	Masimbani ATC	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.76907+03	Netis	Eastern	Kitui	-1.358507	37.924473	Kitui cluster	Eastern	G4S	Symphony NOC
+415	619885	Ongata_Rongai_Quarry	Lower Central Rift	Kajiado	0	Pending	2026-08-10 12:01:37.770863+03	Netis	Lower Central Rift	Kajiado	-1.390848	36.750087	Rongai cluster	Lower Central Rift	G4S	Symphony NOC
+416	619617	Awendo	Lower Western	Migori	0	Pending	2026-08-10 12:01:37.772809+03	Egypro.	Lower Western	Migori	-0.900405	34.512686	Kisii Homabay Cluster	Lower Western	G4S	Symphony NOC
+417	619131	Ruiru Kamakis	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.774569+03	I Engineering.	CBD	Nairobi	-1.165550	36.978712	Thika road	CBD	G4S	Symphony NOC
+418	618714	Thika Landless	Lower Central	Kiambu	0	Pending	2026-08-10 12:01:37.776386+03	I Engineering.	Lower Central	Kiambu	-1.061390	37.149562	Thika road	Lower Central	G4S	Symphony NOC
+419	619979	Nairobi_Ngando_Estate	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.77819+03	I Engineering.	CBD	Nairobi	-1.302683	36.743097	Nairobi Kawangware Cluster	CBD	G4S	Symphony NOC
+420	619961	Nairobi_Parklands	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.78+03	I Engineering.	CBD	Nairobi	-1.254860	36.807880	Nairobi Kawangware Cluster	CBD	G4S	Symphony NOC
+421	619036	Mtito Andei	Coast	Makueni	0	Pending	2026-08-10 12:01:37.78176+03	Netis	Coast	Makueni	-2.690500	38.167527	Wote Cluster	Coast	G4S	Symphony NOC
+422	619637	Suba_Mbitatown	Lower Western	Samburu	0	Pending	2026-08-10 12:01:37.783481+03	Egypro.	Lower Western	Samburu	-0.451018	34.207505	Kisii Homabay Cluster	Lower Western	G4S	Symphony NOC
+423	618985	Kithimani	Lower Central	Machakos	0	Pending	2026-08-10 12:01:37.785333+03	I Engineering.	Lower Central	Machakos	-1.195373	37.444783	Thika road	Lower Central	G4S	Symphony NOC
+424	619502	Eldoret-Langas	North Rift	Uasin Gishu	0	Pending	2026-08-10 12:01:37.787016+03	Egypro.	North Rift	Uasin Gishu	0.477200	35.256400	Eldoret Cluster	North Rift	G4S	Symphony NOC
+425	619313	Nanyuki_2	Upper Eastern	Laikipia	0	Pending	2026-08-10 12:01:37.788819+03	I Engineering.	Upper Eastern	Laikipia	0.001651	37.074866	Nanyuki Cluster	Upper Eastern	G4S	Symphony NOC
+426	618242	KIDUNGUNI-MT. SINAI	Coast	Mombasa	0	Pending	2026-08-10 12:01:37.790818+03	Netis	Coast	Mombasa	-4.091992	39.649772	South Coast	Coast	G4S	Symphony NOC
+427	620008	Public Service Club Knh	CBD	Nairobi	0	Pending	2026-08-10 12:01:37.792594+03	I Engineering.	CBD	Nairobi	-1.302448	36.809238	Nairobi Kawangware Cluster	CBD	G4S	Symphony NOC
+428	619197	Githurai_Mwihoko	CBD	Kiambu	0	Pending	2026-08-10 12:01:37.794555+03	I Engineering.	CBD	Kiambu	-1.215457	36.968358	Thika road	CBD	G4S	Symphony NOC
+429	618492	Simba	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.796284+03	Netis	Eastern	Makueni	-2.157037	37.588317	Wote Cluster	Eastern	G4S	Symphony NOC
+430	620598	Makutano Mwala	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.798076+03	Netis	Eastern	Machakos	-1.408987	37.472602	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+431	620000	Syokimau Katani	Nairobi East	Nairobi	0	Pending	2026-08-10 12:01:37.79985+03	Netis	Nairobi East	Nairobi	-1.359720	36.953350	Nairobi CBD	Nairobi East	G4S	Symphony NOC
+432	621797	Eldoret Kamukunji	North Rift	Uasin Gishu	0	Pending	2026-08-10 12:01:37.801477+03	Egypro.	North Rift	Uasin Gishu	0.544960	35.268890	Eldoret Cluster	North Rift	G4S	Symphony NOC
+433	620590	Mua Radar	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.803303+03	Netis	Eastern	Machakos	-1.475011	37.191100	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+434	618943	Mpayeei_Stage	Lower Central Rift	Kajiado	0	Pending	2026-08-10 12:01:37.804989+03	Netis	Lower Central Rift	Kajiado	-1.477930	36.739640	Rongai cluster	Lower Central Rift	G4S	Symphony NOC
+435	618477	Umoja 1N	Nairobi East	Nairobi	0	Pending	2026-08-10 12:01:37.808923+03	Netis	Nairobi East	Nairobi	-1.287370	36.886240	Nairobi CBD	Nairobi East	G4S	Symphony NOC
+436	622750	Mosa_Kiimani	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.812218+03	Netis	Eastern	Kitui	-1.620590	38.047580	Kitui cluster	Eastern	G4S	Symphony NOC
+437	619600	Mabera_Thagare	Lower Western	Migori	0	Pending	2026-08-10 12:01:37.814469+03	Egypro.	Lower Western	Migori	-1.182365	34.458701	Kisii Homabay Cluster	Lower Western	G4S	Symphony NOC
+438	620550	Kiptoror	North Rift	Trans-Nzoia	0	Pending	2026-08-10 12:01:37.816666+03	Egypro.	North Rift	Trans-Nzoia	1.028697	35.317922	Kitale Cluster	North Rift	G4S	Symphony NOC
+439	619047	Nguni	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.824295+03	I Engineering.	Eastern	Kitui	-0.791502	38.282598	Kitui cluster	Eastern	G4S	Symphony NOC
+440	620809	Malindi_Vofea	North Coast	Kilifi	0	Pending	2026-08-10 12:01:37.826989+03	Netis	North Coast	Kilifi	-3.216865	40.109755	Malindi <>Kilifi cluster	North Coast	G4S	Symphony NOC
+441	618976	Kaani	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.830145+03	Netis	Eastern	Machakos	-1.492282	37.330412	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+442	618273	Kizingo white wall	Coast	Mombasa	0	Pending	2026-08-10 12:01:37.832008+03	Netis	Coast	Mombasa	-4.069132	39.676237	Mombasa cluster	Coast	G4S	Symphony NOC
+443	619680	Oyombe	Lower Western	Homa Bay	0	Pending	2026-08-10 12:01:37.833822+03	Egypro.	Lower Western	Homa Bay	-0.460407	34.647172	Kisii Homabay Cluster	Lower Western	G4S	Symphony NOC
+444	619264	Mwimbi	Upper Eastern	Meru	0	Pending	2026-08-10 12:01:37.835578+03	I Engineering.	Upper Eastern	Meru	-0.248270	37.650180	Embu cluster	Upper Eastern	G4S	Symphony NOC
+445	618621	Kiamaina	Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.837491+03	Egypro.	Central Rift	Nakuru	-0.239818	36.113047	Nakuru Cluster	Central Rift	G4S	Symphony NOC
+446	619163	Mugoiri	Lower Central	Murang'a	0	Pending	2026-08-10 12:01:37.839451+03	I Engineering.	Lower Central	Murang'a	-0.727165	37.110165	Muranga cluster	Lower Central	G4S	Symphony NOC
+447	618588	North kinangop	Upper Central	Nyandarua	0	Pending	2026-08-10 12:01:37.841148+03	Egypro.	Upper Central	Nyandarua	-0.602255	36.577632	Nyahururu/Nyandarua Cluster	Upper Central	G4S	Symphony NOC
+448	619182	Maragua_Town	Lower Central	Murang'a	0	Pending	2026-08-10 12:01:37.84302+03	I Engineering.	Lower Central	Murang'a	-0.801273	37.136238	Muranga cluster	Lower Central	G4S	Symphony NOC
+449	620769	KAMAGUTA	Lower Central	Murang'a	0	Pending	2026-08-10 12:01:37.844698+03	I Engineering.	Lower Central	Murang'a	-0.776110	37.066780	Muranga cluster	Lower Central	G4S	Symphony NOC
+450	619229	Kianjokoma	Lower Central	Embu	0	Pending	2026-08-10 12:01:37.846495+03	I Engineering.	Lower Central	Embu	-0.403880	37.503830	Embu cluster	Lower Central	G4S	Symphony NOC
+451	620539	Laciathuriu	Upper Eastern	Meru	0	Pending	2026-08-10 12:01:37.84815+03	I Engineering.	Upper Eastern	Meru	0.249847	37.731107	Meru Cluster	Upper Eastern	G4S	Symphony NOC
+452	619267	Nthumburi	Upper Eastern	Meru	0	Pending	2026-08-10 12:01:37.849871+03	I Engineering.	Upper Eastern	Meru	0.206947	37.528983	Meru Cluster	Upper Eastern	G4S	Symphony NOC
+453	620113	Umoja 2-B-Centre_Kayole	Nairobi East	Nairobi	0	Pending	2026-08-10 12:01:37.851777+03	Netis	Nairobi East	Nairobi	-1.282600	36.901200	Nairobi CBD	Nairobi East	G4S	Symphony NOC
+454	621650	Nanyuki_Nturukuma	Upper Eastern	Laikipia	0	Pending	2026-08-10 12:01:37.853691+03	I Engineering.	Upper Eastern	Laikipia	0.026715	37.095014	Nanyuki Cluster	Upper Eastern	G4S	Symphony NOC
+455	619044	Mwingi_Pcea	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.855506+03	I Engineering.	Eastern	Kitui	-0.933245	38.055293	Kitui cluster	Eastern	G4S	Symphony NOC
+456	618463	Magadi Road Greenfield	Lower Central Rift	Nairobi	0	Pending	2026-08-10 12:01:37.857296+03	Netis	Lower Central Rift	Nairobi	-1.395321	36.745958	Rongai cluster	Lower Central Rift	G4S	Symphony NOC
+457	670148	Menara ATC	South Rift	Kisumu	0	Pending	2026-08-10 12:01:37.859132+03	Egypro.	South Rift	Kisumu	-0.173040	35.239770	Molo Cluster	South Rift	G4S	Symphony NOC
+458	622587	Kirima_Meru/Nyambene Forest	Upper Eastern	Meru	0	Pending	2026-08-10 12:01:37.860825+03	I Engineering.	Upper Eastern	Meru	0.208624	37.834094	Meru Cluster	Upper Eastern	G4S	Symphony NOC
+459	618165	Tombe	Lower Western	Kisumu	0	Pending	2026-08-10 12:01:37.862553+03	Egypro.	Lower Western	Kisumu	-0.655887	34.876323	Kisii Homabay Cluster	Lower Western	G4S	Symphony NOC
+460	620553	Kiptangwany	Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.86433+03	Egypro.	Central Rift	Nakuru	-0.563062	36.111188	Nakuru Cluster	Central Rift	G4S	Symphony NOC
+461	618571	Nakuru_Rhonda	Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.866011+03	Egypro.	Central Rift	Nakuru	-0.307223	36.052335	Nakuru Cluster	Central Rift	G4S	Symphony NOC
+462	620709	Nyandarua Runda	Upper Central	Nyandarua	0	Pending	2026-08-10 12:01:37.867502+03	Egypro.	Upper Central	Nyandarua	0.007093	36.363636	Nyahururu/Nyandarua Cluster	Upper Central	G4S	Symphony NOC
+463	621332	Rigogo_Chonjo	Central Rift	Nakuru	0	Pending	2026-08-10 12:01:37.869149+03	Egypro.	Central Rift	Nakuru	-0.157158	36.028180	Nakuru Cluster	Central Rift	G4S	Symphony NOC
+464	622692	Bantu_Nyeri	Upper Eastern	Nyeri	0	Pending	2026-08-10 12:01:37.870839+03	I Engineering.	Upper Eastern	Nyeri	-0.435670	37.031620	Nyeri Cluster	Upper Eastern	G4S	Symphony NOC
+465	619314	Chaka_Muthaiga	Upper Eastern	Kiambu	0	Pending	2026-08-10 12:01:37.872503+03	I Engineering.	Upper Eastern	Kiambu	-0.332148	37.001970	Nyeri Cluster	Upper Eastern	G4S	Symphony NOC
+466	618987	Lita	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.874153+03	Netis	Eastern	Machakos	-1.448255	37.280007	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+467	618988	Machakos Garden Hotel	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.875811+03	Netis	Eastern	Machakos	-1.512958	37.267867	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+468	618989	Machakos_Centre	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.877472+03	Netis	Eastern	Machakos	-1.517078	37.269222	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+469	618206	Machakos Mutituni	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.879157+03	Netis	Eastern	Machakos	-1.506980	37.265315	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+470	618209	Kitui TKL Exchange	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.880904+03	Netis	Eastern	Kitui	-1.367447	38.012540	Kitui cluster	Eastern	G4S	Symphony NOC
+471	618376	Athi_River	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.88259+03	Netis	Eastern	Machakos	-1.451927	36.980416	Kitengela cluster	Eastern	G4S	Symphony NOC
+472	618489	Theke	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.884452+03	Netis	Eastern	Machakos	-1.564119	37.162902	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+473	618500	Sultan Hamud	Eastern	Nairobi	0	Pending	2026-08-10 12:01:37.886064+03	Netis	Eastern	Nairobi	-2.017435	37.376210	Wote Cluster	Eastern	G4S	Symphony NOC
+474	618510	Isinya Polytechnic	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.887691+03	Netis	Eastern	Kajiado	-1.679860	36.848257	Kitengela cluster	Eastern	G4S	Symphony NOC
+475	619003	Nguluni	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.889302+03	Netis	Eastern	Machakos	-1.284652	37.276802	Kangundo road	Eastern	G4S	Symphony NOC
+476	618536	Mutomo	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.891036+03	Netis	Eastern	Kitui	-1.845738	38.213918	Wote Cluster	Eastern	G4S	Symphony NOC
+477	618927	Athi River	Eastern	Nairobi	0	Pending	2026-08-10 12:01:37.892687+03	Netis	Eastern	Nairobi	-1.468347	36.972512	Kitengela cluster	Eastern	G4S	Symphony NOC
+478	619011	Kalawa	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.894414+03	Netis	Eastern	Makueni	-1.607952	37.687823	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+479	619000	Muthetheni	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.896143+03	Netis	Eastern	Machakos	-1.494216	37.524652	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+480	618993	Machakos_Miwani_Estate	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.897939+03	Netis	Eastern	Machakos	-1.515698	37.251083	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+481	618994	Machakos_St.Valentines	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.899735+03	Netis	Eastern	Machakos	-1.500578	37.261514	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+482	618935	Emali Makutano	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.901469+03	Netis	Eastern	Kajiado	-2.051835	37.421422	Wote Cluster	Eastern	G4S	Symphony NOC
+483	618937	Kitengela	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.9032+03	Netis	Eastern	Kajiado	-1.472572	36.968390	Kitengela cluster	Eastern	G4S	Symphony NOC
+484	618938	Kitengela_Muigai	Eastern	Nairobi	0	Pending	2026-08-10 12:01:37.904999+03	Netis	Eastern	Nairobi	-1.516478	36.951942	Kitengela cluster	Eastern	G4S	Symphony NOC
+485	618939	Kitengela_Prisons	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.906697+03	Netis	Eastern	Kajiado	-1.470740	36.947135	Kitengela cluster	Eastern	G4S	Symphony NOC
+486	618940	Kitengela_Town	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.910089+03	Netis	Eastern	Kajiado	-1.475068	36.960290	Kitengela cluster	Eastern	G4S	Symphony NOC
+487	619017	Kinyunyini	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.911859+03	Netis	Eastern	Makueni	-1.808421	37.328385	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+488	618991	Machakos_Market	Eastern	Nairobi	0	Pending	2026-08-10 12:01:37.913618+03	Netis	Eastern	Nairobi	-1.520987	37.267699	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+489	618949	Pcea_Kitengela	Eastern	Kajiado	0	Pending	2026-08-10 12:01:37.915358+03	Netis	Eastern	Kajiado	-1.482528	36.958680	Kitengela cluster	Eastern	G4S	Symphony NOC
+490	620311	Matinyani	Eastern	Nairobi	0	Pending	2026-08-10 12:01:37.917045+03	Netis	Eastern	Nairobi	-1.303248	37.992987	Kitui Cluster	Eastern	G4S	Symphony NOC
+491	620408	Kathaana Market	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.918698+03	Netis	Eastern	Machakos	-1.324712	37.295513	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+492	618953	Kisasi	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.920257+03	Netis	Eastern	Kitui	-1.523125	38.023642	Kitui cluster	Eastern	G4S	Symphony NOC
+493	618954	Ikutha	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.921876+03	Netis	Eastern	Kitui	-2.063810	38.178450	Wote Cluster	Eastern	G4S	Symphony NOC
+494	618955	Katulani	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.923513+03	Netis	Eastern	Kitui	-1.487575	37.946767	Kitui cluster	Eastern	G4S	Symphony NOC
+495	618956	Kitui Muslim	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.925154+03	Netis	Eastern	Kitui	-1.369755	38.003827	Kitui cluster	Eastern	G4S	Symphony NOC
+496	618957	Kitui_Majengo	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.9268+03	Netis	Eastern	Kitui	-1.343549	37.983977	Kitui cluster	Eastern	G4S	Symphony NOC
+497	619025	Makuyuni	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.928421+03	Netis	Eastern	Makueni	-1.713162	37.452595	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+498	618959	Ksyusiani	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.930073+03	Netis	Eastern	Kitui	-1.442120	37.844240	Kitui cluster	Eastern	G4S	Symphony NOC
+499	618960	Kyangwithya	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.931565+03	Netis	Eastern	Kitui	-1.384376	37.986739	Kitui cluster	Eastern	G4S	Symphony NOC
+500	620485	Kangundo Kikambuani	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.933527+03	Netis	Eastern	Machakos	-1.302138	37.369387	Kangundo road	Eastern	G4S	Symphony NOC
+501	618963	Mutito	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.93554+03	Netis	Eastern	Kitui	-1.240301	38.220149	Kitui cluster	Eastern	G4S	Symphony NOC
+502	618964	Mutomo	Eastern	Kitui	0	Pending	2026-08-10 12:01:37.937235+03	Netis	Eastern	Kitui	-1.846030	38.213691	Wote Cluster	Eastern	G4S	Symphony NOC
+503	618968	Athi_River_Kmc	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.9389+03	Netis	Eastern	Machakos	-1.451538	36.987598	Kitengela cluster	Eastern	G4S	Symphony NOC
+504	618969	Athi_River_Ngei	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.940557+03	Netis	Eastern	Machakos	-1.464133	36.979740	Kitengela cluster	Eastern	G4S	Symphony NOC
+505	619030	Mbooni	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.942145+03	Netis	Eastern	Makueni	-1.673457	37.452470	Machakos Cluster 1	Eastern	G4S	Symphony NOC
+506	619032	Kikoko_Hill	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.943929+03	Netis	Eastern	Makueni	-1.803982	37.396392	Machakos Cluster 2	Eastern	G4S	Symphony NOC
+507	619034	Sultan Hamud 1	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.945649+03	Netis	Eastern	Makueni	-2.016922	37.373155	Wote Cluster	Eastern	G4S	Symphony NOC
+508	620479	Wote_Slaughter	Eastern	Makueni	0	Pending	2026-08-10 12:01:37.947622+03	Netis	Eastern	Makueni	-1.775990	37.632280	Wote Cluster	Eastern	G4S	Symphony NOC
+509	618981	Kangundo	Eastern	Machakos	0	Pending	2026-08-10 12:01:37.949617+03	Netis	Eastern	Machakos	-1.312095	37.346709	Kangundo road	Eastern	G4S	Symphony NOC
+510	620660	Isiolo Checheles	Upper Eastern	Isiolo	0	Pending	2026-08-10 12:01:37.951426+03	I Engineering.	Upper Eastern	Isiolo	0.366177	37.592068	Isiolo Cluster	Upper Eastern	G4S	Symphony NOC
+511	621361	Isiolo Kiwanjani 2	Upper Eastern	Isiolo	0	Pending	2026-08-10 12:01:37.953238+03	I Engineering.	Upper Eastern	Isiolo	0.353843	37.594405	Isiolo Cluster	Upper Eastern	G4S	Symphony NOC
+2	MBA-BR-002	Mombasa Branch	Western	Nyali, Mombasa	9	Live	2026-08-09 10:31:54.621224+03	\N	Western	\N	-4.043500	39.668200	\N	\N	\N	\N
+5	ELD-ST-005	Eldoret Station	Rift Valley	Eldoret Town	3	Maintenance	2026-08-09 10:31:54.621224+03	\N	\N	\N	0.514300	35.269800	\N	\N	\N	\N
+\.
+
+
+--
+-- Data for Name: unknown_logs; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.unknown_logs (id, imei, received_at, raw, src_ip, src_port) FROM stdin;
+\.
+
+
+--
+-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.users (id, name, email, phone, company_id, role, status, password, regions, email_verified, phone_verified, approved_by, approved_at, last_seen, created_at) FROM stdin;
+1	Grace Wambui	admin@symphony.co.ke	+254 700 777 888	1	superadmin	Active	$2b$10$Ap/IcTgfJkk0d7OMYgWOsuFRCOSkylOoO/q6P0dWu/gIFzQNAMM7a	{}	t	t	\N	2026-08-07 16:14:35.586525+03	\N	2026-08-07 16:14:35.586525+03
+6	Vitalis Owuor	vowour@sympony.coo.ke	+254710115476	2	sec_country_asst	Active	$2a$10$4ZA5EQr.uBDlnaBsjg4L0O/yVgIP7DyQsyLVZAsW6g2ASw04BWH3m	{Coast}	t	t	\N	\N	\N	2026-08-08 14:35:33.729353+03
+4	Nancy Chebet	n.chebet@falconguard.co.ke	+254 726 551 048	2	company_mgr	Active	$2b$10$bEEoVFZpreVoYZap37riNeFQc8wcYKCZr/TRGU/jGqX7.RgX.hKFW	{}	t	t	1	2026-08-07 16:25:16.81714+03	\N	2026-08-07 16:14:36.00372+03
+2	Caroline Wanjiru	c.wanjiru@symphony.co.ke	+254 720 884 512	1	company_mgr	Active	$2b$10$mbwCrPia2tuutOBEbWGAquFr26T2Sv2TklxZUBEYV7wz7Ug287h7i	{}	t	t	\N	\N	\N	2026-08-07 16:14:35.765748+03
+7	Kennedy Itee	kennedy@symphony.co.ke	+254740180266	5	asst_mgr	Active	$2a$10$YLy9h3eC4TYloVDZW.oW1OXL.9kIgD9dEq2RVrbzrK66rmuV0ex5a	{Coast}	t	t	1	2026-08-08 15:04:48.902953+03	\N	2026-08-08 14:40:08.23285+03
+9	Faith  mbuthia	nobleme4@gmail.com	+254706320905	3	noc	Active	$2a$10$Bie7RPrM.B8Bjk/1nYxTUOZmtRhQi.R1ZPbqzkrTWgu8YX4R5cyuC	{"Nairobi North"}	t	t	1	2026-08-08 22:10:25.429051+03	\N	2026-08-08 22:08:43.625223+03
+3	Kevin Otieno	k.otieno@falconguard.co.ke	+254 719 220 703	2	asst_mgr	Active	$2b$10$jMkKcCKoZ7lK3GCtDjq6EOnV3jrBs6BJRUmQjWfOsgySx4KcSdk/W	{}	t	t	1	2026-08-07 16:25:47.887395+03	\N	2026-08-07 16:14:35.903269+03
+10	Eric Kirongo	eric@symphony.co.ke	+254702380624	3	admin	Suspended	$2a$10$neTYA1zUdAstFn7tz4u4xOeRawaPL05.js5hibQXRc3QQkYZhjhLq	{}	t	t	1	2026-08-09 09:43:12.258766+03	\N	2026-08-09 09:40:56.2582+03
+\.
+
+
+--
+-- Data for Name: verification_codes; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.verification_codes (id, channel, target, code, expires_at, consumed, attempts, created_at) FROM stdin;
+1	email	eric@symphony.co.ke	282771	2026-08-07 17:04:22.978836+03	f	0	2026-08-07 16:54:22.978836+03
+2	phone	+254710766390	833884	2026-08-07 17:04:49.995223+03	t	0	2026-08-07 16:54:49.995223+03
+3	email	eric@symphony.co.ke	225584	2026-08-07 17:20:12.939055+03	t	0	2026-08-07 17:10:12.939055+03
+4	email	jereasanya@gmail.com	701974	2026-08-07 17:37:29.941923+03	f	0	2026-08-07 17:27:29.941923+03
+5	phone	+254710766390	338724	2026-08-07 17:37:30.662696+03	f	0	2026-08-07 17:27:30.662696+03
+6	phone	+254710115476	974648	2026-08-08 13:20:55.958767+03	t	0	2026-08-08 13:10:55.958767+03
+7	email	kennedy@symphony.co.ke	199670	2026-08-08 14:48:00.349005+03	t	0	2026-08-08 14:38:00.349005+03
+8	phone	+2547	611672	2026-08-08 14:48:31.606578+03	f	0	2026-08-08 14:38:31.606578+03
+9	phone	+254740180266	600709	2026-08-08 14:48:48.442875+03	t	0	2026-08-08 14:38:48.442875+03
+10	email	eric@symphony.co.ke	171185	2026-08-08 21:37:34.901948+03	f	0	2026-08-08 21:27:34.901948+03
+11	email	nobleme4@gmail.com	352740	2026-08-08 22:15:05.955413+03	t	0	2026-08-08 22:05:05.955413+03
+12	phone	+254706320905	557153	2026-08-08 22:16:06.514667+03	f	0	2026-08-08 22:06:06.514667+03
+13	phone	+254706320905	964541	2026-08-08 22:17:56.58352+03	t	0	2026-08-08 22:07:56.58352+03
+14	email	eric@symphony.co.ke	610471	2026-08-09 09:46:17.74878+03	t	0	2026-08-09 09:36:17.74878+03
+15	phone	+254702380624	770777	2026-08-09 09:47:52.434208+03	t	0	2026-08-09 09:37:52.434208+03
+16	email	eric@symphony.co.ke	992486	2026-08-09 09:55:45.330326+03	t	0	2026-08-09 09:45:45.330326+03
+\.
+
+
+--
+-- Name: access_requests_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.access_requests_id_seq', 5, true);
+
+
+--
+-- Name: audit_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.audit_logs_id_seq', 15, true);
+
+
+--
+-- Name: companies_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.companies_id_seq', 12, true);
+
+
+--
+-- Name: device_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.device_logs_id_seq', 1, false);
+
+
+--
+-- Name: devices_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.devices_id_seq', 20, true);
+
+
+--
+-- Name: missed_alarms_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.missed_alarms_seq', 1001, false);
+
+
+--
+-- Name: modules_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.modules_id_seq', 50, true);
+
+
+--
+-- Name: raw_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.raw_logs_id_seq', 7, true);
+
+
+--
+-- Name: sites_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.sites_id_seq', 511, true);
+
+
+--
+-- Name: unknown_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.unknown_logs_id_seq', 1, false);
+
+
+--
+-- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.users_id_seq', 11, true);
+
+
+--
+-- Name: verification_codes_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.verification_codes_id_seq', 16, true);
+
+
+--
+-- Name: access_requests access_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.access_requests
+    ADD CONSTRAINT access_requests_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: access_requests access_requests_req_no_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.access_requests
+    ADD CONSTRAINT access_requests_req_no_key UNIQUE (req_no);
+
+
+--
+-- Name: alarms alarms_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.alarms
+    ADD CONSTRAINT alarms_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: app_config app_config_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.app_config
+    ADD CONSTRAINT app_config_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: audit_logs audit_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.audit_logs
+    ADD CONSTRAINT audit_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: companies companies_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.companies
+    ADD CONSTRAINT companies_code_key UNIQUE (code);
+
+
+--
+-- Name: companies companies_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.companies
+    ADD CONSTRAINT companies_name_key UNIQUE (name);
+
+
+--
+-- Name: companies companies_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.companies
+    ADD CONSTRAINT companies_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: device_logs device_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.device_logs
+    ADD CONSTRAINT device_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: devices devices_device_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.devices
+    ADD CONSTRAINT devices_device_id_key UNIQUE (device_id);
+
+
+--
+-- Name: devices devices_imei_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.devices
+    ADD CONSTRAINT devices_imei_key UNIQUE (imei);
+
+
+--
+-- Name: devices devices_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.devices
+    ADD CONSTRAINT devices_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: missed_alarms missed_alarms_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.missed_alarms
+    ADD CONSTRAINT missed_alarms_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: modules modules_key_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.modules
+    ADD CONSTRAINT modules_key_key UNIQUE (key);
+
+
+--
+-- Name: modules modules_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.modules
+    ADD CONSTRAINT modules_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: playback_routes playback_routes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.playback_routes
+    ADD CONSTRAINT playback_routes_pkey PRIMARY KEY (device_id, route_date);
+
+
+--
+-- Name: raw_logs raw_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.raw_logs
+    ADD CONSTRAINT raw_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: role_permissions role_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.role_permissions
+    ADD CONSTRAINT role_permissions_pkey PRIMARY KEY (role_key, module_key, perm_key);
+
+
+--
+-- Name: roles roles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.roles
+    ADD CONSTRAINT roles_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: sites sites_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sites
+    ADD CONSTRAINT sites_code_key UNIQUE (code);
+
+
+--
+-- Name: sites sites_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sites
+    ADD CONSTRAINT sites_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: unknown_logs unknown_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.unknown_logs
+    ADD CONSTRAINT unknown_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_email_key UNIQUE (email);
+
+
+--
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: verification_codes verification_codes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.verification_codes
+    ADD CONSTRAINT verification_codes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: audit_logs_cat_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX audit_logs_cat_idx ON public.audit_logs USING btree (category);
+
+
+--
+-- Name: audit_logs_ts_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX audit_logs_ts_idx ON public.audit_logs USING btree (ts DESC);
+
+
+--
+-- Name: idx_access_requests_status; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_access_requests_status ON public.access_requests USING btree (status);
+
+
+--
+-- Name: idx_alarms_status; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_alarms_status ON public.alarms USING btree (status);
+
+
+--
+-- Name: idx_devices_imei; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_devices_imei ON public.devices USING btree (imei);
+
+
+--
+-- Name: idx_devices_site; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_devices_site ON public.devices USING btree (site_id);
+
+
+--
+-- Name: idx_devlogs_device_time; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_devlogs_device_time ON public.device_logs USING btree (device_id, received_at DESC);
+
+
+--
+-- Name: idx_devlogs_site_time; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_devlogs_site_time ON public.device_logs USING btree (site_id, received_at DESC);
+
+
+--
+-- Name: idx_raw_logs_time; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_raw_logs_time ON public.raw_logs USING btree (received_at DESC);
+
+
+--
+-- Name: idx_role_perms_role; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_role_perms_role ON public.role_permissions USING btree (role_key);
+
+
+--
+-- Name: idx_sites_region; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_sites_region ON public.sites USING btree (region);
+
+
+--
+-- Name: idx_sites_status; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_sites_status ON public.sites USING btree (status);
+
+
+--
+-- Name: idx_users_company; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_users_company ON public.users USING btree (company_id);
+
+
+--
+-- Name: idx_users_email; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_users_email ON public.users USING btree (lower(email));
+
+
+--
+-- Name: idx_users_phone_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX idx_users_phone_unique ON public.users USING btree (regexp_replace(phone, '\s+'::text, ''::text, 'g'::text)) WHERE ((phone IS NOT NULL) AND (phone <> ''::text));
+
+
+--
+-- Name: idx_users_status; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_users_status ON public.users USING btree (status);
+
+
+--
+-- Name: idx_vcodes_lookup; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_vcodes_lookup ON public.verification_codes USING btree (channel, target, consumed);
+
+
+--
+-- Name: device_logs device_logs_device_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.device_logs
+    ADD CONSTRAINT device_logs_device_id_fkey FOREIGN KEY (device_id) REFERENCES public.devices(id) ON DELETE SET NULL;
+
+
+--
+-- Name: device_logs device_logs_site_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.device_logs
+    ADD CONSTRAINT device_logs_site_id_fkey FOREIGN KEY (site_id) REFERENCES public.sites(id) ON DELETE SET NULL;
+
+
+--
+-- Name: devices devices_site_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.devices
+    ADD CONSTRAINT devices_site_id_fkey FOREIGN KEY (site_id) REFERENCES public.sites(id) ON DELETE SET NULL;
+
+
+--
+-- Name: role_permissions role_permissions_module_key_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.role_permissions
+    ADD CONSTRAINT role_permissions_module_key_fkey FOREIGN KEY (module_key) REFERENCES public.modules(key) ON DELETE CASCADE;
+
+
+--
+-- Name: role_permissions role_permissions_role_key_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.role_permissions
+    ADD CONSTRAINT role_permissions_role_key_fkey FOREIGN KEY (role_key) REFERENCES public.roles(key) ON DELETE CASCADE;
+
+
+--
+-- Name: users users_approved_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: users users_company_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id) ON DELETE SET NULL;
+
+
+--
+-- Name: users users_role_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_role_fkey FOREIGN KEY (role) REFERENCES public.roles(key) ON DELETE SET NULL;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict GBb9qMelBKvV7tAcRB7z93m9HslgB9um2V3mUUpEoYN0HYE5XIdeLu6pF9QOOGo
+

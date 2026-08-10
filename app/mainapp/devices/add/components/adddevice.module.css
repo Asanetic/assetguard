@@ -1,0 +1,97 @@
+/* app/mainapp/devices/add/components/adddevice.module.css
+   Add-device page — a faithful port of the prototype (assetguard_web_add_device):
+   two-column layout (form + sticky naming-convention aside), sectioned cards with
+   colored chip icons, orientation toggles, geofence radius map, sensitivity
+   slider, install photo and mounting notes. Colors match the prototype exactly. */
+
+.page { color: #0f274a; }
+
+.head { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; position: sticky; top: 0; z-index: 6; background: #f8fafc; padding: 6px 0 10px; }
+.back { width: 36px; height: 36px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; color: #334155; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 17px; flex: none; }
+.back:hover { border-color: #2e6cf5; color: #2e6cf5; }
+.title { font-size: 23px; font-weight: 700; color: #0f274a; }
+.sub { font-size: 13px; color: #64748b; margin-top: 2px; }
+
+.grid { display: grid; grid-template-columns: 1fr 320px; gap: 14px; align-items: start; }
+
+.card { border: 1px solid #eef2f7; border-radius: 12px; padding: 16px; margin-bottom: 13px; background: #fff; }
+.cardHead { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 700; color: #0f274a; margin-bottom: 12px; }
+.chip { display: inline-flex; align-items: center; justify-content: center; width: 27px; height: 27px; border-radius: 8px; flex: none; font-size: 14px; }
+
+.lab { display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 5px; }
+.muted { color: #94a3b8; font-weight: 500; }
+.in { width: 100%; height: 42px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13.5px; background: #fff; color: #0f274a; font-family: inherit; box-sizing: border-box; }
+.in:focus { border-color: #2e6cf5; box-shadow: 0 0 0 3px rgba(46,108,245,.14); outline: none; }
+.in.readonly { background: #f8fafc; color: #475569; font-weight: 700; }
+select.in { cursor: pointer; }
+.mb { margin-bottom: 11px; }
+
+/* site combobox */
+.siteWrap { position: relative; }
+.siteList { position: absolute; left: 0; right: 0; top: 46px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; max-height: 180px; overflow-y: auto; z-index: 20; box-shadow: 0 8px 20px rgba(15,23,42,.12); }
+.siteItem { padding: 9px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; }
+.siteItem:last-child { border-bottom: 0; }
+.siteItem:hover { background: #f8fafc; }
+.siteId { color: #94a3b8; font-size: 11px; margin-left: 6px; }
+.siteNone { padding: 10px 12px; color: #94a3b8; font-size: 12.5px; }
+
+/* orientation */
+.oriRow { display: flex; gap: 10px; }
+.ori { flex: 1; border: 1.5px solid #e2e8f0; border-radius: 11px; padding: 13px; cursor: pointer; text-align: center; background: #fff; font-family: inherit; }
+.ori i { font-size: 20px; color: #2e6cf5; }
+.ori div { font-size: 13px; font-weight: 700; color: #0f274a; margin-top: 5px; }
+.oriOn { border-color: #2e6cf5; background: #eff4ff; }
+
+/* geofence */
+.geoGrid { display: grid; grid-template-columns: 1fr 190px; gap: 16px; align-items: center; }
+.geoNote { font-size: 11px; color: #94a3b8; margin-top: 7px; line-height: 1.5; }
+.geoMap { position: relative; background: #eaf1e6; border: 1px solid #e2e8f0; border-radius: 11px; height: 150px; overflow: hidden; }
+.geoMap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.geoCircle { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); border-radius: 50%; border: 2px dashed #2e6cf5; background: rgba(46,108,245,.08); transition: width .18s, height .18s; }
+.geoPin { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 22px; height: 22px; border-radius: 8px; background: #2e6cf5; border: 2.5px solid #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(15,23,42,.25); }
+.geoPin i { font-size: 11px; color: #fff; }
+
+/* toggle */
+.tg { width: 40px; height: 22px; border-radius: 99px; background: #2e6cf5; position: relative; cursor: pointer; flex: none; border: 0; padding: 0; }
+.tg::after { content: ""; position: absolute; top: 2.5px; left: 20px; width: 17px; height: 17px; border-radius: 50%; background: #fff; transition: left .2s; }
+.tgOff { background: #cbd5e1; }
+.tgOff::after { left: 3px; }
+
+/* slider */
+.slider { -webkit-appearance: none; appearance: none; width: 100%; height: 5px; border-radius: 99px; background: #e2e8f0; outline: none; margin-bottom: 4px; }
+.slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 17px; height: 17px; border-radius: 50%; background: #2e6cf5; cursor: pointer; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(15,23,42,.3); }
+.slider::-moz-range-thumb { width: 17px; height: 17px; border-radius: 50%; background: #2e6cf5; cursor: pointer; border: 2px solid #fff; }
+.motVal { color: #2e6cf5; font-weight: 800; }
+.sliderEnds { display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; margin-bottom: 14px; }
+
+/* installation photo */
+.photoEmpty { border: 2px dashed #e2e8f0; border-radius: 11px; height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; cursor: pointer; gap: 5px; }
+.photoEmpty i { font-size: 24px; }
+.photoEmpty .pt { font-size: 12px; font-weight: 600; }
+.photoEmpty .ps { font-size: 10.5px; color: #94a3b8; }
+.photoFull { position: relative; border-radius: 11px; overflow: hidden; border: 1px solid #e2e8f0; }
+.photoFull img { display: block; width: 100%; max-height: 220px; object-fit: cover; }
+.photoX { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(15,23,42,.55); border: 0; color: #fff; cursor: pointer; }
+.notes { width: 100%; height: 60px; padding: 9px 12px 0; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13.5px; background: #fff; color: #0f274a; font-family: inherit; box-sizing: border-box; resize: none; margin-bottom: 12px; }
+.notes:focus { border-color: #2e6cf5; box-shadow: 0 0 0 3px rgba(46,108,245,.14); outline: none; }
+
+.msg { background: #d1fae5; color: #065f46; border-radius: 10px; padding: 11px 14px; font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 7px; }
+.err { background: #fef2f2; color: #b91c1c; border-radius: 10px; padding: 11px 14px; font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+
+.save { width: 100%; background: #2e6cf5; color: #fff; border: 0; border-radius: 10px; padding: 12px 0; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.save:hover { background: #1e56db; }
+.save:disabled { opacity: .6; cursor: default; }
+.cancel { width: 100%; background: #fff; color: #334155; border: 1px solid #e2e8f0; border-radius: 10px; padding: 11px 0; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 9px; }
+.cancel:hover { border-color: #cbd5e1; }
+
+/* naming-convention aside */
+.aside { position: sticky; top: 0; }
+.asideBox { font-size: 12px; color: #475569; line-height: 1.6; background: #f8fafc; border: 1px solid #eef2f7; border-radius: 9px; padding: 11px 12px; }
+.asideBox b { color: #0f274a; }
+.asideBox code { background: #fff; border: 1px solid #e2e8f0; border-radius: 5px; padding: 1px 5px; }
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
+  .geoGrid { grid-template-columns: 1fr; }
+  .aside { position: static; }
+}

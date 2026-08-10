@@ -1,0 +1,75 @@
+/* app/mainapp/playbackmap/components/playback.module.css
+   Route Playback — a faithful port of the prototype: a left route panel + a
+   full Google Map with the animated route, and a bottom transport bar. */
+
+/* Fill the AppShell content box exactly (it already accounts for the red alarm
+   bar), and bleed over its padding so the map is edge-to-edge. Using 100% of the
+   content box + the padding back means the page never exceeds the viewport, so
+   the bottom transport bar is always visible without scrolling. */
+.page { height: calc(100% + 62px); margin: -22px -28px -40px; position: relative; overflow: hidden; background: #eaf1e6; color: #0f274a; }
+.grid { display: grid; grid-template-columns: 270px 1fr; height: 100%; transition: grid-template-columns .28s ease; }
+.gridCollapsed { grid-template-columns: 0px 1fr; }
+
+/* sidebar */
+.sidebar { background: #fff; border-right: 1px solid #e2e8f0; padding: 20px 18px; overflow-y: auto; min-width: 0; }
+.title { font-size: 18px; font-weight: 800; color: #0f274a; white-space: nowrap; }
+.lab { font-size: 10.5px; font-weight: 800; letter-spacing: .6px; color: #94a3b8; margin: 14px 0 6px; }
+.field { position: relative; }
+.in { width: 100%; height: 38px; padding: 0 10px; border: 1px solid #e2e8f0; border-radius: 9px; font-size: 12.5px; background: #fff; color: #0f274a; font-family: inherit; box-sizing: border-box; }
+.in:focus { border-color: #2e6cf5; box-shadow: 0 0 0 3px rgba(46,108,245,.14); outline: none; }
+.devList { position: absolute; left: 0; right: 0; top: 40px; background: #fff; border: 1px solid #e2e8f0; border-radius: 9px; max-height: 190px; overflow-y: auto; z-index: 30; box-shadow: 0 8px 20px rgba(15,23,42,.14); }
+.devItem { padding: 8px 10px; font-size: 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+.devItem:last-child { border-bottom: 0; }
+.devItem:hover { background: #f8fafc; }
+.devNone { padding: 9px 11px; color: #94a3b8; font-size: 12px; }
+
+.stat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; }
+.statLast { border-bottom: 0; }
+.statK { color: #94a3b8; font-weight: 600; }
+.statV { color: #0f274a; font-weight: 800; }
+
+.rp { display: flex; gap: 9px; padding: 8px 0; cursor: pointer; border-radius: 8px; }
+.rp:hover { background: #f8fafc; }
+.rpDot { width: 9px; height: 9px; border-radius: 50%; margin-top: 4px; flex: none; }
+.rpName { font-size: 12.5px; font-weight: 700; color: #0f274a; }
+.rpSub { font-size: 11px; color: #94a3b8; }
+.export { width: 100%; margin-top: 14px; background: #fff; color: #334155; border: 1px solid #e2e8f0; border-radius: 9px; padding: 9px 0; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.export:hover { border-color: #2e6cf5; color: #2e6cf5; }
+
+/* map */
+.mapWrap { position: relative; min-width: 0; }
+.mapReal { position: absolute; inset: 0; }
+.mapOverlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #64748b; font-size: 13px; text-align: center; padding: 24px; background: #eaf1e6; z-index: 2; }
+.mapOverlay i { font-size: 40px; color: #cbd5e1; }
+.mapOverlay a { color: #2e6cf5; font-weight: 700; text-decoration: none; }
+.mapOverlay code { background: #f1f5f9; border-radius: 5px; padding: 1px 6px; font-size: 11.5px; }
+
+.chips { position: absolute; top: 16px; right: 16px; z-index: 6; display: flex; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: #fff; border-radius: 999px; padding: 7px 13px; font-size: 12.5px; font-weight: 700; color: #0f274a; box-shadow: 0 2px 8px rgba(15,23,42,.12); white-space: nowrap; }
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; background: #2e6cf5; }
+
+.handle { position: absolute; top: 300px; width: 26px; height: 46px; z-index: 7; background: #fff; border: 1px solid #e2e8f0; border-left: 0; border-radius: 0 8px 8px 0; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 2px 0 6px rgba(15,23,42,.06); transition: left .28s ease; }
+.handle:hover { color: #2e6cf5; }
+
+/* bottom transport bar */
+.bar { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid #e2e8f0; padding: 12px 20px 16px; z-index: 6; }
+.barTop { display: flex; align-items: center; justify-content: space-between; margin-bottom: 11px; gap: 12px; flex-wrap: wrap; }
+.dropbox { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #e2e8f0; border-radius: 9px; padding: 0 11px; height: 36px; font-size: 11.5px; font-weight: 700; color: #334155; background: #fff; white-space: nowrap; }
+.readout { display: flex; gap: 16px; }
+.read { display: flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; color: #0f274a; }
+.read i { font-size: 14px; }
+.scrubRow { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.scrubEnds { font-size: 13px; color: #334155; font-weight: 600; }
+.scrub { -webkit-appearance: none; appearance: none; flex: 1; height: 5px; border-radius: 99px; background: #e2e8f0; outline: none; }
+.scrub::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #2e6cf5; cursor: pointer; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(46,108,245,.18), 0 2px 6px rgba(15,23,42,.25); }
+.scrub::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #2e6cf5; cursor: pointer; border: 3px solid #fff; }
+.controls { display: flex; align-items: center; justify-content: center; gap: 14px; }
+.tbtn { width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 1px solid #e2e8f0; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.tbtn:hover { border-color: #cbd5e1; color: #334155; }
+.play { width: 54px; height: 54px; border-radius: 50%; background: #2e6cf5; border: 0; color: #fff; box-shadow: 0 4px 14px rgba(46,108,245,.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.play:hover { background: #1e56db; }
+.sep { width: 1px; height: 24px; background: #eef2f7; margin: 0 6px; }
+.speed { background: #fff; color: #475569; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.speedOn { background: #14315d; color: #fff; border-color: #14315d; }
+
+.toast { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: #0f274a; color: #fff; border-radius: 10px; padding: 9px 16px; font-size: 12.5px; font-weight: 700; z-index: 9; white-space: nowrap; box-shadow: 0 10px 30px rgba(15,23,42,.25); }

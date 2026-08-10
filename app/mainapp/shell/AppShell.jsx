@@ -3,16 +3,19 @@
 // floating speaker, and a slide-out drawer menu. Wraps authenticated pages.
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./shell.module.css";
+import { startAlarmSound, stopAlarmSound, resumeAudio } from "../lib/alarmSound.js";
 
 // Rail quick-nav (collapsed icons). Sections not yet built open the drawer.
+// The collapsed rail icons are map shortcuts — each navigates straight to its
+// map view. Only the hamburger opens the full drawer.
 const RAIL = [
-  { key: "sites", label: "Sites", icon: "ti-map-pin" },
-  { key: "devices", label: "Devices", icon: "ti-cpu" },
-  { key: "alarms", label: "Alarms", icon: "ti-bell-ringing", badge: true },
-  { key: "playback", label: "Playback", icon: "ti-player-play" },
+  { key: "sites", label: "Sites", icon: "ti-map-pin", href: "/mainapp/sitemaps" },
+  { key: "devices", label: "Devices", icon: "ti-cpu", href: "/mainapp/devicemap" },
+  { key: "alarms", label: "Alarms", icon: "ti-bell-ringing", badge: true, href: "/mainapp/alarmmaps" },
+  { key: "playback", label: "Playback", icon: "ti-player-play", href: "/mainapp/playbackmap" },
 ];
 
 // Full drawer menu. `children` makes an expandable group.
@@ -21,15 +24,18 @@ const MENU = [
   { key: "dashboard", label: "Dashboard", icon: "ti-layout-dashboard", color: "#2E6CF5", href: "/mainapp/dashboard" },
   { key: "sites", label: "Sites", icon: "ti-map-pin", color: "#10B981", children: [
       { key: "all_sites", label: "All sites", href: "/mainapp/sites" },
+      { key: "group_sites", label: "Group sites", href: "/mainapp/sites/group" },
       { key: "add_site", label: "Add site", href: "/mainapp/sites/add" },
     ] },
   { key: "devices", label: "Devices", icon: "ti-cpu", color: "#F59E0B", children: [
       { key: "all_devices", label: "All devices", href: "/mainapp/devices" },
+      { key: "group_devices", label: "Group devices", href: "/mainapp/devices/group" },
       { key: "add_device", label: "Add device", href: "/mainapp/devices/add" },
       { key: "ingest", label: "Live logs", href: "/mainapp/ingest" },
     ] },
   { key: "alarms", label: "Alarms", icon: "ti-bell-ringing", color: "#EF4444", children: [
       { key: "all_alarms", label: "All alarms", href: "/mainapp/alarms" },
+      { key: "missed_alarms", label: "Missed alarms", href: "/mainapp/alarms/missed" },
     ] },
   { key: "playback", label: "Playback", icon: "ti-player-play", color: "#8B5CF6", href: "/mainapp/playback" },
   { key: "notifications", label: "Notifications", icon: "ti-bell", color: "#0EA5E9", href: "/mainapp/notifications" },
@@ -70,7 +76,7 @@ function initials(name) {
     .toUpperCase();
 }
 
-export default function AppShell({ children, active, openAlarms = 0, criticalAlarms = 0 }) {
+export default function AppShell({ children, active, openAlarms = 0, criticalAlarms = 0, speakerPosition = "right" }) {
   const router = useRouter();
   const [drawer, setDrawer] = useState(false);
   const [expanded, setExpanded] = useState(() => {
@@ -88,21 +94,49 @@ export default function AppShell({ children, active, openAlarms = 0, criticalAla
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
+  const prevOpenRef = useRef(alarms.open);
+
   useEffect(() => {
     let ok = true;
     fetch("/api/auth/me")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => ok && d?.user && setUser(d.user))
       .catch(() => {});
-    // Alarm summary is optional; hide the bar if the endpoint isn't there.
-    if (!openAlarms) {
-      fetch("/api/mainapp/alarms/summary")
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => ok && d && setAlarms({ open: d.open || 0, critical: d.critical || 0 }))
-        .catch(() => {});
-    }
     return () => { ok = false; };
-  }, [openAlarms]);
+  }, []);
+
+  // Poll the alarm summary. When the open count RISES (a new alarm came in), the
+  // buzzer force-unmutes and rings — even if the operator had muted it.
+  useEffect(() => {
+    let ok = true;
+    async function poll() {
+      try {
+        const r = await fetch("/api/mainapp/alarms/summary");
+        const d = r.ok ? await r.json() : null;
+        if (!ok || !d) return;
+        const open = d.open || 0, critical = d.critical || 0;
+        if (open > prevOpenRef.current) setMuted(false); // new alarm → auto-unmute
+        prevOpenRef.current = open;
+        setAlarms({ open, critical });
+      } catch { /* endpoint optional */ }
+    }
+    poll();
+    const id = setInterval(poll, 15000);
+    return () => { ok = false; clearInterval(id); };
+  }, []);
+
+  // Ring while there are open alarms and the buzzer isn't muted. Audio can't
+  // start before a user gesture, so also arm it on the first interaction.
+  useEffect(() => {
+    if (alarms.open > 0 && !muted) startAlarmSound();
+    else stopAlarmSound();
+  }, [alarms.open, muted]);
+  useEffect(() => {
+    const arm = () => { resumeAudio(); if (alarms.open > 0 && !muted) startAlarmSound(); };
+    window.addEventListener("pointerdown", arm, { once: true });
+    return () => { window.removeEventListener("pointerdown", arm); stopAlarmSound(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function go(href) {
     setDrawer(false);
@@ -151,7 +185,7 @@ export default function AppShell({ children, active, openAlarms = 0, criticalAla
             <button
               key={r.key}
               className={`${styles.railBtn} ${active === r.key ? styles.railBtnActive : ""}`}
-              onClick={() => setDrawer(true)}
+              onClick={() => go(r.href)}
             >
               <i className={`ti ${r.icon}`} style={{ fontSize: 19 }} aria-hidden="true" />
               {r.label}
@@ -181,11 +215,12 @@ export default function AppShell({ children, active, openAlarms = 0, criticalAla
         <main className={styles.content}>{children}</main>
       </div>
 
-      {/* Floating speaker */}
+      {/* Floating speaker — raised on Playback so it clears the transport bar */}
       <button
-        className={`${styles.speaker} ${alarms.open > 0 && !muted ? styles.speakerLive : ""}`}
+        className={`${styles.speaker} ${active === "playback" ? styles.speakerRaised : ""} ${speakerPosition === "left" ? styles.speakerLeft : ""} ${alarms.open > 0 && !muted ? styles.speakerLive : ""}`}
         aria-label={muted ? "Unmute alarm sound" : "Mute alarm sound"}
-        onClick={() => setMuted((m) => !m)}
+        style={{ color: muted ? "#94a3b8" : "#dc2626" }}
+        onClick={() => { resumeAudio(); setMuted((m) => !m); }}
       >
         <i
           className={muted ? "ti ti-volume-off" : "ti ti-volume"}

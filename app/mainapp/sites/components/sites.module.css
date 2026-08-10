@@ -49,7 +49,8 @@
 
 /* table */
 .tableWrap { border: 1px solid #eef2f7; border-radius: 12px; overflow: hidden; background: #fff; }
-.scroll { max-height: 520px; overflow-y: auto; overflow-x: auto; }
+/* No fixed height — the table grows with its rows and the page scrolls normally. */
+.scroll { overflow-x: auto; }
 .scroll::-webkit-scrollbar { width: 7px; height: 7px; }
 .scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
 

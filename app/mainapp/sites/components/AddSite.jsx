@@ -10,8 +10,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./addsite.module.css";
+import { fetchMapsConfig, loadGoogleMaps, sitePinIcon } from "../../lib/googleMaps.js";
 import {
   COUNTIES, DIST_REGIONS, SEC_REGIONS, CLUSTERS, VENDORS, COMPANY,
   resolveSiteContacts, responseTeamsFor,
@@ -27,6 +28,8 @@ const toStr = (p) => (p ? { name: p.name, phones: joinC(p.phones), emails: joinC
 const emptyTeam = () => ({ name: "", vehicle: "", phones: "", emails: "", on: true });
 const teamFrom = (t) => ({ name: t.code || "", vehicle: t.vehicle || "", phones: joinC(t.phones), emails: joinC(t.emails), on: true });
 const listOrEmpty = (arr) => (arr && arr.length ? arr.map(teamFrom) : [emptyTeam()]);
+// Ensure a saved value that isn't in the preset list still shows in its select.
+const withVal = (opts, v) => (v && !opts.includes(v) ? [v, ...opts] : opts);
 
 // Comma-separated contact input with a live chip preview.
 function ContactField({ value, onChange, kind }) {
@@ -139,6 +142,9 @@ const REQUIRED = ["id", "name", "county", "distRegion", "securityRegion", "respo
 
 export default function AddSite() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
+  const [editing] = useState(!!editId);
 
   const [f, setF] = useState({
     id: "", name: "", smpms: "", county: "", distRegion: "",
@@ -170,30 +176,158 @@ export default function AddSite() {
   const [locating, setLocating] = useState(false);
   const refs = useRef({});
 
+  // --- real Google map ---
+  const mapEl = useRef(null);
+  const gmap = useRef(null);
+  const marker = useRef(null);
+  const mapsApi = useRef(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [siteStatus, setSiteStatus] = useState("Pending"); // drives the marker colour
+
   function set(k, v) { setF((s) => ({ ...s, [k]: v })); }
 
-  // Cascade A — security region drives security staff, its NOC teams, and the
-  // monitoring company + its NOC teams.
+  // Client company (national — covers every site) is pulled from Settings.
   useEffect(() => {
-    const r = resolveSiteContacts(f.securityRegion, f.responseCluster);
-    setSec({
-      company: r.secco ? r.secco.company : "",
-      ops: toStr(r.secco && r.secco.country ? r.secco.country.opsMgr : null),
-      opsAsst: toStr(r.secco && r.secco.country ? r.secco.country.opsAsst : null),
-      field: toStr(r.secco && r.secco.region ? r.secco.region.fieldMgr : null),
-      fieldAsst: toStr(r.secco && r.secco.region ? r.secco.region.fieldAsst : null),
-    });
+    let alive = true;
+    fetch("/api/mainapp/org", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d?.org) return;
+        const o = d.org;
+        setComp({ name: o.name || COMPANY.name, mgr: toStr(o.manager), a1: toStr(o.assistant1), a2: toStr(o.assistant2) });
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  // The auto-fill cascade runs ONLY when the user picks a security region or
+  // response cluster (not on hydration), so loading a saved site never wipes its
+  // stored contacts.
+  function onSecurityRegion(v) {
+    set("securityRegion", v);
+    // Teams + monitoring company still come from the seed cascade (no DB source yet).
+    const r = resolveSiteContacts(v, f.responseCluster);
     setSecNoc(listOrEmpty(r.secNocTeams));
     setMonitoringCompany(r.monco ? r.monco.name : "");
     setMnc(listOrEmpty(r.mncTeams));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.securityRegion]);
+    setResponse(listOrEmpty(responseTeamsFor(f.responseCluster, v)));
+    // Security-company staff autofill from REAL registered users, matched to this region.
+    if (!v) {
+      setSec({ company: "", ops: toStr(null), opsAsst: toStr(null), field: toStr(null), fieldAsst: toStr(null) });
+      return;
+    }
+    fetch(`/api/mainapp/site-contacts?region=${encodeURIComponent(v)}`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => {
+        if (!d) return;
+        const s = d.security || {};
+        setSec({
+          company: s.company || "",
+          ops: toStr(s.country?.opsMgr), opsAsst: toStr(s.country?.opsAsst),
+          field: toStr(s.region?.fieldMgr), fieldAsst: toStr(s.region?.fieldAsst),
+        });
+      })
+      .catch(() => {});
+  }
+  function onResponseCluster(v) {
+    set("responseCluster", v);
+    setResponse(listOrEmpty(responseTeamsFor(v, f.securityRegion)));
+  }
 
-  // Cascade B — response cluster (falls back to region) drives response teams.
+  // Edit mode — load the saved site and prefill every field, without triggering
+  // the auto-fill cascade (which would overwrite the saved contacts).
   useEffect(() => {
-    setResponse(listOrEmpty(responseTeamsFor(f.responseCluster, f.securityRegion)));
+    if (!editId) return;
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/mainapp/sites/${editId}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const { site } = await res.json();
+        if (!alive || !site) return;
+        if (site.status) setSiteStatus(site.status);
+        const d = site.details || {};
+        const teamRow = (t) => ({ name: t.name || t.code || "", vehicle: t.vehicle || "", phones: joinC(t.phones), emails: joinC(t.emails), on: true });
+        const teamsIn = (arr) => (arr && arr.length ? arr.map(teamRow) : [emptyTeam()]);
+        const coordStr = d.coordinates
+          || (site.lat != null && site.lng != null ? `${site.lat}, ${site.lng}` : "");
+        setF({
+          id: site.code || "", name: site.name || "", smpms: site.smpms_vendor || "",
+          county: site.county || d.county || "", distRegion: site.dist_region || d.distRegion || "",
+          securityRegion: site.security_region || d.securityRegion || "",
+          responseCluster: site.response_cluster || d.responseCluster || "",
+          coords: coordStr,
+          sms: joinC(d.alerts?.sms), emails: joinC(d.alerts?.emails),
+        });
+        // The client company comes from Settings (loaded on mount, covers every site);
+        // we don't overwrite it from the saved snapshot.
+        const scy = d.securityCompany || {};
+        setSec({
+          company: scy.company || site.security_company || "",
+          ops: toStr(scy.country?.operationsManager), opsAsst: toStr(scy.country?.assistant),
+          field: toStr(scy.region?.fieldOperationsManager), fieldAsst: toStr(scy.region?.assistant),
+        });
+        setSecNoc(teamsIn(scy.nocTeams));
+        setResponse(teamsIn(scy.responseTeams));
+        setMonitoringCompany(d.noc?.monitoringCompany || site.monitoring_company || "");
+        setMnc(teamsIn(d.noc?.nocTeams));
+      } catch { /* ignore */ }
+    })();
+    return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.responseCluster, f.securityRegion]);
+  }, [editId]);
+
+  // Init the real map once.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const cfg = await fetchMapsConfig();
+        if (!cfg.apiKey) return;              // no key → keep the drawn placeholder
+        const maps = await loadGoogleMaps(cfg);
+        if (cancelled || !mapEl.current) return;
+        mapsApi.current = maps;
+        const start = parseCoords(f.coords);
+        const has = start.lat != null && start.lng != null;
+        const center = has ? { lat: start.lat, lng: start.lng } : cfg.defaultCenter;
+        const map = new maps.Map(mapEl.current, {
+          center, zoom: has ? 15 : (Number(cfg.defaultZoom) || 7),
+          mapTypeId: cfg.mapType || "roadmap", streetViewControl: false, fullscreenControl: false,
+          mapTypeControl: true,
+          mapTypeControlOptions: { style: maps.MapTypeControlStyle.HORIZONTAL_BAR, position: maps.ControlPosition.BOTTOM_LEFT },
+        });
+        gmap.current = map;
+        if (has) marker.current = new maps.Marker({ map, position: center, icon: sitePinIcon(maps, siteStatus) });
+        // click the map to drop / move the pin
+        map.addListener("click", (e) => {
+          const lat = e.latLng.lat().toFixed(6), lng = e.latLng.lng().toFixed(6);
+          setF((s) => ({ ...s, coords: `${lat}, ${lng}` }));
+        });
+        maps.event.trigger(map, "resize"); map.setCenter(center);
+        setMapReady(true);
+      } catch { /* keep placeholder */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Re-centre the map + marker whenever the coordinates change.
+  useEffect(() => {
+    if (!mapReady || !gmap.current || !mapsApi.current) return;
+    const { lat, lng } = parseCoords(f.coords);
+    if (lat == null || lng == null) return;
+    const pos = { lat, lng };
+    gmap.current.setCenter(pos);
+    if (gmap.current.getZoom() < 13) gmap.current.setZoom(15);
+    if (marker.current) marker.current.setPosition(pos);
+    else marker.current = new mapsApi.current.Marker({ map: gmap.current, position: pos, icon: sitePinIcon(mapsApi.current, siteStatus) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.coords, mapReady]);
+
+  // keep the marker colour in sync with the site's status (edit mode)
+  useEffect(() => {
+    if (marker.current && mapsApi.current) marker.current.setIcon(sitePinIcon(mapsApi.current, siteStatus));
+  }, [siteStatus]);
 
   // --- map pin + geolocation ---
   function moveMap() {
@@ -262,22 +396,34 @@ export default function AddSite() {
       alerts: { sms: splitC(f.sms), emails: splitC(f.emails) },
     };
 
+    const payload = {
+      code: f.id, name: f.name, smpms_vendor: f.smpms,
+      country: "Kenya", county: f.county, dist_region: f.distRegion,
+      security_region: f.securityRegion, response_cluster: f.responseCluster,
+      security_company: sec.company || null, monitoring_company: monitoringCompany || null,
+      lat, lng, coordinates: f.coords, details,
+    };
+
     try {
-      const res = await fetch("/api/mainapp/sites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code: f.id, name: f.name, smpms_vendor: f.smpms,
-          country: "Kenya", county: f.county, dist_region: f.distRegion,
-          security_region: f.securityRegion, response_cluster: f.responseCluster,
-          security_company: sec.company || null, monitoring_company: monitoringCompany || null,
-          lat, lng, coordinates: f.coords, status: "Pending", details,
-        }),
-      });
+      let res;
+      if (editing) {
+        // Edit — update the existing site (status is left untouched).
+        res = await fetch(`/api/mainapp/sites/${editId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        res = await fetch("/api/mainapp/sites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, status: "Pending" }),
+        });
+      }
       const d = await res.json().catch(() => ({}));
       if (!res.ok) { setErr(d.error || "Could not save site"); setSaving(false); return; }
       setSaved(true); setSaving(false);
-      setTimeout(() => router.push("/mainapp/sites"), 1400);
+      setTimeout(() => router.push(editing ? `/mainapp/sites/${editId}` : "/mainapp/sites"), 1200);
     } catch {
       setErr("Network error"); setSaving(false);
     }
@@ -292,26 +438,35 @@ export default function AddSite() {
     <div className={styles.page}>
       <div className={styles.head}>
         <div>
-          <div className={styles.title}>Add site</div>
-          <div className={styles.sub}>Register a new location — scroll down to complete all sections</div>
+          <div className={styles.title}>{editing ? "Edit site" : "Add site"}</div>
+          <div className={styles.sub}>
+            {editing ? "Update this location's details" : "Register a new location — scroll down to complete all sections"}
+          </div>
         </div>
       </div>
 
-      {/* decorative location map */}
+      {/* location map — real Google map, with a drawn placeholder until it loads */}
       <div className={styles.map}>
-        <svg className={styles.mapSvg} viewBox="0 0 900 170" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M780 0 L900 0 L900 170 L700 170 C740 130 760 90 748 55 C744 35 760 18 780 0 Z" fill="#CFE3F5" />
-          <path d="M0 60 C200 48 420 74 690 60" stroke="#FFFFFF" strokeWidth="4" fill="none" />
-          <path d="M150 0 C190 60 230 120 210 170" stroke="#F1E9D2" strokeWidth="3" fill="none" />
-        </svg>
-        <div className={styles.pin} style={{ left: pin.left, top: pin.top }}>
-          <i className="ti ti-map-pin" aria-hidden="true" />
-        </div>
+        <div ref={mapEl} className={styles.mapReal} />
+        {!mapReady && (
+          <>
+            <svg className={styles.mapSvg} viewBox="0 0 900 170" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M780 0 L900 0 L900 170 L700 170 C740 130 760 90 748 55 C744 35 760 18 780 0 Z" fill="#CFE3F5" />
+              <path d="M0 60 C200 48 420 74 690 60" stroke="#FFFFFF" strokeWidth="4" fill="none" />
+              <path d="M150 0 C190 60 230 120 210 170" stroke="#F1E9D2" strokeWidth="3" fill="none" />
+            </svg>
+            <div className={styles.pin} style={{ left: pin.left, top: pin.top }}>
+              <i className="ti ti-map-pin" aria-hidden="true" />
+            </div>
+          </>
+        )}
         {toast && <div className={styles.toast}>Location updated</div>}
         <button type="button" className={styles.liveBtn} onClick={openLiveMaps}>
           <i className="ti ti-map-2" aria-hidden="true" />Live maps
         </button>
-        <div className={styles.mapNote}>Exact site location — updates when coordinates change</div>
+        <div className={styles.mapNote}>
+          {mapReady ? "Click the map or type coordinates to set the exact location" : "Exact site location — updates when coordinates change"}
+        </div>
       </div>
 
       {/* full-width two-column layout */}
@@ -338,7 +493,7 @@ export default function AddSite() {
             <label className={styles.lab}>SMPMS vendor</label>
             <select className={styles.in} value={f.smpms} onChange={(e) => set("smpms", e.target.value)}>
               <option value="">Select vendor</option>
-              {VENDORS.map((v) => <option key={v}>{v}</option>)}
+              {withVal(VENDORS, f.smpms).map((v) => <option key={v}>{v}</option>)}
             </select>
           </div>
         </div>
@@ -360,30 +515,30 @@ export default function AddSite() {
             <label className={styles.lab}>County <span className={styles.rq}>*</span></label>
             <select {...reg("county")} value={f.county} onChange={(e) => set("county", e.target.value)}>
               <option value="">Select county</option>
-              {COUNTIES.map((c) => <option key={c}>{c}</option>)}
+              {withVal(COUNTIES, f.county).map((c) => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div>
             <label className={styles.lab}>Distribution region <span className={styles.rq}>*</span> <span className={styles.op}>(client split)</span></label>
             <select {...reg("distRegion")} value={f.distRegion} onChange={(e) => set("distRegion", e.target.value)}>
               <option value="">Select distribution region</option>
-              {DIST_REGIONS.map((r) => <option key={r}>{r}</option>)}
+              {withVal(DIST_REGIONS, f.distRegion).map((r) => <option key={r}>{r}</option>)}
             </select>
           </div>
         </div>
         <div className={styles.g2}>
           <div>
             <label className={styles.lab}>Security region <span className={styles.rq}>*</span> <span className={styles.op}>(regional managers &amp; heads)</span></label>
-            <select {...reg("securityRegion")} value={f.securityRegion} onChange={(e) => set("securityRegion", e.target.value)}>
+            <select {...reg("securityRegion")} value={f.securityRegion} onChange={(e) => onSecurityRegion(e.target.value)}>
               <option value="">Select security region</option>
-              {SEC_REGIONS.map((r) => <option key={r}>{r}</option>)}
+              {withVal(SEC_REGIONS, f.securityRegion).map((r) => <option key={r}>{r}</option>)}
             </select>
           </div>
           <div>
             <label className={styles.lab}>Response cluster <span className={styles.rq}>*</span> <span className={styles.op}>(team that responds here)</span></label>
-            <select {...reg("responseCluster")} value={f.responseCluster} onChange={(e) => set("responseCluster", e.target.value)}>
+            <select {...reg("responseCluster")} value={f.responseCluster} onChange={(e) => onResponseCluster(e.target.value)}>
               <option value="">Select response cluster</option>
-              {CLUSTERS.map((c) => <option key={c}>{c}</option>)}
+              {withVal(CLUSTERS, f.responseCluster).map((c) => <option key={c}>{c}</option>)}
             </select>
           </div>
         </div>
@@ -507,7 +662,9 @@ export default function AddSite() {
 
       <div className={styles.actions}>
         <button type="button" className={`${styles.save} ${saved ? styles.saveOk : ""}`} onClick={save} disabled={saving || saved}>
-          {saved ? "Site saved — status: Pending" : saving ? "Saving…" : "Save site"}
+          {editing
+            ? (saved ? "Changes saved" : saving ? "Saving…" : "Save changes")
+            : (saved ? "Site saved — status: Pending" : saving ? "Saving…" : "Save site")}
         </button>
         <button type="button" className={styles.cancel} onClick={() => router.push("/mainapp/sites")} disabled={saving}>
           Cancel

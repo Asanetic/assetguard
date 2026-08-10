@@ -30,8 +30,13 @@ export async function listSites({ q, region, status } = {}) {
   }
 
   const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  // Include coordinates + a few detail columns so the sites map can plot markers
+  // and fill popups without a second request.
   const { rows } = await query(
-    `SELECT ${COLS} FROM sites ${clause} ORDER BY id ASC`,
+    `SELECT ${COLS}, lat, lng, county, dist_region, security_region,
+            response_cluster, smpms_vendor,
+            security_company, monitoring_company
+       FROM sites ${clause} ORDER BY id ASC`,
     params
   );
   return rows;
@@ -86,21 +91,33 @@ export async function createSite({
   return rows[0];
 }
 
-/** Patch a site. Only provided fields change. */
+/** Patch a site. Only provided fields change (supports the full Add/Edit form). */
 export async function updateSite(id, patch = {}) {
-  const allowed = ["code", "name", "region", "location", "devices", "status"];
+  const allowed = [
+    "code", "name", "region", "location", "devices", "status",
+    "smpms_vendor", "dist_region", "county", "lat", "lng",
+    "response_cluster", "security_region", "country",
+    "security_company", "monitoring_company",
+  ];
   const sets = [];
   const params = [];
   for (const key of allowed) {
     if (patch[key] !== undefined) {
-      params.push(key === "devices" ? Number(patch[key]) || 0 : patch[key]);
+      let v = patch[key];
+      if (key === "devices") v = Number(v) || 0;
+      if (key === "lat" || key === "lng") v = (v === "" || v == null) ? null : Number(v);
+      params.push(v);
       sets.push(`${key} = $${params.length}`);
     }
+  }
+  if (patch.details !== undefined) {
+    params.push(patch.details ? JSON.stringify(patch.details) : null);
+    sets.push(`details = $${params.length}::jsonb`);
   }
   if (!sets.length) return getSite(id);
   params.push(id);
   const { rows } = await query(
-    `UPDATE sites SET ${sets.join(", ")} WHERE id = $${params.length} RETURNING ${COLS}`,
+    `UPDATE sites SET ${sets.join(", ")} WHERE id = $${params.length} RETURNING *`,
     params
   );
   return rows[0] || null;
@@ -109,6 +126,36 @@ export async function updateSite(id, patch = {}) {
 export async function deleteSite(id) {
   await query(`DELETE FROM sites WHERE id = $1`, [id]);
   return true;
+}
+
+// ---- batch operations (Group sites) ---------------------------------------
+const BATCH_COLS = {
+  region: "region", dist_region: "dist_region", response_cluster: "response_cluster",
+  security_region: "security_region", smpms_vendor: "smpms_vendor",
+  security_company: "security_company", monitoring_company: "monitoring_company", status: "status",
+};
+
+/** Apply the same column patch to many sites at once. Returns rows affected. */
+export async function batchUpdateSites(ids = [], patch = {}) {
+  if (!ids.length) return 0;
+  const sets = [];
+  const params = [];
+  for (const k in patch) {
+    if (BATCH_COLS[k]) { params.push(patch[k]); sets.push(`${BATCH_COLS[k]} = $${params.length}`); }
+  }
+  if (!sets.length) return 0;
+  params.push(ids);
+  const { rowCount } = await query(
+    `UPDATE sites SET ${sets.join(", ")} WHERE id = ANY($${params.length}::bigint[])`,
+    params
+  );
+  return rowCount;
+}
+
+export async function batchDeleteSites(ids = []) {
+  if (!ids.length) return 0;
+  const { rowCount } = await query(`DELETE FROM sites WHERE id = ANY($1::bigint[])`, [ids]);
+  return rowCount;
 }
 
 // -----------------------------------------------------------------------------

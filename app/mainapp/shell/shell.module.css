@@ -172,6 +172,11 @@
   cursor: pointer;
   z-index: 30;
 }
+/* Raised clear of the Playback transport bar so it never overlaps its controls. */
+.speakerRaised { bottom: 176px; }
+/* On Track Device the right side is reserved for Google's controls + the blue
+   guidance speaker, so the alarm buzzer sits bottom-left, clear of the bottom bar. */
+.speakerLeft { right: auto; left: 80px; bottom: 96px; }
 .speakerLive::after {
   content: "";
   position: absolute;

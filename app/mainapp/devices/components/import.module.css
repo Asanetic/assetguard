@@ -1,0 +1,125 @@
+/* app/mainapp/sites/components/import.module.css
+   "Import sites from Excel" modal — colors, fonts and proportions mirror the
+   prototype (agInjectSiteImport). */
+
+.scrim {
+  position: fixed; inset: 0; background: rgba(15,23,42,.5); z-index: 70;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.modal {
+  width: 760px; max-width: 96%; max-height: 88vh; background: #fff; border-radius: 16px;
+  overflow: hidden; box-shadow: 0 20px 60px rgba(15,23,42,.35);
+  display: flex; flex-direction: column;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+/* header */
+.header {
+  background: #14315d; padding: 16px 20px; display: flex; align-items: center;
+  justify-content: space-between; flex: none;
+}
+.headLeft { display: flex; align-items: center; gap: 10px; color: #fff; }
+.headIcon {
+  width: 34px; height: 34px; border-radius: 9px; background: rgba(255,255,255,.14);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 19px;
+}
+.headTitle { font-size: 16px; font-weight: 800; }
+.headSub { font-size: 11px; color: #b9c7de; }
+.closeBtn { background: transparent; border: 0; color: #b9c7de; cursor: pointer; font-size: 18px; display: inline-flex; }
+
+/* body / footer */
+.body { padding: 20px 22px; overflow-y: auto; flex: 1; }
+.foot {
+  border-top: 1px solid #eef2f7; padding: 14px 20px; display: flex; align-items: center;
+  justify-content: space-between; gap: 10px; flex: none; background: #fff;
+}
+.footNote { font-size: 11.5px; color: #94a3b8; }
+
+/* dropzone */
+.drop {
+  border: 2px dashed #cbd5e1; border-radius: 14px; padding: 34px 20px; text-align: center;
+  background: #f8fafc; transition: border-color .15s, background .15s;
+}
+.dropOver { border-color: #2e6cf5; background: #f0f6ff; }
+.dropIcon {
+  width: 58px; height: 58px; border-radius: 14px; background: #dbe7fe; color: #2e6cf5;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 30px;
+}
+.dropTitle { font-size: 15px; font-weight: 800; color: #0f274a; margin-top: 12px; }
+.dropHint { font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.5; }
+.chooseBtn {
+  margin-top: 16px; display: inline-flex; align-items: center; gap: 8px; background: #2e6cf5;
+  color: #fff; border: 0; border-radius: 10px; padding: 11px 20px; font-size: 13.5px;
+  font-weight: 800; cursor: pointer; font-family: inherit;
+}
+.chooseBtn:hover { background: #1e56db; }
+.chooseBtn i { font-size: 17px; }
+
+/* expected columns */
+.expect {
+  margin-top: 16px; background: #f8fafc; border: 1px solid #eef2f7; border-radius: 11px;
+  padding: 13px 15px;
+}
+.expectHead { font-size: 11.5px; font-weight: 800; color: #475569; margin-bottom: 7px; }
+.expectHead i { font-size: 13px; color: #2e6cf5; margin-right: 5px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 3px 10px;
+  font-size: 10.5px; font-weight: 700; color: #475569;
+}
+.templateBtn {
+  margin-top: 11px; background: transparent; border: 0; color: #2e6cf5; font-size: 12px;
+  font-weight: 700; cursor: pointer; font-family: inherit; padding: 0;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.templateBtn i { font-size: 14px; }
+
+/* preview */
+.previewTop { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.fileChip {
+  display: inline-flex; align-items: center; gap: 8px; background: #ecfdf5; border: 1px solid #a7f3d0;
+  border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: 700; color: #065f46;
+}
+.fileChip i { font-size: 15px; }
+.foundTxt { font-size: 12px; color: #475569; font-weight: 700; }
+.replaceBtn {
+  margin-left: auto; background: transparent; border: 0; color: #2e6cf5; font-size: 12px;
+  font-weight: 700; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 5px;
+}
+.replaceBtn i { font-size: 14px; }
+.previewWrap { border: 1px solid #eef2f7; border-radius: 11px; overflow: auto; max-height: 320px; }
+.previewTable { width: 100%; border-collapse: collapse; }
+.previewTable th {
+  text-align: left; font-size: 9.5px; font-weight: 800; letter-spacing: .4px; color: #94a3b8;
+  padding: 8px 10px; background: #f8fafc; border-bottom: 1px solid #eef2f7; white-space: nowrap;
+  position: sticky; top: 0;
+}
+.previewTable td { padding: 8px 10px; font-size: 11px; color: #475569; white-space: nowrap; border-bottom: 1px solid #f1f5f9; }
+.cellName { color: #0f274a; font-weight: 700; }
+.validLine { margin-top: 10px; font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
+.validLine i { font-size: 14px; color: #059669; }
+.warnLine { margin-top: 10px; font-size: 11px; color: #b45309; display: flex; align-items: center; gap: 6px; }
+.warnLine i { font-size: 14px; color: #f59e0b; }
+
+/* done */
+.done { text-align: center; padding: 34px 20px; }
+.doneIcon {
+  width: 66px; height: 66px; border-radius: 50%; background: #d1fae5; color: #059669;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 34px;
+}
+.doneTitle { font-size: 17px; font-weight: 800; color: #0f274a; margin-top: 14px; }
+.doneSub { font-size: 12.5px; color: #64748b; margin-top: 5px; line-height: 1.5; }
+
+/* footer buttons */
+.btnGhost {
+  background: #fff; color: #475569; border: 1px solid #e2e8f0; border-radius: 9px;
+  padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.btnPrimary {
+  background: #2e6cf5; color: #fff; border: 0; border-radius: 9px; padding: 10px 20px;
+  font-size: 13.5px; font-weight: 800; cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.btnPrimary:hover { background: #1e56db; }
+.btnPrimary:disabled { opacity: .6; cursor: default; }
+.err { color: #dc2626; font-size: 12px; font-weight: 700; }

@@ -39,12 +39,20 @@ export const MAPS_DEFAULTS = {
   mapType: "roadmap",
 };
 
-/** Current maps config, always merged over the defaults so callers get a full shape. */
+/** Current maps config, always merged over the defaults so callers get a full shape.
+ *  If no key was saved via the admin page, fall back to an environment key so a
+ *  key in .env works out of the box. Set one of:
+ *    GOOGLE_MAPS_API_KEY, NEXT_PUBLIC_GOOGLE_MAPS_API_KEY, or MAPS_API_KEY  */
 export async function getMapsConfig() {
   const v = (await getConfig("maps")) || {};
+  const envKey =
+    process.env.GOOGLE_MAPS_API_KEY ||
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
+    process.env.MAPS_API_KEY || "";
   return {
     ...MAPS_DEFAULTS,
     ...v,
+    apiKey: (v.apiKey && String(v.apiKey).trim()) || envKey,
     defaultCenter: { ...MAPS_DEFAULTS.defaultCenter, ...(v.defaultCenter || {}) },
     libraries: Array.isArray(v.libraries) ? v.libraries : MAPS_DEFAULTS.libraries,
   };
@@ -157,6 +165,35 @@ export async function saveSmsConfig(patch = {}, updatedBy = null) {
   if (typeof patch.apiKey === "string" && patch.apiKey.trim() !== "") next.apiKey = patch.apiKey;
   else next.apiKey = cur.apiKey !== undefined ? cur.apiKey : SMS_DEFAULTS.apiKey;
   await setConfig("sms", next, updatedBy);
+  return next;
+}
+
+// ---- Client company (the org that owns the system) ------------------------
+// National — the same on every site. Edited on the Settings page, pulled into
+// the Add-site "Company" block. Defaults mirror the Settings seed (AG_ORG).
+export const ORG_DEFAULTS = {
+  name: "Symphony Technologies Limited",
+  domain: "assetguard.symphony.co.ke",
+  country: "Kenya",
+  manager: { name: "Jane Wanjiku", phones: ["+254 720 114 880"], emails: ["jane.wanjiku@symphony.co.ke"] },
+  assistant1: { name: "Peter Kimani", phones: ["+254 733 902 415"], emails: ["peter.kimani@symphony.co.ke"] },
+  assistant2: { name: "Alice Njeri", phones: ["+254 733 902 416"], emails: ["alice.njeri@symphony.co.ke"] },
+};
+
+export async function getOrgConfig() {
+  const v = (await getConfig("org")) || {};
+  return {
+    ...ORG_DEFAULTS, ...v,
+    manager: { ...ORG_DEFAULTS.manager, ...(v.manager || {}) },
+    assistant1: { ...ORG_DEFAULTS.assistant1, ...(v.assistant1 || {}) },
+    assistant2: { ...ORG_DEFAULTS.assistant2, ...(v.assistant2 || {}) },
+  };
+}
+
+export async function saveOrgConfig(patch = {}, updatedBy = null) {
+  const cur = (await getConfig("org")) || {};
+  const next = { ...ORG_DEFAULTS, ...cur, ...patch };
+  await setConfig("org", next, updatedBy);
   return next;
 }
 
