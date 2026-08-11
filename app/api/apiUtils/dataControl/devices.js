@@ -7,9 +7,9 @@ export async function findDeviceByImei(imei) {
     `SELECT d.*, s.name AS site, s.code AS site_code
        FROM devices d
        LEFT JOIN sites s ON s.id = d.site_id
-      WHERE d.imei = $1
+      WHERE btrim(d.imei) = btrim($1)
       LIMIT 1`,
-    [String(imei)]
+    [String(imei ?? "").trim()]
   );
   return rows[0] || null;
 }

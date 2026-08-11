@@ -13,8 +13,35 @@
 // -----------------------------------------------------------------------------
 import net from "net";
 import { insertRawLog } from "../dataControl/rawLogs.js";
+import { extractFrames, parseFrame } from "./parse.js";
+import { resolveAndStore } from "./store.js";
 
 const MAX_BUFFER = 800; // recent raw entries kept in memory for the live UI
+
+// Interpret complete [...] frames out of a connection's buffer: parse, store
+// telemetry + raise alarms, and reply to heartbeats. Returns the leftover tail.
+async function ingestBuffer(conn, s) {
+  const { frames, rest } = extractFrames(conn.buf || "");
+  conn.buf = rest.length > 8192 ? "" : rest;
+  for (const f of frames) {
+    let rec;
+    try { rec = parseFrame(f); } catch { continue; }
+    if (rec.cmd === "LK") {           // heartbeat — keep the device online
+      try {
+        const ack = `[${rec.prefix}*${rec.imei}*0002*LK]`;
+        conn.socket.write(Buffer.from(ack, "latin1"));
+        push({ dir: "out", connId: conn.id, ip: conn.ip, port: conn.port, data: ack, bytes: ack.length });
+      } catch {}
+      continue;
+    }
+    try {
+      const { view } = await resolveAndStore(rec, conn.ip, conn.port);
+      const tags = view?.unknown ? "unknown device" : (view?.alarms || []).map((a) => a.type).join(",");
+      push({ dir: "sys", connId: conn.id, ip: conn.ip, port: conn.port,
+             data: `parsed ${rec.imei} ${rec.cmd}${tags ? " · " + tags : ""}`, bytes: 0 });
+    } catch {}
+  }
+}
 
 function S() {
   if (!globalThis.__agIngest) {
@@ -73,7 +100,7 @@ export function startListener(port = 9000) {
       const ip = socket.remoteAddress, port2 = socket.remotePort;
       const conn = {
         id, socket, ip, port: port2, connectedAt: new Date().toISOString(),
-        bytesIn: 0, bytesOut: 0, lastSeen: null,
+        bytesIn: 0, bytesOut: 0, lastSeen: null, buf: "",
       };
       s.conns.set(id, conn);
       push({ dir: "sys", connId: id, ip, port: port2, data: "connected", bytes: 0 });
@@ -92,6 +119,9 @@ export function startListener(port = 9000) {
             push({ dir: "out", connId: id, ip, port: port2, data: s.autoAck.text, bytes: b });
           } catch {}
         }
+        // interpret + persist any complete frames (telemetry + alarms)
+        conn.buf += text;
+        ingestBuffer(conn, s).catch(() => {});
       });
       socket.on("close", () => {
         s.conns.delete(id);
@@ -159,11 +189,30 @@ export function setAutoAck({ enabled, text }) {
   return s.autoAck;
 }
 
-// Simulate an inbound raw packet (no socket) — for the UI tester.
+// Test whether a TCP port is actually accepting connections — works whether it's
+// this in-app listener, the standalone ingest/server.js, or anything else. Used
+// by the UI to give honest "port is open" feedback even when EADDRINUSE means an
+// external process (not us) owns it.
+export function testPort(host = "127.0.0.1", port = 9000) {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (open, detail) => { if (!done) { done = true; try { sock.destroy(); } catch {} resolve({ open, detail }); } };
+    const sock = net.connect({ host, port: Number(port) || 9000 });
+    sock.setTimeout(2000);
+    sock.on("connect", () => finish(true, "accepting connections"));
+    sock.on("timeout", () => finish(false, "no response (timeout)"));
+    sock.on("error", (e) => finish(false, e.code === "ECONNREFUSED" ? "nothing listening" : (e.code || "unreachable")));
+  });
+}
+
+// Simulate an inbound raw packet (no socket) — for the UI tester. Runs the full
+// interpret + persist pipeline, just like a real connection.
 export function injectTest(raw) {
   const s = S();
   const text = String(raw || "");
   s.packets += 1; s.bytesIn += Buffer.byteLength(text, "latin1");
   const row = push({ dir: "in", connId: 0, ip: "test", port: 0, data: text, bytes: Buffer.byteLength(text, "latin1") });
+  const conn = { id: 0, ip: "test", port: 0, buf: text, socket: { write() {} } };
+  ingestBuffer(conn, s).catch(() => {});
   return [row];
 }

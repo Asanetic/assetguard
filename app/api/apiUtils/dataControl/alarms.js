@@ -40,6 +40,40 @@ export async function alarmCounts() {
   return { bySeverity, closed, open, criticalOpen };
 }
 
+// ---- Live alarms raised by the ingest alarm engine -------------------------
+// Map the engine's alarm type to the table's (name, priority) shape.
+const LIVE_META = {
+  DISTURBANCE:     { priority: "Critical", name: (v) => `Disturbance${v ? ` — ${v}` : ""}` },
+  CRITICAL_MOTION: { priority: "Critical", name: (v) => `Critical Motion — ${v} km/h` },
+  LOW_BATTERY:     { priority: "High",     name: (v) => `Low Battery — ${v}%` },
+  GEOFENCE_EXIT:   { priority: "Critical", name: (v) => `Geofence Violation — ${v} m from site` },
+  DEVICE_OFFLINE:  { priority: "High",     name: () => `Device Offline` },
+};
+
+/**
+ * Insert one live alarm into the shared `alarms` table (status 'Open', so it
+ * counts toward the nav badge + speaker). De-duped: while an alarm of the same
+ * (device, type) is still Open/Acknowledged, a repeat is a no-op — so a condition
+ * that persists every second doesn't stack rows. Returns the new row or null.
+ */
+export async function insertLiveAlarm({ alarmType, value, deviceIdText, site, serial, lat, lng }) {
+  const meta = LIVE_META[alarmType] || { priority: "Medium", name: () => alarmType };
+  const name = meta.name(value);
+  const { rows } = await query(
+    `INSERT INTO alarms (id, name, priority, device_id, site, serial, status, lat, lng, alarm_type, source)
+       SELECT 'ALM-' || to_char(now(), 'YYYY') || '-' || nextval('alarms_live_seq'),
+              $1, $2, $3, $4, $5, 'Open', $6, $7, $8, 'device'
+        WHERE NOT EXISTS (
+          SELECT 1 FROM alarms
+           WHERE device_id = $3 AND alarm_type = $8 AND status <> 'Closed'
+        )
+     RETURNING *`,
+    [name, meta.priority, deviceIdText || null, site || null, serial || null,
+     lat ?? null, lng ?? null, alarmType]
+  );
+  return rows[0] || null; // null = de-duped (already open)
+}
+
 export async function acknowledgeAlarm(id) {
   const { rows } = await query(
     `UPDATE alarms SET status = 'Acknowledged' WHERE id = $1 AND status = 'Open' RETURNING *`,

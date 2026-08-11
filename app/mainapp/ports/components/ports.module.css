@@ -1,0 +1,66 @@
+.page { display: flex; flex-direction: column; gap: 16px; }
+.card { background: #fff; border: 1px solid #EEF2F7; border-radius: 14px; padding: 18px 20px; }
+
+.pageHead { }
+.pageTitle { font-size: 24px; font-weight: 800; color: #0F274A; }
+.pageSub { font-size: 13.5px; color: #64748B; margin-top: 2px; }
+
+.stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+@media (max-width: 1000px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+.stat { background: #fff; border: 1px solid #EEF2F7; border-radius: 12px; padding: 16px 18px; }
+.statN { font-size: 26px; font-weight: 800; color: #0F274A; line-height: 1.1; }
+.nGreen { color: #059669; } .nRed { color: #DC2626; } .nAmber { color: #D97706; }
+.statK { font-size: 13px; font-weight: 700; color: #0F274A; margin-top: 6px; }
+.statSub { font-size: 11.5px; color: #94A3B8; margin-top: 1px; }
+
+.head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.title { font-size: 18px; font-weight: 800; color: #0F274A; }
+.addLink { border: none; background: none; color: #2E6CF5; font-size: 13px; font-weight: 600; cursor: pointer; }
+.addLink:hover { text-decoration: underline; }
+
+.addRow { display: flex; gap: 10px; margin: 12px 0 4px; flex-wrap: wrap; }
+.in { border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 11px; font-size: 13px; }
+.in:first-child { width: 160px; } .in:nth-child(2) { flex: 1; min-width: 220px; }
+.addBtn { background: #2E6CF5; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 700; font-size: 13px; cursor: pointer; }
+.addBtn:disabled { opacity: .6; }
+.err { color: #B91C1C; font-size: 12.5px; margin: 8px 0; }
+
+.tableWrap { overflow-x: auto; margin-top: 8px; }
+.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.table thead th { text-align: left; color: #94A3B8; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; padding: 10px 14px; border-bottom: 1px solid #EEF2F7; white-space: nowrap; }
+.table tbody td { padding: 16px 14px; border-bottom: 1px solid #F4F7FB; color: #0F274A; white-space: nowrap; }
+.port { font-weight: 800; font-size: 15px; }
+.mut { color: #64748B; }
+.empty { color: #94A3B8; text-align: center; padding: 24px; }
+
+.state { display: inline-flex; align-items: center; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px; }
+.stOpen { background: #D1FAE5; color: #047857; }
+.stListen { background: #DBEAFE; color: #1D4ED8; }
+.stClosed { background: #FEE2E2; color: #B91C1C; }
+.stErr { background: #FEE2E2; color: #B91C1C; }
+
+.actions { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.open, .close { border: none; border-radius: 8px; font-size: 12.5px; font-weight: 700; padding: 8px 14px; cursor: pointer; }
+.open { background: #D1FAE5; color: #047857; } .close { background: #FEE2E2; color: #B91C1C; }
+.open:disabled, .close:disabled { opacity: .6; }
+.del { border: 1px solid #E2E8F0; background: #fff; color: #94A3B8; border-radius: 8px; padding: 7px 9px; cursor: pointer; }
+.del:hover { color: #B91C1C; border-color: #FCA5A5; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+.panelHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.panelTitle { font-size: 16px; font-weight: 800; color: #0F274A; }
+.viewAll { color: #2E6CF5; font-size: 13px; font-weight: 600; text-decoration: none; }
+.viewAll:hover { text-decoration: underline; }
+
+.rawList { display: flex; flex-direction: column; gap: 12px; }
+.rawRow { border-bottom: 1px solid #F4F7FB; padding-bottom: 10px; }
+.rawMeta { font-size: 12px; font-family: ui-monospace, monospace; }
+.rawTime { color: #94A3B8; } .rawPort { color: #2E6CF5; font-weight: 700; } .rawDev { color: #059669; font-weight: 700; }
+.rawData { font-family: ui-monospace, monospace; font-size: 11.5px; color: #475569; margin-top: 3px; word-break: break-all; }
+
+.parsedList { display: flex; flex-direction: column; gap: 14px; }
+.parsedRow { border-bottom: 1px solid #F4F7FB; padding-bottom: 12px; }
+.parsedTop { font-size: 13.5px; color: #0F274A; position: relative; }
+.parsedTime { position: absolute; right: 0; color: #94A3B8; font-size: 12px; font-weight: 400; }
+.parsedSub { font-size: 12.5px; color: #64748B; margin-top: 3px; }

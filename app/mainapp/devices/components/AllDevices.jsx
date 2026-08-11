@@ -147,7 +147,7 @@ export default function AllDevices() {
                   <td><StatusPill status={d.status} /></td>
                   <td style={{ textAlign: "right" }}>
                     <div className={styles.actions}>
-                      <button className={styles.viewBtn} onClick={() => flash("Device detail page is coming soon.")}>View</button>
+                      <button className={styles.viewBtn} onClick={() => { window.location.href = `/mainapp/devices/view?device=${encodeURIComponent(d.device_id)}`; }}>View</button>
                       <button className={styles.trackBtn} onClick={() => { window.location.href = `/mainapp/track?device=${encodeURIComponent(d.device_id)}`; }}>Track</button>
                     </div>
                   </td>

@@ -7,6 +7,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import styles from "./playback.module.css";
 import { fetchMapsConfig, loadGoogleMaps, playbackVehicleIcon, routeDotIcon } from "../../lib/googleMaps.js";
 
@@ -26,11 +27,15 @@ function haversine(a, b) {
 }
 
 export default function PlaybackMap() {
+  const params = useSearchParams();
+  const qsDevice = params.get("device");
+  const qsDate = params.get("date");
+
   const [devices, setDevices] = useState([]);
-  const [deviceId, setDeviceId] = useState("001_NairobiHeadquarters_V");
-  const [deviceQ, setDeviceQ] = useState("001_NairobiHeadquarters_V");
+  const [deviceId, setDeviceId] = useState(qsDevice || "001_NairobiHeadquarters_V");
+  const [deviceQ, setDeviceQ] = useState(qsDevice || "001_NairobiHeadquarters_V");
   const [openDev, setOpenDev] = useState(false);
-  const [date, setDate] = useState("2026-07-07");
+  const [date, setDate] = useState(qsDate || "2026-07-07");
   const [route, setRoute] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mapErr, setMapErr] = useState("");

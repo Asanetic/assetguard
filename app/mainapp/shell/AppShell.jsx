@@ -31,7 +31,9 @@ const MENU = [
       { key: "all_devices", label: "All devices", href: "/mainapp/devices" },
       { key: "group_devices", label: "Group devices", href: "/mainapp/devices/group" },
       { key: "add_device", label: "Add device", href: "/mainapp/devices/add" },
-      { key: "ingest", label: "Live logs", href: "/mainapp/ingest" },
+      { key: "ports", label: "Listener ports", href: "/mainapp/ports" },
+      { key: "tcplogs", label: "Parsed & aligned", href: "/mainapp/tcplogs" },
+      { key: "simulator", label: "Simulator", href: "/mainapp/simulator" },
     ] },
   { key: "alarms", label: "Alarms", icon: "ti-bell-ringing", color: "#EF4444", children: [
       { key: "all_alarms", label: "All alarms", href: "/mainapp/alarms" },
@@ -89,12 +91,25 @@ export default function AppShell({ children, active, openAlarms = 0, criticalAla
     return open;
   });
   const [user, setUser] = useState(null);
-  const [muted, setMuted] = useState(false);
+  // The buzzer mute is sticky: it survives navigation / reloads until the operator
+  // unmutes it (a new incoming alarm still force-unmutes — see the poll below).
+  const [muted, setMuted] = useState(() => {
+    try { return typeof window !== "undefined" && window.localStorage.getItem("ag_buzzer_muted") === "1"; }
+    catch { return false; }
+  });
+  function setMutedPersist(next) {
+    setMuted((prev) => {
+      const v = typeof next === "function" ? next(prev) : next;
+      try { window.localStorage.setItem("ag_buzzer_muted", v ? "1" : "0"); } catch { /* ignore */ }
+      return v;
+    });
+  }
   const [alarms, setAlarms] = useState({ open: openAlarms, critical: criticalAlarms });
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const prevOpenRef = useRef(alarms.open);
+  const firstPollRef = useRef(true);
 
   useEffect(() => {
     let ok = true;
@@ -115,7 +130,11 @@ export default function AppShell({ children, active, openAlarms = 0, criticalAla
         const d = r.ok ? await r.json() : null;
         if (!ok || !d) return;
         const open = d.open || 0, critical = d.critical || 0;
-        if (open > prevOpenRef.current) setMuted(false); // new alarm → auto-unmute
+        // The first poll only establishes the baseline (so an initial 0 → N read
+        // on page load is NOT treated as a new alarm and does not unmute). After
+        // that, a genuine RISE in the open count force-unmutes and rings.
+        if (!firstPollRef.current && open > prevOpenRef.current) setMutedPersist(false);
+        firstPollRef.current = false;
         prevOpenRef.current = open;
         setAlarms({ open, critical });
       } catch { /* endpoint optional */ }
@@ -217,10 +236,11 @@ export default function AppShell({ children, active, openAlarms = 0, criticalAla
 
       {/* Floating speaker — raised on Playback so it clears the transport bar */}
       <button
+        suppressHydrationWarning
         className={`${styles.speaker} ${active === "playback" ? styles.speakerRaised : ""} ${speakerPosition === "left" ? styles.speakerLeft : ""} ${alarms.open > 0 && !muted ? styles.speakerLive : ""}`}
         aria-label={muted ? "Unmute alarm sound" : "Mute alarm sound"}
         style={{ color: muted ? "#94a3b8" : "#dc2626" }}
-        onClick={() => { resumeAudio(); setMuted((m) => !m); }}
+        onClick={() => { resumeAudio(); setMutedPersist((m) => !m); }}
       >
         <i
           className={muted ? "ti ti-volume-off" : "ti ti-volume"}

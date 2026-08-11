@@ -2,12 +2,11 @@
 // Devices map — a faithful port of the prototype's devices-map view: a
 // retractable devices drawer beside a full-height Google Map. Devices are
 // grouped per site. A site with more than one device shows a single status-
-// striped cluster chip with a count badge; clicking it EXPLODES the devices
-// into a fanned ring around the pole (spread in screen pixels, so devices that
-// share the exact same coordinates — mounted on the same pole — always separate
-// at any zoom) with a navy "×" button to collapse. Clicking any individual pin
-// opens the navy-header details popup (IMEI · Speed · Orientation · Last Seen ·
-// Battery · Data bundle left).
+// striped cluster chip with a count badge; clicking it zooms in and EXPLODES the
+// devices into a fanned ring around the pole (spread in screen pixels, so devices
+// that share the exact same coordinates — mounted on the same pole — always
+// separate at any zoom) with a navy "×" button to collapse. Clicking any device
+// (map pin or drawer card) zooms to it and opens the navy-header details popup.
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -20,6 +19,7 @@ import {
 
 const FAN_PX = 36;          // ring radius (screen px) when a same-pole cluster explodes
 const FAN_GEO = 0.0004;     // fallback geographic offset if the projection isn't ready yet
+const DEVICE_ZOOM = 16;     // zoom level when focusing a device / group (like the sites map)
 
 const FILTERS = [["All", "All"], ["Live", "Live"], ["Offline", "Offline"], ["Testing", "Testing"], ["Inactive", "Inactive"], ["Maintenance", "Maintenance"]];
 
@@ -111,6 +111,13 @@ export default function DevicesMap() {
 
   function toggleExpand(code) {
     setExpanded((prev) => { const n = new Set(prev); n.has(code) ? n.delete(code) : n.add(code); return n; });
+  }
+  // Zoom in on a point if we're zoomed out, and centre it — mirrors the sites map.
+  function focusOn(pos) {
+    const map = gmap.current;
+    if (!map || !pos) return;
+    map.panTo(pos);
+    if ((map.getZoom() || 0) < DEVICE_ZOOM) map.setZoom(DEVICE_ZOOM);
   }
 
   // init map
@@ -220,9 +227,9 @@ export default function DevicesMap() {
         markers.current.push(mk);
         if (String(d.status) === "Live") livePts.push(center);
       } else if (!expanded.has(code)) {
-        // collapsed cluster — explode IN PLACE on click (no camera move), like the prototype
-        const mk = new maps.Marker({ map, position: center, title: `${list.length} devices — click to expand`, icon: deviceClusterIcon(maps, list), optimized: false, zIndex: 20 });
-        mk.addListener("click", () => toggleExpand(code));
+        // collapsed cluster — clicking zooms into the group and explodes it
+        const mk = new maps.Marker({ map, position: center, title: `${list.length} devices — click to zoom in`, icon: deviceClusterIcon(maps, list), optimized: false, zIndex: 20 });
+        mk.addListener("click", () => { focusOn(center); toggleExpand(code); });
         markers.current.push(mk);
         if (list.every((d) => String(d.status) === "Live")) livePts.push(center);
       } else {
@@ -263,6 +270,7 @@ export default function DevicesMap() {
     setSelected(d.id);
     popupIdRef.current = d.id;
     setPopup(d);
+    focusOn(posRef.current[d.id] || coordsOf(d)); // zoom in + centre on the device
     setTimeout(reposition, 0);
     const map = gmap.current;
     if (mapsApi.current && map) mapsApi.current.event.addListenerOnce(map, "idle", () => repositionRef.current());
@@ -272,10 +280,10 @@ export default function DevicesMap() {
   function clickCard(d) {
     const c = coordsOf(d), map = gmap.current;
     if (!c || !map) { setSelected(d.id); return; }
-    map.panTo(c);
     const list = groups[d.site_code] || [];
     if (list.length > 1 && !expanded.has(d.site_code)) {
-      // explode the pole first, then open this device's popup once redrawn
+      // zoom into the pole, explode it, then open this device's popup once redrawn
+      focusOn(c);
       pendingPopupRef.current = d.id;
       setExpanded((prev) => new Set(prev).add(d.site_code));
     } else {
@@ -356,7 +364,7 @@ export default function DevicesMap() {
                 <div className={styles.popRow}><span className={styles.popLbl}>Battery</span><span className={styles.popVal} style={{ color: battColor(popup.battery) }}>{popup.battery}%</span></div>
                 <div className={styles.popRow}><span className={styles.popLbl}>Data bundle left</span><span className={styles.popVal} style={{ color: "#475569" }}>{popup.data_left || "—"}</span></div>
                 <div className={styles.popActions}>
-                  <button type="button" className={styles.popView} onClick={() => flash("Device detail page is coming soon.")}>View</button>
+                  <button type="button" className={styles.popView} onClick={() => router.push(`/mainapp/devices/view?device=${encodeURIComponent(popup.device_id)}`)}>View</button>
                   <button type="button" className={styles.popTrack} onClick={() => router.push(`/mainapp/track?device=${encodeURIComponent(popup.device_id)}`)}>Track Device</button>
                 </div>
               </div>

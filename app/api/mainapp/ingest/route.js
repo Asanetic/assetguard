@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getStatus, startListener, stopListener, setAutoAck } from "../../apiUtils/ingest/listener.js";
+import { getStatus, startListener, stopListener, setAutoAck, testPort } from "../../apiUtils/ingest/listener.js";
 import { requireAdmin } from "../../apiUtils/authUtils/session.js";
 
 export async function GET(request) {
@@ -33,6 +33,12 @@ export async function POST(request) {
   }
   if (action === "stop") {
     return NextResponse.json(await stopListener());
+  }
+  if (action === "test") {
+    const port = Number(body.port) || 9000;
+    const host = String(body.host || "127.0.0.1");
+    const r = await testPort(host, port);
+    return NextResponse.json({ ok: true, ...r, port, host, ...getStatus() });
   }
   if (action === "ack") {
     const autoAck = setAutoAck({ enabled: body.enabled, text: body.text });
