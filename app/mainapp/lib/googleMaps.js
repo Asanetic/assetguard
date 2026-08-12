@@ -203,6 +203,18 @@ export function myLocationIcon(maps, heading = 0) {
   return toIcon(maps, svg, B);
 }
 
+/** A responder's position marker — same navigation arrow, distinct colour so it
+ *  reads apart from the red target and the blue my-location markers. */
+export function responderNavIcon(maps, heading = 0, color = "#059669") {
+  const B = 40, gs = 19 / 24;
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${B}" height="${B}" viewBox="0 0 ${B} ${B}">` +
+    `<circle cx="${B / 2}" cy="${B / 2}" r="${B / 2 - 3}" fill="${color}" stroke="#fff" stroke-width="3"/>` +
+    `<g transform="translate(${B / 2},${B / 2}) rotate(${Math.round(heading)}) scale(${gs}) translate(-12,-12)" fill="#fff" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">${NAV_GLYPH}</g>` +
+    `</svg>`;
+  return toIcon(maps, svg, B);
+}
+
 /** A small coloured dot marker for route start / stop / end. */
 export function routeDotIcon(maps, color) {
   const B = 16;

@@ -87,6 +87,47 @@ export async function requestGoogleLocation(payload) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Reverse-geocode a position to its nearest road name, for the Critical Motion
+// alarm ("… on Waiyaki Way"). Uses the same admin Google Maps key (the Geocoding
+// API must be enabled on it). Cached on a coarse grid (~11 m) so a moving asset
+// doesn't bill a call per packet. Returns a road/street string or null.
+// ---------------------------------------------------------------------------
+const ROAD_CACHE = new Map();
+const ROAD_CACHE_MAX = 1000;
+
+export async function reverseGeocodeRoad(lat, lng) {
+  if (lat == null || lng == null || !Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return null;
+  const key = `${Number(lat).toFixed(4)},${Number(lng).toFixed(4)}`; // ~11 m grid
+  if (ROAD_CACHE.has(key)) return ROAD_CACHE.get(key);
+
+  let apiKey = "";
+  try { apiKey = (await getMapsConfig()).apiKey || ""; } catch {}
+  apiKey = apiKey || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY || "";
+  if (!apiKey) return null;
+
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${encodeURIComponent(`${lat},${lng}`)}&result_type=route&key=${encodeURIComponent(apiKey)}`;
+  let road = null;
+  try {
+    const res = await fetch(url);
+    const data = await res.json().catch(() => null);
+    if (data && data.status === "OK" && Array.isArray(data.results) && data.results.length) {
+      // The route-typed result carries the road; fall back to its first address component.
+      const r0 = data.results[0];
+      const comp = (r0.address_components || []).find((c) => c.types?.includes("route"));
+      road = comp?.long_name || r0.formatted_address || null;
+    } else if (data && data.status && data.status !== "ZERO_RESULTS") {
+      console.warn(`[reverseGeocodeRoad] Google status ${data.status}${data.error_message ? `: ${data.error_message}` : ""}`);
+    }
+  } catch (e) {
+    console.warn("[reverseGeocodeRoad] network error:", e?.message || e);
+  }
+
+  if (ROAD_CACHE.size >= ROAD_CACHE_MAX) ROAD_CACHE.delete(ROAD_CACHE.keys().next().value);
+  ROAD_CACHE.set(key, road);
+  return road;
+}
+
 // One lookup attempt — builds the payload, LOGS it to the terminal, and calls Google.
 async function locateOnce(cells, wifi, mcc, mnc, label) {
   const deviceData = {
@@ -125,9 +166,15 @@ export async function geolocate({ cells = [], wifi = [], mcc = null, mnc = null 
     else r = { ...r2, error: `cells+Wi-Fi failed (${r.error}); cells-only also failed (${r2.error})` };
   }
 
-  // Which signals actually produced the fix: lbs (cells) / wifi / wifi+lbs.
+  // Label by the signals the PACKET provided for the network fix, not by which one
+  // Google ended up using — so a packet carrying both cells + Wi-Fi reads "wifi+lbs"
+  // even when the combined call fell back to cells-only.
   let source = null;
-  if (!r.error) source = usedFallback ? "lbs" : (cells.length && wifi.length ? "wifi+lbs" : wifi.length ? "wifi" : "lbs");
+  if (!r.error) {
+    const hc = cells.length > 0, hw = wifi.length > 0;
+    source = hc && hw ? "wifi+lbs" : hw ? "wifi" : "lbs";
+  }
+  void usedFallback;
 
   const result = r.error
     ? { location: null, error: r.error, raw: r.raw ?? null, source: null }

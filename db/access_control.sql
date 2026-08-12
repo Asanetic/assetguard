@@ -1271,3 +1271,12 @@ INSERT INTO role_permissions (role_key,module_key,perm_key) VALUES
 ('field_resp','port_parsed','view'),
 ('noc','port_parsed','view')
 ON CONFLICT DO NOTHING;
+
+-- Alarm Thresholds editor (per-device + batch). Added post-hoc; idempotent.
+INSERT INTO modules (name,key,grp,type,active,sort) VALUES
+  ('Alarm Thresholds','alarm_config','Alarms','Page',true,51)
+ON CONFLICT (key) DO NOTHING;
+INSERT INTO role_permissions (role_key,module_key,perm_key) VALUES
+  ('superadmin','alarm_config','view'),('superadmin','alarm_config','edit'),
+  ('admin','alarm_config','view'),('admin','alarm_config','edit')
+ON CONFLICT DO NOTHING;

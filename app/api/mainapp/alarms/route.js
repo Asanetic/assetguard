@@ -5,19 +5,29 @@
 import { NextResponse } from "next/server";
 import { listAlarms, alarmCounts } from "../../apiUtils/dataControl/alarms.js";
 import { getAuth } from "../../apiUtils/authUtils/session.js";
+import { alarmPerms } from "../../apiUtils/authUtils/alarmPerms.js";
+import { getUserOrg } from "../../apiUtils/dataControl/companies.js";
 
 export async function GET(request) {
-  if (!getAuth(request)) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const me = getAuth(request);
+  if (!me) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   const { searchParams } = new URL(request.url);
   try {
+    // The viewer's ack side(s) + visibility — so the list/map show only what this
+    // user may see and the Acknowledge button matches the profile.
+    const org = (await getUserOrg(me.sub).catch(() => null)) || { role: me.role, purposes: [] };
+    const perms = alarmPerms({ role: me.role, purposes: org.purposes });
     const alarms = await listAlarms({
       priority: searchParams.get("priority") || undefined,
       status: searchParams.get("status") || undefined,
       q: searchParams.get("q") || undefined,
       includeClosed: searchParams.get("scope") === "all",
+      role: me.role,
+      restrictCritical: perms.criticalOnly,
     });
-    const counts = await alarmCounts();
-    return NextResponse.json({ alarms, counts });
+    const counts = await alarmCounts(me.role, perms.criticalOnly);
+    const viewer = { side: perms.side, canAckMonitoring: perms.canAckMonitoring, canAckSecurity: perms.canAckSecurity, canChooseSide: perms.canChooseSide, isSecuritySide: perms.isSecuritySide };
+    return NextResponse.json({ alarms, counts, viewer });
   } catch (err) {
     console.error("[alarms GET] error", err);
     return NextResponse.json({ error: "Failed to load alarms" }, { status: 500 });

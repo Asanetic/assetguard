@@ -9,9 +9,9 @@
 // like the prototype (there is no teams backend yet).
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./response.module.css";
-import { SEC_REGIONS, CLUSTERS, COMPANIES, SEED_TEAMS } from "./teamsData.js";
+import { SEED_TEAMS } from "./teamsData.js";
 
 /* ---- contact helpers (ports of agSplitContacts / agValidEmail / agValidPhone) ---- */
 function splitContacts(v) {
@@ -60,12 +60,12 @@ function ContactChips({ value, kind }) {
 }
 
 /* Cluster multi-pick (agMultiPick + agMultiPickWire, no "all" option here). */
-function ClusterPicker({ selected, onToggle }) {
+function ClusterPicker({ selected, onToggle, clusters = [] }) {
   const count = selected.length;
   return (
     <div className={styles.pick}>
       <div className={styles.pickList}>
-        {CLUSTERS.map((c) => (
+        {clusters.map((c) => (
           <label key={c} className={styles.pickRow}>
             <input
               type="checkbox"
@@ -91,14 +91,52 @@ export default function ResponseTeams() {
   const [grants, setGrants] = useState({});
 
   // registration / edit form
-  const emptyForm = { code: "", sec: SEC_REGIONS[0], veh: "", phones: "", emails: "", company: COMPANIES[0], clusters: [] };
+  const emptyForm = { code: "", sec: "", veh: "", phones: "", emails: "", company: "", clusters: [], members: [] };
   const [form, setForm] = useState(emptyForm);
   const [editing, setEditing] = useState(null); // original code being edited
   const [err, setErr] = useState("");
 
+  // Reference data — regions, clusters and security companies come from the DB,
+  // nothing hardcoded on this page.
+  const [regions, setRegions] = useState([]);
+  const [clusters, setClusters] = useState([]);   // [{ name, region }]
+  const [companies, setCompanies] = useState([]);
+  const clusterNames = useMemo(() => clusters.map((c) => c.name), [clusters]);
+  useEffect(() => {
+    fetch("/api/mainapp/response/geo").then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (!d) return;
+      setRegions(d.regions || []);
+      setClusters(d.clusters || []);
+      setCompanies(d.companies || []);
+      // seed the create-form defaults once data is in
+      setForm((f) => (f.code || f.sec ? f : { ...f, sec: (d.regions || [])[0] || "", company: (d.companies || [])[0] || "" }));
+    }).catch(() => {});
+  }, []);
+  const CLUSTER_COUNTRYWIDE = "__ALL__";
+
+  // Field-response users that can be assigned to a team (their marker will show
+  // the team name; unassigned responders show their own name).
+  const RESPONDER_ROLES = new Set(["field_resp", "sec_country", "sec_country_asst", "sec_regional", "sec_regional_asst"]);
+  const [fieldUsers, setFieldUsers] = useState([]);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [memberOpen, setMemberOpen] = useState(false);
+  useEffect(() => {
+    fetch("/api/mainapp/users").then((r) => (r.ok ? r.json() : null)).then((d) => {
+      const us = (d?.users || []).filter((u) => RESPONDER_ROLES.has(String(u.role || "").toLowerCase()));
+      setFieldUsers(us);
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  function toggleMember(id) {
+    setForm((f) => {
+      const has = (f.members || []).includes(id);
+      return { ...f, members: has ? f.members.filter((x) => x !== id) : [...(f.members || []), id] };
+    });
+  }
+
   // cross-cluster grant form
   const [gTeam, setGTeam] = useState("");
-  const [gCl, setGCl] = useState(CLUSTERS[0]);
+  const [gCl, setGCl] = useState("");
 
   const [term, setTerm] = useState("");
   const [toast, setToast] = useState("");
@@ -131,13 +169,19 @@ export default function ResponseTeams() {
     setErr("");
     setForm({
       code: t.code,
-      sec: t.sec || SEC_REGIONS[0],
+      sec: t.sec || "",
       veh: t.vehicle || "",
       phones: joinContacts(t.phones),
       emails: joinContacts(t.emails),
-      company: t.company || COMPANIES[0],
+      company: t.company || "",
       clusters: (t.clusters || []).slice(),
+      members: [],
     });
+    // pull the team's currently-assigned responders
+    fetch(`/api/mainapp/response/teams/${encodeURIComponent(code)}/members`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setForm((f) => (f.code === t.code ? { ...f, members: (d?.members || []).map((m) => m.id) } : f)))
+      .catch(() => {});
   }
 
   function save() {
@@ -181,6 +225,13 @@ export default function ResponseTeams() {
       setTeams((arr) => [...arr, rec]);
       flashToast("Team " + code + " registered");
     }
+    // Persist the assigned responders (team membership). Drives the responder
+    // marker + the alarm response log; unassigned responders show their own name.
+    const memberIds = form.members || [];
+    fetch(`/api/mainapp/response/teams/${encodeURIComponent(code)}/members`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: code, userIds: memberIds }),
+    }).catch(() => {});
     clearForm();
   }
 
@@ -204,7 +255,7 @@ export default function ResponseTeams() {
   /* ---- cross-cluster grants ---- */
   function grantRows() {
     const rows = [];
-    CLUSTERS.forEach((c) => {
+    clusterNames.forEach((c) => {
       (grants[c] || []).forEach((code) => rows.push({ cluster: c, code }));
     });
     return rows;
@@ -271,8 +322,16 @@ export default function ResponseTeams() {
           </div>
           <div className={styles.field}>
             <label className={styles.lab}>SECURITY REGION</label>
-            <select className={styles.in} value={form.sec} onChange={(e) => set("sec", e.target.value)}>
-              {SEC_REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+            <select className={styles.in}
+              value={form.sec === "Country wide" ? CLUSTER_COUNTRYWIDE : form.sec}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === CLUSTER_COUNTRYWIDE) setForm((f) => ({ ...f, sec: "Country wide", clusters: clusterNames.slice() }));
+                else set("sec", v);
+              }}>
+              <option value="">Select a region…</option>
+              <option value={CLUSTER_COUNTRYWIDE}>Country wide — all clusters</option>
+              {regions.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
           <div className={styles.field}>
@@ -284,7 +343,73 @@ export default function ResponseTeams() {
 
         <div className={styles.clWrap}>
           <label className={styles.lab}>ASSIGN TO CLUSTERS — one or more</label>
-          <ClusterPicker selected={form.clusters} onToggle={toggleCluster} />
+          <ClusterPicker selected={form.clusters} onToggle={toggleCluster} clusters={clusterNames} />
+        </div>
+
+        <div className={styles.clWrap}>
+          <label className={styles.lab}>ASSIGN FIELD-RESPONSE USERS — their responder marker shows this team</label>
+          {(() => {
+            const selected = (form.members || [])
+              .map((id) => fieldUsers.find((u) => u.id === id))
+              .filter(Boolean);
+            const term = memberSearch.trim().toLowerCase();
+            const matches = fieldUsers.filter((u) =>
+              !(form.members || []).includes(u.id) &&
+              (!term || `${u.name} ${u.email || ""}`.toLowerCase().includes(term)));
+            const CAP = 50;
+            return (
+              <>
+                {/* searchable select dropdown */}
+                <div style={{ position: "relative" }}>
+                  <input className={styles.in} placeholder="Search users by name or email…"
+                    value={memberSearch}
+                    onChange={(e) => { setMemberSearch(e.target.value); setMemberOpen(true); }}
+                    onFocus={() => setMemberOpen(true)}
+                    onBlur={() => setTimeout(() => setMemberOpen(false), 150)} />
+                  {memberOpen && (
+                    <div style={{ position: "absolute", zIndex: 30, top: "100%", left: 0, right: 0, background: "#fff",
+                                  border: "1px solid #E2E8F0", borderRadius: 10, marginTop: 4, maxHeight: 260,
+                                  overflowY: "auto", boxShadow: "0 12px 28px rgba(15,23,42,.15)" }}>
+                      {fieldUsers.length === 0 ? (
+                        <div style={{ padding: "10px 12px", color: "#94A3B8", fontSize: 13 }}>No field-response users found. Register users with a field-response role first.</div>
+                      ) : matches.length === 0 ? (
+                        <div style={{ padding: "10px 12px", color: "#94A3B8", fontSize: 13 }}>No matches{term ? ` for “${memberSearch.trim()}”` : ""}.</div>
+                      ) : (
+                        <>
+                          {matches.slice(0, CAP).map((u) => (
+                            <div key={u.id} role="option"
+                              onMouseDown={(e) => { e.preventDefault(); toggleMember(u.id); setMemberSearch(""); }}
+                              onMouseEnter={(e) => (e.currentTarget.style.background = "#F5F8FF")}
+                              onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                              style={{ padding: "9px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid #F4F7FB" }}>
+                              <span style={{ fontWeight: 600, color: "#0F274A" }}>{u.name}</span>
+                              {u.email ? <span style={{ color: "#94A3B8", marginLeft: 8 }}>{u.email}</span> : null}
+                            </div>
+                          ))}
+                          {matches.length > CAP && <div style={{ padding: "8px 12px", color: "#94A3B8", fontSize: 12 }}>Showing {CAP} of {matches.length} — keep typing to narrow.</div>}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* selected responders — a list, not chips */}
+                {selected.length > 0 ? (
+                  <div style={{ border: "1px solid #EEF2F7", borderRadius: 10, marginTop: 8, overflow: "hidden" }}>
+                    {selected.map((u) => (
+                      <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 12px", borderBottom: "1px solid #F4F7FB" }}>
+                        <span><span style={{ fontWeight: 600, color: "#0F274A" }}>{u.name}</span>{u.email ? <span style={{ color: "#94A3B8", marginLeft: 8, fontSize: 12 }}>{u.email}</span> : null}</span>
+                        <button type="button" onClick={() => toggleMember(u.id)} style={{ border: "none", background: "none", color: "#B91C1C", fontWeight: 600, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                ) : <div style={{ color: "#94A3B8", fontSize: 13, marginTop: 6 }}>No responders assigned yet — search above to add.</div>}
+                <div style={{ color: "#94A3B8", fontSize: 12, marginTop: 6 }}>
+                  {selected.length} assigned · {fieldUsers.length} field-response user{fieldUsers.length === 1 ? "" : "s"} total
+                </div>
+              </>
+            );
+          })()}
         </div>
 
         <div className={styles.g2}>
@@ -306,7 +431,7 @@ export default function ResponseTeams() {
           <div className={styles.field}>
             <label className={styles.lab}>SECURITY COMPANY</label>
             <select className={styles.in} value={form.company} onChange={(e) => set("company", e.target.value)}>
-              {COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {companies.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div className={styles.formActions}>
@@ -341,7 +466,7 @@ export default function ResponseTeams() {
         <div className={styles.field}>
           <label className={styles.lab}>MAY ALSO RESPOND IN</label>
           <select className={styles.in} value={gCl} onChange={(e) => setGCl(e.target.value)}>
-            {CLUSTERS.map((c) => <option key={c} value={c}>{c}</option>)}
+            {clusterNames.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div>

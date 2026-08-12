@@ -7,9 +7,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./alarmsmap.module.css";
 import { fetchMapsConfig, loadGoogleMaps, createWaveOverlay, alarmPinIcon, alarmSeverityColor, ALARM_SEVERITIES } from "../../lib/googleMaps.js";
+import { ackView } from "../../lib/ackView.js";
+import AckModal from "../../alarms/components/AckModal.jsx";
 
 const FILTERS = ["All", "Critical", "High", "Medium", "Low"];
 
@@ -31,7 +33,12 @@ function relTime(v) {
 
 export default function AlarmsMap() {
   const router = useRouter();
+  const params = useSearchParams();
+  const focusId = params.get("focus");        // ?focus=<alarm id> from "View on map"
+  const didFocus = useRef(false);
+  const [mapReady, setMapReady] = useState(false);
   const [alarms, setAlarms] = useState([]);
+  const [viewer, setViewer] = useState({});
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("All");
@@ -57,6 +64,7 @@ export default function AlarmsMap() {
       const res = await fetch("/api/mainapp/alarms", { cache: "no-store" });
       const data = res.ok ? await res.json() : { alarms: [] };
       setAlarms(Array.isArray(data.alarms) ? data.alarms : []);
+      setViewer(data.viewer || {});
     } catch { /* keep */ }
     finally { setLoading(false); }
   }
@@ -71,7 +79,9 @@ export default function AlarmsMap() {
     });
   }, [alarms, q, filter]);
 
-  const openCount = useMemo(() => alarms.filter((a) => a.status === "Open").length, [alarms]);
+  // "open" from THIS viewer's side — an alarm the security side acked still reads
+  // as open to a monitoring user who hasn't acked (and vice-versa).
+  const openCount = useMemo(() => alarms.filter((a) => ackView(a, viewer).status === "Open").length, [alarms, viewer]);
   const legend = useMemo(() => {
     const c = { Critical: 0, High: 0, Medium: 0, Low: 0 };
     alarms.forEach((a) => { c[a.priority] = (c[a.priority] || 0) + 1; });
@@ -108,7 +118,8 @@ export default function AlarmsMap() {
         ["bounds_changed", "center_changed", "zoom_changed", "drag"].forEach((ev) => map.addListener(ev, () => repositionRef.current()));
         map.addListener("click", () => closeRef.current());
 
-        drawMarkers(true);
+        drawMarkers(!focusId); // when focusing a specific alarm, don't fit-to-all (it fights the zoom)
+        setMapReady(true);
       } catch (err) { setMapErr(err.message || "Map failed to load."); }
     })();
     return () => { cancelled = true; };
@@ -116,6 +127,22 @@ export default function AlarmsMap() {
   }, [loading]);
 
   useEffect(() => { if (gmap.current) drawMarkers(); /* eslint-disable-next-line */ }, [filtered, alarms]);
+
+  // "View on map" (?focus=<id>) — zoom to that alarm's coordinates and pop its
+  // detail window, once the map + alarms are ready. Runs once.
+  useEffect(() => {
+    if (didFocus.current || !focusId || !mapReady || !gmap.current || !alarms.length) return;
+    const a = alarms.find((x) => String(x.id) === String(focusId));
+    if (!a) return;
+    didFocus.current = true;
+    const pos = coordsOf(a);
+    if (!pos) { setSelected(a.id); return; }
+    openPopup(a, { zoom: 18 });   // zoom right in + pop the detail window
+    // re-assert once after the camera settles, in case anything nudged it
+    const map = gmap.current, maps = mapsApi.current;
+    if (maps) maps.event.addListenerOnce(map, "idle", () => { map.setZoom(18); map.panTo(pos); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId, mapReady, alarms]);
 
   useEffect(() => {
     if (!gmap.current || !mapsApi.current) return;
@@ -158,12 +185,12 @@ export default function AlarmsMap() {
     el.style.left = Math.round(pt.x) + "px";
     el.style.top = Math.round(pt.y - 26) + "px";
   }
-  function openPopup(a) {
+  function openPopup(a, { zoom = 17 } = {}) {
     setSelected(a.id);
     popupIdRef.current = a.id;
     setPopup(a);
     const map = gmap.current, pos = coordsOf(a);
-    if (map && pos) { map.panTo(pos); if (map.getZoom() < 8) map.setZoom(9); }
+    if (map && pos) { map.setZoom(zoom); map.panTo(pos); }  // clicking a pin or card zooms right in
     setTimeout(reposition, 0);
     if (mapsApi.current && map) mapsApi.current.event.addListenerOnce(map, "idle", () => repositionRef.current());
   }
@@ -173,15 +200,7 @@ export default function AlarmsMap() {
     if (coordsOf(a) && gmap.current) openPopup(a); else setSelected(a.id);
   }
 
-  async function acknowledge(a) {
-    try {
-      const res = await fetch(`/api/mainapp/alarms/${encodeURIComponent(a.id)}/ack`, { method: "POST" });
-      if (!res.ok) { flash("Could not acknowledge"); return; }
-      flash(`${a.name} acknowledged — waves stopped`);
-      closePopup();
-      await load();
-    } catch { flash("Network error"); }
-  }
+  const [ackId, setAckId] = useState(null); // alarm being acknowledged (opens the modal)
   function flash(msg) { setToast(msg); setTimeout(() => setToast(""), 2400); }
 
   repositionRef.current = reposition;
@@ -215,11 +234,13 @@ export default function AlarmsMap() {
             {loading ? <div className={styles.emptyList}>Loading…</div>
               : filtered.length ? filtered.map((a) => {
                 const c = alarmSeverityColor(a.priority);
+                const av = ackView(a, viewer);   // per-side status for THIS viewer
+                const isOpen = av.status === "Open";
                 return (
                   <div key={a.id} className={`${styles.card} ${selected === a.id ? styles.cardOn : ""}`} onClick={() => clickCard(a)}>
                     <div className={styles.cardTop}>
                       <div className={styles.cardName}>{a.name}</div>
-                      <span className={`${styles.stPill} ${a.status === "Open" ? styles.stOpen : styles.stAck}`}>{a.status === "Open" ? "OPEN" : "ACKNOWLEDGED"}</span>
+                      <span className={`${styles.stPill} ${isOpen ? styles.stOpen : styles.stAck}`}>{av.status.toUpperCase()}</span>
                     </div>
                     <div className={styles.cardSub}>{a.device_id} — {a.site}</div>
                     <div className={styles.cardMeta}>
@@ -250,8 +271,8 @@ export default function AlarmsMap() {
                   <div className={styles.popRow}><span className={styles.popLbl}>Time</span><span className={styles.popVal}>{relTime(popup.created_at)}</span></div>
                   <div className={styles.popRow}><span className={styles.popLbl}>Serial</span><span className={styles.popSerial}>{popup.serial}</span></div>
                   <div className={styles.popActions}>
-                    {popup.status === "Open" && <button type="button" className={styles.popAck} onClick={() => acknowledge(popup)}>Acknowledge</button>}
-                    <button type="button" className={styles.popOpen} style={{ background: popColor }} onClick={() => flash(`Opening ${popup.name} detail — coming soon`)}>Open</button>
+                    {ackView(popup, viewer).canAck && <button type="button" className={styles.popAck} onClick={() => setAckId(popup.id)}>Acknowledge</button>}
+                    <button type="button" className={styles.popOpen} style={{ background: popColor }} onClick={() => router.push(`/mainapp/alarms/${encodeURIComponent(popup.id)}`)}>Open</button>
                   </div>
                 </div>
               </div>
@@ -284,6 +305,7 @@ export default function AlarmsMap() {
       </button>
 
       {toast ? <div className={styles.toast}>{toast}</div> : null}
+      {ackId && <AckModal alarmId={ackId} onClose={() => setAckId(null)} onDone={() => { setAckId(null); flash("Alarm acknowledged"); closePopup(); load(); }} />}
     </div>
   );
 }

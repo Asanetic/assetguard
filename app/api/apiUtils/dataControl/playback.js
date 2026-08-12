@@ -98,6 +98,32 @@ export async function routeFromTelemetry(deviceIdText, date) {
   };
 }
 
+/**
+ * Incidents (alarms) for a device on a date, as playback overlay + CSV rows.
+ * Alarm location is the SITE location; `t` is seconds since the route's start so
+ * the pin can be revealed as the vehicle reaches that moment. Times are read in
+ * UTC to line up with routeFromTelemetry's start_sec.
+ */
+export async function getIncidents(deviceIdText, date, startSec = 0) {
+  const { rows } = await query(
+    `SELECT id, name, priority, alarm_type, lat, lng, created_at AS at,
+            (EXTRACT(HOUR   FROM (created_at AT TIME ZONE 'UTC')) * 3600
+           + EXTRACT(MINUTE FROM (created_at AT TIME ZONE 'UTC')) * 60
+           + EXTRACT(SECOND FROM (created_at AT TIME ZONE 'UTC')))::int AS tod
+       FROM alarms
+      WHERE device_id = $1
+        AND (created_at AT TIME ZONE 'UTC')::date = $2::date
+        AND lat IS NOT NULL AND lng IS NOT NULL
+      ORDER BY created_at ASC`,
+    [String(deviceIdText || ""), date]
+  );
+  return rows.map((r) => ({
+    id: r.id, name: r.name, priority: r.priority, alarm_type: r.alarm_type,
+    lat: Number(r.lat), lng: Number(r.lng), at: r.at,
+    t: Math.max(0, (Number(r.tod) || 0) - (Number(startSec) || 0)),
+  }));
+}
+
 /** Dates that have a route for a device — stored routes plus telemetry days. */
 export async function routeDatesForDevice(deviceId) {
   const { rows } = await query(

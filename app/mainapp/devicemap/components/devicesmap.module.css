@@ -3,7 +3,7 @@
    retractable devices drawer beside a full-height Google Map, device pins
    clustered per site, and a per-device popup. */
 
-.page { height: 100vh; margin: -22px -28px -40px; position: relative; overflow: hidden; background: #eaf1e6; color: #0f274a; }
+.page { height: calc(100% + 62px); margin: -22px -28px -40px; position: relative; overflow: hidden; background: #eaf1e6; color: #0f274a; }
 .grid { display: grid; grid-template-columns: 320px 1fr; height: 100%; transition: grid-template-columns .22s ease; }
 .gridCollapsed { grid-template-columns: 0px 1fr; }
 

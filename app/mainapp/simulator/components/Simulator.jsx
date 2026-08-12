@@ -44,6 +44,8 @@ export default function Simulator() {
   const [streaming, setStreaming] = useState(false);
   const [interval, setIntervalMs] = useState(1000);
   const [busy, setBusy] = useState(false);
+  const [simBusy, setSimBusy] = useState(false);
+  const [simDate, setSimDate] = useState("");
   const [log, setLog] = useState([]);
 
   // map + path
@@ -210,8 +212,31 @@ export default function Simulator() {
     pushLog({ ok: true, mode, count: path.length, who: imei, detail: "path sent — open in Playback", packets: [] });
   }
 
+  // One-click critical-alarms tracking simulation: server injects a moving route
+  // that raises Disturbance + Critical Motion + Geofence, so Playback has real
+  // recorded telemetry + incidents to replay and export.
+  async function runCriticalSim() {
+    if (!imei) { pushLog({ err: "Pick a device first" }); return; }
+    setSimBusy(true);
+    pushLog({ ok: true, mode: "inject", count: 0, who: imei, detail: "critical-alarms simulation started…", packets: [] });
+    try {
+      const r = await fetch("/api/mainapp/ingest/simulate-critical", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imei, deviceId: dev?.device_id, lat: base.lat, lng: base.lng, paceSec: 120, stepSec: 20 }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || d.error) { pushLog({ err: d.error || "Simulation failed" }); return; }
+      setSimDate(d.date || "");
+      pushLog({ ok: true, mode: "inject", count: d.stored, who: imei,
+        detail: `critical procedure done — ${(d.procedure || []).join(" → ")} @ ${Math.round((d.pace_seconds || 120) / 60)} min pace · ${d.points} pts · date ${d.date}${d.response_on ? ` · response ${d.response_on}` : ""}`,
+        packets: [], alarms: d.alarms || [] });
+    } catch { pushLog({ err: "Network error" }); }
+    finally { setSimBusy(false); }
+  }
+
   const dev = devices.find((x) => x.imei === imei);
-  const playbackHref = dev?.device_id ? `/mainapp/playbackmap?device=${encodeURIComponent(dev.device_id)}&date=${todayUTC()}` : null;
+  const pbDate = simDate || todayUTC();
+  const playbackHref = dev?.device_id ? `/mainapp/playbackmap?device=${encodeURIComponent(dev.device_id)}&date=${pbDate}` : null;
 
   return (
     <div className={styles.page}>
@@ -221,6 +246,9 @@ export default function Simulator() {
           <div className={styles.sub}>Craft GL-28 packets for any device and send them like a real tracker — click the map to place them, stream a path, then replay it in Playback.</div>
         </div>
         <div className={styles.headRight}>
+          <button className={styles.critBtn} onClick={runCriticalSim} disabled={simBusy || !imei}>
+            <i className={`ti ${simBusy ? "ti-loader-2" : "ti-alert-triangle"}`} aria-hidden="true" /> {simBusy ? "Simulating…" : "Run critical-alarms simulation"}
+          </button>
           {playbackHref && <a className={styles.pbLink} href={playbackHref}><i className="ti ti-player-play" aria-hidden="true" /> Open in Playback</a>}
           <span className={`${styles.modePill} ${mode === "tcp" ? styles.modeTcp : styles.modeInject}`}>{mode === "tcp" ? "TCP → listener" : "Direct inject"}</span>
         </div>

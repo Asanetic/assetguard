@@ -35,6 +35,9 @@
 .rpSub { font-size: 11px; color: #94a3b8; }
 .export { width: 100%; margin-top: 14px; background: #fff; color: #334155; border: 1px solid #e2e8f0; border-radius: 9px; padding: 9px 0; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .export:hover { border-color: #2e6cf5; color: #2e6cf5; }
+.export:disabled { opacity: .7; cursor: default; border-color: #e2e8f0; color: #64748b; }
+.exportsLink { width: 100%; margin-top: 8px; background: #14315d; color: #fff; border-radius: 9px; padding: 9px 0; font-size: 12px; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.exportsLink:hover { background: #0f274a; }
 
 /* map */
 .mapWrap { position: relative; min-width: 0; }

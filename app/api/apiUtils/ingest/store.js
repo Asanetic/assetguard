@@ -8,10 +8,12 @@
 import { findDeviceByImei, touchDeviceLastSeen } from "../dataControl/devices.js";
 import { insertDeviceLog, insertUnknownLog } from "../dataControl/deviceLogs.js";
 import { insertTelemetry, updateDeviceState, getSiteLatLng } from "../dataControl/telemetry.js";
-import { insertLiveAlarm } from "../dataControl/alarms.js";
+import { insertLiveAlarm, clearOpenAlarm } from "../dataControl/alarms.js";
 import { toTelemetry } from "./parse.js";
-import { evaluate } from "./alarmEngine.js";
-import { geolocate } from "./geolocate.js";
+import { evaluate, ALARM_TYPES } from "./alarmEngine.js";
+import { geolocate, reverseGeocodeRoad } from "./geolocate.js";
+import { isTechOnSite } from "./techOnSite.js";
+import { ensureOfflineSweep } from "./offlineSweep.js";
 
 // Per-device motion/geofence state (keyed by device id, or imei when unregistered).
 function motionState(key) {
@@ -22,6 +24,7 @@ function motionState(key) {
 }
 
 export async function resolveAndStore(rec, ip, port) {
+  ensureOfflineSweep(); // idempotent — starts the Device Offline sweep once per process
   const view = {
     receivedAt: new Date().toISOString(),
     imei: rec.imei, cmd: rec.cmd,
@@ -114,10 +117,21 @@ export async function resolveAndStore(rec, ip, port) {
   const devForEngine = device || { imei: rec.imei, device_id: null, config: {} };
   let site = null;
   if (known) { try { site = await getSiteLatLng(device.site_id); } catch {} }
+  // Tech-on-site check (inert until the access-control integration lands) — only
+  // matters for a disturbance, which it downgrades to the Low "tech on site" tier.
+  let techOnSite = false;
+  if (known) { try { techOnSite = await isTechOnSite(device.site_id); } catch {} }
   let alarms = [];
-  try { alarms = evaluate(t, devForEngine, site, motionState(known ? device.id : `imei:${rec.imei}`)) || []; } catch (e) { console.error("[ingest] engine error:", e.message); }
+  try { alarms = evaluate(t, devForEngine, site, motionState(known ? device.id : `imei:${rec.imei}`), { techOnSite }) || []; } catch (e) { console.error("[ingest] engine error:", e.message); }
   const alarmTypes = alarms.map((a) => a.type);
   view.alarms = alarms;
+
+  // Critical Motion records the road it's on — reverse-geocode the position once.
+  let road = null;
+  if (alarms.some((a) => a.type === ALARM_TYPES.CRITICAL_MOTION) && t.lat != null && t.lng != null) {
+    try { road = await reverseGeocodeRoad(t.lat, t.lng); } catch {}
+    if (road) view.road = road;
+  }
 
   // 3) normalized telemetry — stored for BOTH known and unknown (device_id may be NULL)
   let telemetryId = null;
@@ -128,13 +142,19 @@ export async function resolveAndStore(rec, ip, port) {
   // 4) registered devices: keep live state fresh + persist alarms to All Alarms/speaker
   if (known) {
     try { await updateDeviceState(device.id, t); } catch { try { await touchDeviceLastSeen(device.id); } catch {} }
+    // The device just reported, so it isn't offline — clear any open offline alarm.
+    try { await clearOpenAlarm(device.device_id || device.imei, ALARM_TYPES.DEVICE_OFFLINE); } catch {}
     for (const a of alarms) {
       try {
         await insertLiveAlarm({
           alarmType: a.type, value: a.value,
           deviceIdText: device.device_id || device.imei,
           site: device.site || null, serial: device.imei || rec.imei,
-          lat: a.lat, lng: a.lng,
+          // Alarm location is the SITE location (where the alarm belongs), not the
+          // device's current position. Fall back to device position only if the
+          // site has no coordinates.
+          lat: site?.lat ?? a.lat, lng: site?.lng ?? a.lng,
+          road: a.type === ALARM_TYPES.CRITICAL_MOTION ? road : undefined,
         });
       } catch {}
     }

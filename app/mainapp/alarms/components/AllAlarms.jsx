@@ -8,6 +8,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./allalarms.module.css";
 import { alarmSeverityColor } from "../../lib/googleMaps.js";
+import { ackView } from "../../lib/ackView.js";
+import AckModal from "./AckModal.jsx";
 
 const PRIORITIES = ["All priorities", "Critical", "High", "Medium", "Low"];
 const STATUSES = ["All statuses", "Open", "Acknowledged", "Closed"];
@@ -26,6 +28,7 @@ function relTime(v) {
 
 export default function AllAlarms() {
   const [alarms, setAlarms] = useState([]);
+  const [viewer, setViewer] = useState({});
   const [counts, setCounts] = useState({ bySeverity: {}, closed: 0 });
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -40,6 +43,7 @@ export default function AllAlarms() {
       const res = await fetch("/api/mainapp/alarms?scope=all", { cache: "no-store" });
       const d = res.ok ? await res.json() : { alarms: [], counts: {} };
       setAlarms(Array.isArray(d.alarms) ? d.alarms : []);
+      setViewer(d.viewer || {});
       setCounts(d.counts || { bySeverity: {}, closed: 0 });
     } catch { /* keep */ }
     finally { setLoading(false); }
@@ -52,11 +56,13 @@ export default function AllAlarms() {
     const term = q.trim().toLowerCase();
     return alarms.filter((a) => {
       if (priority !== "All priorities" && a.priority !== priority) return false;
-      if (status !== "All statuses" && a.status !== status) return false;
+      // Filter on the per-side status the viewer actually sees (so a monitoring
+      // user filtering "Open" still gets alarms the security side already acked).
+      if (status !== "All statuses" && ackView(a, viewer).status !== status) return false;
       if (!term) return true;
       return (`${a.name} ${a.device_id} ${a.site} ${a.serial} ${a.id}`).toLowerCase().includes(term);
     });
-  }, [alarms, q, priority, status]);
+  }, [alarms, q, priority, status, viewer]);
 
   const STAT_CARDS = [
     { key: "Critical", color: alarmSeverityColor("Critical"), n: counts.bySeverity?.Critical || 0, hint: "active" },
@@ -75,14 +81,7 @@ export default function AllAlarms() {
     else { setPriority(key); setStatus("All statuses"); }
   }
 
-  async function acknowledge(a) {
-    try {
-      const res = await fetch(`/api/mainapp/alarms/${encodeURIComponent(a.id)}/ack`, { method: "POST" });
-      if (!res.ok) { flash("Could not acknowledge"); return; }
-      flash(`${a.name} acknowledged`);
-      await load();
-    } catch { flash("Network error"); }
-  }
+  const [ackId, setAckId] = useState(null);   // alarm being acknowledged (opens the modal)
 
   function pillClass(st) { return st === "Open" ? styles.pillOpen : st === "Acknowledged" ? styles.pillAck : styles.pillClosed; }
   function sevColor(a) { return a.status === "Closed" ? CLOSED_GREEN : alarmSeverityColor(a.priority); }
@@ -130,6 +129,7 @@ export default function AllAlarms() {
               {loading ? <tr><td className={styles.empty} colSpan={6}>Loading…</td></tr>
                 : filtered.length ? filtered.map((a) => {
                   const col = sevColor(a);
+                  const av = ackView(a, viewer);   // per-side status + whether THIS viewer can still ack
                   return (
                     <tr key={a.id}>
                       <td>
@@ -141,12 +141,12 @@ export default function AllAlarms() {
                         <div className={styles.devSite}>{a.site}</div>
                       </td>
                       <td><span className={styles.sev} style={{ color: col }}><span className={styles.dot} style={{ background: col }} />{a.priority}</span></td>
-                      <td><span className={`${styles.pill} ${pillClass(a.status)}`}>{a.status.toUpperCase()}</span></td>
+                      <td><span className={`${styles.pill} ${pillClass(av.status)}`}>{av.status.toUpperCase()}</span></td>
                       <td className={styles.time}>{relTime(a.created_at)}</td>
                       <td>
                         <div className={styles.acts}>
-                          {a.status === "Open" && <button type="button" className={styles.ackBtn} onClick={() => acknowledge(a)}>Acknowledge</button>}
-                          <button type="button" className={styles.viewBtn} onClick={() => flash(`Opening ${a.name} — detail view coming soon`)}>View</button>
+                          {av.canAck && <button type="button" className={styles.ackBtn} onClick={() => setAckId(a.id)}>Acknowledge</button>}
+                          <a className={styles.viewBtn} href={`/mainapp/alarms/${encodeURIComponent(a.id)}`}>View</a>
                         </div>
                       </td>
                     </tr>
@@ -158,6 +158,7 @@ export default function AllAlarms() {
       </div>
 
       {toast ? <div className={styles.toast}>{toast}</div> : null}
+      {ackId && <AckModal alarmId={ackId} onClose={() => setAckId(null)} onDone={() => { setAckId(null); flash("Alarm acknowledged"); load(); }} />}
     </div>
   );
 }

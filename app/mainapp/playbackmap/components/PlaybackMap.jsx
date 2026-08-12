@@ -10,6 +10,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "./playback.module.css";
 import { fetchMapsConfig, loadGoogleMaps, playbackVehicleIcon, routeDotIcon } from "../../lib/googleMaps.js";
+import { startScreenRecording, buildRouteCsv } from "../../lib/routeRecorder.js";
+import { addExport } from "../../lib/exportsStore.js";
+import { useRouter } from "next/navigation";
 
 const WP_COLOR = { start: "#10B981", stop: "#F59E0B", end: "#EF4444" };
 const SPEEDS = [1, 2, 3, 4, 5];
@@ -28,6 +31,7 @@ function haversine(a, b) {
 
 export default function PlaybackMap() {
   const params = useSearchParams();
+  const router = useRouter();
   const qsDevice = params.get("device");
   const qsDate = params.get("date");
 
@@ -37,6 +41,9 @@ export default function PlaybackMap() {
   const [openDev, setOpenDev] = useState(false);
   const [date, setDate] = useState(qsDate || "2026-07-07");
   const [route, setRoute] = useState(null);
+  const [incidents, setIncidents] = useState([]);
+  const [exporting, setExporting] = useState(false);
+  const [exportPct, setExportPct] = useState(0);
   const [loading, setLoading] = useState(true);
   const [mapErr, setMapErr] = useState("");
   const [collapsed, setCollapsed] = useState(false);
@@ -52,6 +59,7 @@ export default function PlaybackMap() {
   const travelLine = useRef(null);
   const vehicle = useRef(null);
   const wpMarkers = useRef([]);
+  const incMarkers = useRef([]);
   const devWrap = useRef(null);
   const tickRef = useRef(null);
   const stopToastRef = useRef(false);
@@ -74,9 +82,9 @@ export default function PlaybackMap() {
     (async () => {
       try {
         const r = await fetch(`/api/mainapp/playback?device_id=${encodeURIComponent(deviceId)}&date=${date}`, { cache: "no-store" });
-        const d = r.ok ? await r.json() : { route: null };
-        if (alive) setRoute(d.route || null);
-      } catch { if (alive) setRoute(null); }
+        const d = r.ok ? await r.json() : { route: null, incidents: [] };
+        if (alive) { setRoute(d.route || null); setIncidents(Array.isArray(d.incidents) ? d.incidents : []); }
+      } catch { if (alive) { setRoute(null); setIncidents([]); } }
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
@@ -152,6 +160,7 @@ export default function PlaybackMap() {
   function clearMap() {
     [fullLine, travelLine, vehicle].forEach((r) => { if (r.current) { r.current.setMap(null); r.current = null; } });
     wpMarkers.current.forEach((m) => m.setMap(null)); wpMarkers.current = [];
+    incMarkers.current.forEach((m) => m.setMap(null)); incMarkers.current = [];
   }
 
   function drawRoute() {
@@ -169,6 +178,17 @@ export default function PlaybackMap() {
     (route.waypoints || []).forEach((w) => {
       const mk = new maps.Marker({ map, position: { lat: w.lat, lng: w.lng }, icon: routeDotIcon(maps, WP_COLOR[w.kind] || "#64748b"), title: w.label, zIndex: 3 });
       wpMarkers.current.push(mk);
+    });
+    // incident (alarm) pins — red, with a click-to-read label
+    (incidents || []).forEach((inc) => {
+      if (inc.lat == null || inc.lng == null) return;
+      const mk = new maps.Marker({
+        map, position: { lat: Number(inc.lat), lng: Number(inc.lng) },
+        icon: routeDotIcon(maps, "#EF4444"), title: `${inc.name}${inc.priority ? ` · ${inc.priority}` : ""}`, zIndex: 4,
+      });
+      const iw = new maps.InfoWindow({ content: `<div style="font-weight:700;color:#b91c1c;font-size:12.5px">⚠ ${String(inc.name || "Alarm").replace(/</g, "&lt;")}</div><div style="color:#64748b;font-size:11.5px">${inc.priority || ""} · ${fmtClock(startSec, inc.t || 0)}</div>` });
+      mk.addListener("click", () => iw.open({ map, anchor: mk }));
+      incMarkers.current.push(mk);
     });
     vehicle.current = new maps.Marker({ map, position: path[0], icon: playbackVehicleIcon(maps, 0), zIndex: 5, optimized: false });
     const bounds = new maps.LatLngBounds(); path.forEach((p) => bounds.extend(p));
@@ -224,15 +244,50 @@ export default function PlaybackMap() {
   function jumpPrev() { setPlaying(false); let target = labeled[0]?.t || 0; for (let i = labeled.length - 1; i >= 0; i--) { if (labeled[i].t < t - 2) { target = labeled[i].t; break; } } setT(target); }
   function jumpNext() { setPlaying(false); let target = totalT; for (let i = 0; i < labeled.length; i++) { if (labeled[i].t > t + 2) { target = labeled[i].t; break; } } setT(target); }
 
-  function exportCsv() {
-    if (!points.length) return;
-    const header = ["time", "lat", "lng", "speed_kmh"];
-    const lines = [header.join(",")].concat(points.map((p) => [fmtClock(startSec, p.t), p.lat, p.lng, p.spd].join(",")));
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `${deviceId}_${date}_route.csv`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    flash("Route exported to CSV");
+  // Screen-record the REAL playback (Google Maps) as it auto-plays, build the
+  // coordinates/incidents CSV, then add both to the session Exports list. The
+  // browser asks which screen/tab to share — choose "This tab".
+  async function runExport() {
+    if (!route || !points.length || exporting) return;
+    setExporting(true); setExportPct(0); setPlaying(false); setT(0);
+    let recCtl = null;
+    try {
+      // Ask for the screen share first (needs the click gesture), then play.
+      recCtl = await startScreenRecording({ deviceId, date });
+      flash("Recording the map… choose “This tab” if prompted");
+      await new Promise((r) => setTimeout(r, 600)); // let the share settle
+      // Drive the playback slowly ourselves (the 1× loop is too fast to record):
+      // sweep t from 0 → end over a calm 18–45s so the map pans gently.
+      setPlaying(false); setT(0);
+      const durMs = Math.min(45000, Math.max(18000, Math.round(totalT * 55)));
+      const t0 = Date.now();
+      await new Promise((res) => {
+        const iv = setInterval(() => {
+          const p = Math.min(1, (Date.now() - t0) / durMs);
+          setT(Math.round(p * totalT));
+          setExportPct(Math.round(p * 100));
+          if (p >= 1) { clearInterval(iv); res(); }
+        }, 50);
+      });
+      await new Promise((r) => setTimeout(r, 500)); // hold the final frame
+      recCtl.stop();
+      const { blob, name } = await recCtl.done;
+      const videoUrl = URL.createObjectURL(blob);
+      const csvUrl = URL.createObjectURL(new Blob([buildRouteCsv(route, incidents, deviceId, date)], { type: "text/csv;charset=utf-8;" }));
+      addExport({
+        device: deviceId, date,
+        durationMin: route.summary?.duration_min ?? Math.round(totalT / 60),
+        distanceKm: route.summary?.total_km ?? null,
+        incidents: incidents.length,
+        video: { url: videoUrl, name },
+        csv: { url: csvUrl, name: `${deviceId}_${date}_route.csv` },
+      });
+      flash("Export ready — opening Exports…");
+      setTimeout(() => router.push("/mainapp/playback/exports"), 800);
+    } catch (e) {
+      if (recCtl) recCtl.stop();
+      flash(e?.name === "NotAllowedError" ? "Screen share cancelled" : (e?.message || "Export failed"));
+    } finally { setExporting(false); setExportPct(0); }
   }
 
   const now = interp(t) || { spd: 0, dist: 0 };
@@ -284,7 +339,26 @@ export default function PlaybackMap() {
                 </div>
               ))}
 
-              <button className={styles.export} onClick={exportCsv}><i className="ti ti-download" style={{ fontSize: 15 }} /> Export</button>
+              {incidents.length > 0 && (
+                <>
+                  <div className={styles.lab}>INCIDENTS ({incidents.length})</div>
+                  {incidents.map((inc) => (
+                    <div key={inc.id} className={styles.rp} onClick={() => { setPlaying(false); setT(inc.t || 0); }}>
+                      <span className={styles.rpDot} style={{ background: "#EF4444" }} />
+                      <div>
+                        <div className={styles.rpName}>{inc.name}</div>
+                        <div className={styles.rpSub}>{inc.priority} · {fmtClock(startSec, inc.t || 0)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              <button className={styles.export} onClick={runExport} disabled={exporting}>
+                <i className={`ti ${exporting ? "ti-loader-2" : "ti-screen-share"}`} style={{ fontSize: 15 }} />
+                {exporting ? ` Recording… ${exportPct}%` : " Record & export (MP4 + CSV)"}
+              </button>
+              <a className={styles.exportsLink} href="/mainapp/playback/exports"><i className="ti ti-files" style={{ fontSize: 14 }} /> View exports</a>
             </>
           ) : !loading ? (
             <div style={{ marginTop: 18, fontSize: 12.5, color: "#94a3b8" }}>No route recorded for this device on this date.</div>

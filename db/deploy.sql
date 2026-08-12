@@ -37,6 +37,8 @@ CREATE SCHEMA public;
 \ir playback.sql
 \ir alarms.sql
 \ir alarms_live.sql
+\ir alarms_severity.sql
+\ir alarm_lifecycle.sql
 \ir device_telemetry.sql
 \ir telemetry_extras.sql
 \ir telemetry_geo.sql

@@ -1,0 +1,48 @@
+.page { display: flex; flex-direction: column; gap: 16px; }
+.card { background: #fff; border: 1px solid #EEF2F7; border-radius: 14px; padding: 18px 20px; }
+
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.title { font-size: 24px; font-weight: 800; color: #0F274A; }
+.sub { font-size: 13.5px; color: #64748B; margin-top: 2px; max-width: 640px; }
+.search { border: 1px solid #E2E8F0; border-radius: 8px; padding: 9px 12px; font-size: 13px; min-width: 240px; }
+
+.err { color: #B91C1C; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 9px 12px; font-size: 13px; }
+.ok  { color: #047857; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px; padding: 9px 12px; font-size: 13px; }
+
+/* batch bar */
+.batch { display: flex; flex-direction: column; gap: 12px; }
+.batchHead { display: flex; align-items: center; gap: 10px; }
+.batchTitle { font-size: 15px; font-weight: 800; color: #0F274A; }
+.batchCount { font-size: 12px; font-weight: 700; color: #2E6CF5; background: #EFF4FF; border-radius: 999px; padding: 3px 10px; }
+.batchGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.bField { display: flex; flex-direction: column; gap: 4px; }
+.bLabel { font-size: 11.5px; font-weight: 700; color: #0F274A; text-transform: uppercase; letter-spacing: .02em; }
+.bLabel em { color: #94A3B8; font-style: normal; font-weight: 600; }
+.apply { align-self: flex-start; background: #2E6CF5; color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-weight: 700; font-size: 13px; cursor: pointer; }
+.apply:disabled { opacity: .5; cursor: not-allowed; }
+
+.num { width: 100%; border: 1px solid #E2E8F0; border-radius: 7px; padding: 7px 9px; font-size: 13px; text-align: right; }
+.num:focus { outline: none; border-color: #2E6CF5; }
+
+/* table */
+.tableWrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.table thead th { text-align: left; color: #94A3B8; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; padding: 10px 12px; border-bottom: 1px solid #EEF2F7; white-space: nowrap; }
+.table tbody td { padding: 12px; border-bottom: 1px solid #F4F7FB; color: #0F274A; vertical-align: middle; }
+.numCol { text-align: right; width: 108px; }
+.unit { color: #94A3B8; font-weight: 600; margin-left: 3px; }
+.chkCol { width: 34px; text-align: center; }
+.actCol { text-align: right; width: 120px; }
+.selRow { background: #F8FAFF; }
+
+.dev { font-weight: 700; }
+.imei { font-size: 11.5px; color: #94A3B8; font-family: ui-monospace, monospace; }
+.mut { color: #64748B; }
+.empty { color: #94A3B8; text-align: center; padding: 24px; }
+
+.rowActs { display: inline-flex; gap: 6px; justify-content: flex-end; }
+.edit { border: 1px solid #E2E8F0; background: #fff; color: #2E6CF5; border-radius: 8px; padding: 7px 14px; font-weight: 700; font-size: 12.5px; cursor: pointer; }
+.edit:hover { border-color: #2E6CF5; }
+.save { background: #2E6CF5; color: #fff; border: none; border-radius: 8px; padding: 7px 14px; font-weight: 700; font-size: 12.5px; cursor: pointer; }
+.cancel { background: #fff; color: #64748B; border: 1px solid #E2E8F0; border-radius: 8px; padding: 7px 12px; font-weight: 700; font-size: 12.5px; cursor: pointer; }
+.save:disabled, .cancel:disabled { opacity: .5; }

@@ -3,7 +3,10 @@
 .title { font-size: 20px; font-weight: 800; color: #0F274A; }
 .sub { font-size: 12.5px; color: #64748B; margin-top: 2px; max-width: 620px; }
 
-.headRight { display: flex; align-items: center; gap: 10px; }
+.headRight { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.critBtn { display: inline-flex; align-items: center; gap: 6px; background: #EF4444; color: #fff; border: none; font-size: 12.5px; font-weight: 800; padding: 8px 13px; border-radius: 9px; cursor: pointer; font-family: inherit; }
+.critBtn:hover { background: #DC2626; }
+.critBtn:disabled { opacity: .6; cursor: default; }
 .pbLink { display: inline-flex; align-items: center; gap: 6px; background: #8B5CF6; color: #fff; text-decoration: none; font-size: 12.5px; font-weight: 700; padding: 8px 13px; border-radius: 9px; }
 .pbLink:hover { background: #7C3AED; }
 

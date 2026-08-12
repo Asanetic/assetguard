@@ -7,7 +7,7 @@
 /* Fill the whole content area, edge to edge. The shell content has 22/28/40
    padding; negative margins bleed it and 100vh gives the full height. */
 .page {
-  height: 100vh;
+  height: calc(100% + 62px);
   margin: -22px -28px -40px;
   position: relative;
   overflow: hidden;

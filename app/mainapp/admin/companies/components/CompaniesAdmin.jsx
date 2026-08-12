@@ -22,6 +22,24 @@ const PURPOSE_COLOR = {
 };
 const KNOWN_PURPOSES = Object.keys(PURPOSE_COLOR);
 
+// Company classification from purposes (agreed rule):
+//   Response + NOC => Security company; NOC only => Monitoring company.
+function cType(purposes = []) {
+  const p = (purposes || []).map((x) => String(x).toLowerCase());
+  const noc = p.includes("noc"), resp = p.includes("response");
+  if (resp && noc) return "Security company";
+  if (noc) return "Monitoring company";
+  if (resp) return "Response company";
+  if (p.includes("client")) return "Client";
+  return "—";
+}
+function cTypeColor(t) {
+  return t === "Security company" ? "#B45309"
+    : t === "Monitoring company" ? "#1D4ED8"
+    : t === "Response company" ? "#B45309"
+    : t === "Client" ? "#047857" : "#64748B";
+}
+
 function chipStyle(p) {
   const c = PURPOSE_COLOR[p] || "#64748B";
   return { background: c + "1A", color: c };
@@ -75,6 +93,7 @@ export default function CompaniesAdmin() {
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
   const [showRegister, setShowRegister] = useState(false);
+  const [editCompany, setEditCompany] = useState(null);
   const [showImport, setShowImport] = useState(false);
   const [toast, setToast] = useState("");
 
@@ -135,13 +154,13 @@ export default function CompaniesAdmin() {
       <div className={styles.card}>
         <table className={styles.table}>
           <thead>
-            <tr><th>COMPANY</th><th>PURPOSE</th><th>CONTACT</th><th>SITES</th><th>USERS</th><th>STATUS</th></tr>
+            <tr><th>COMPANY</th><th>PURPOSE</th><th>TYPE</th><th>CONTACT</th><th>SITES</th><th>USERS</th><th>STATUS</th><th></th></tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className={styles.empty}>Loading…</td></tr>
+              <tr><td colSpan={8} className={styles.empty}>Loading…</td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={6} className={styles.empty}>No companies match “{q.trim()}”</td></tr>
+              <tr><td colSpan={8} className={styles.empty}>No companies match “{q.trim()}”</td></tr>
             ) : rows.map((c) => {
               const status = c.status || "Active";
               return (
@@ -156,6 +175,7 @@ export default function CompaniesAdmin() {
                     </div>
                   </td>
                   <td><div className={styles.chips}>{purposeChips(c.purposes)}</div></td>
+                  <td><span style={{ fontWeight: 700, color: cTypeColor(c.type) }}>{c.type || cType(c.purposes)}</span></td>
                   <td>
                     <div className={styles.contact}>{c.contact_email || "—"}</div>
                     <div className={styles.contactSub}>{c.phone || "—"}</div>
@@ -164,6 +184,12 @@ export default function CompaniesAdmin() {
                   <td className={styles.num}>{c.users}</td>
                   <td>
                     <span className={`${styles.statusPill} ${status === "Active" ? styles.stActive : styles.stOther}`}>{status}</span>
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    <button type="button" onClick={() => setEditCompany(c)}
+                      style={{ border: "1px solid #E2E8F0", background: "#fff", color: "#2E6CF5", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>
+                      Edit
+                    </button>
                   </td>
                 </tr>
               );
@@ -176,6 +202,13 @@ export default function CompaniesAdmin() {
         <RegisterPanel
           onClose={() => setShowRegister(false)}
           onSaved={(msg) => { setShowRegister(false); flash(msg); load(); }}
+        />
+      )}
+      {editCompany && (
+        <RegisterPanel
+          company={editCompany}
+          onClose={() => setEditCompany(null)}
+          onSaved={(msg) => { setEditCompany(null); flash(msg); load(); }}
         />
       )}
       {showImport && (
@@ -191,11 +224,12 @@ export default function CompaniesAdmin() {
 }
 
 // ---------------- Register company slide-over ----------------
-function RegisterPanel({ onClose, onSaved }) {
-  const [name, setName] = useState("");
-  const [chosen, setChosen] = useState([]);
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+function RegisterPanel({ onClose, onSaved, company }) {
+  const isEdit = !!company;
+  const [name, setName] = useState(company?.name || "");
+  const [chosen, setChosen] = useState(company?.purposes || []);
+  const [email, setEmail] = useState(company?.contact_email || "");
+  const [phone, setPhone] = useState(company?.phone || "");
   const [err, setErr] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -207,22 +241,23 @@ function RegisterPanel({ onClose, onSaved }) {
     if (chosen.length === 0) return setErr("Select at least one purpose");
     setSaving(true);
     try {
-      const res = await fetch("/api/mainapp/companies", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const res = await fetch(isEdit ? `/api/mainapp/companies/${company.id}` : "/api/mainapp/companies", {
+        method: isEdit ? "PUT" : "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim(), purposes: chosen, contactEmail: email.trim(), phone: phone.trim() }),
       });
       const d = await res.json();
-      if (!res.ok) { setSaving(false); return setErr(d.error || "Could not register company"); }
-      onSaved(`${name.trim()} registered`);
+      if (!res.ok) { setSaving(false); return setErr(d.error || `Could not ${isEdit ? "update" : "register"} company`); }
+      onSaved(`${name.trim()} ${isEdit ? "updated" : "registered"}`);
     } catch { setSaving(false); setErr("Network error"); }
   }
 
+  const typeNow = cType(chosen);
   return (
     <>
       <div className={styles.backdrop} onClick={onClose} />
       <div className={styles.panel}>
         <div className={styles.panelHead}>
-          <div className={styles.panelTitle}>Register company</div>
+          <div className={styles.panelTitle}>{isEdit ? "Edit company" : "Register company"}</div>
           <button className={styles.panelX} onClick={onClose} aria-label="Close"><i className="ti ti-x" aria-hidden="true" /></button>
         </div>
         <div className={styles.panelBody}>
@@ -243,6 +278,13 @@ function RegisterPanel({ onClose, onSaved }) {
             })}
           </div>
 
+          {chosen.length > 0 && (
+            <div style={{ margin: "2px 0 4px", fontSize: 13 }}>
+              This company is a <b style={{ color: cTypeColor(typeNow) }}>{typeNow}</b>
+              {typeNow === "Security company" ? " (Response + NOC)" : typeNow === "Monitoring company" ? " (NOC only)" : ""}.
+            </div>
+          )}
+
           <label className={styles.fLab}>CONTACT EMAIL</label>
           <input className={styles.fIn} type="email" placeholder="ops@company.com" value={email} onChange={(e) => setEmail(e.target.value)} />
 
@@ -252,7 +294,7 @@ function RegisterPanel({ onClose, onSaved }) {
           {err && <div className={styles.err}>{err}</div>}
 
           <button className={styles.saveBtn} onClick={save} disabled={saving}>
-            {saving ? "Registering…" : "Register company"}
+            {saving ? (isEdit ? "Saving…" : "Registering…") : (isEdit ? "Save changes" : "Register company")}
           </button>
         </div>
       </div>

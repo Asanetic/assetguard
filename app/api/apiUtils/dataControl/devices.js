@@ -1,6 +1,51 @@
 // app/api/apiUtils/dataControl/devices.js
 // Device registry access. The IMEI lookup runs on every ingested packet.
 import { query } from "../s_env/db.js";
+import { THRESHOLD_FIELDS, resolveConfig } from "../ingest/alarmEngine.js";
+
+// Coerce an incoming thresholds patch to the allowed numeric keys, clamped to
+// each field's range. Anything else is dropped — the client can't write arbitrary
+// config keys through this path.
+export function sanitizeThresholds(patch = {}) {
+  const out = {};
+  for (const f of THRESHOLD_FIELDS) {
+    if (patch[f.key] == null || patch[f.key] === "") continue;
+    let n = Number(patch[f.key]);
+    if (!Number.isFinite(n)) continue;
+    n = Math.min(f.max, Math.max(f.min, n));
+    out[f.key] = n;
+  }
+  return out;
+}
+
+// Every device with its resolved alarm thresholds (config merged over defaults),
+// for the threshold editor + batch selection.
+export async function listDeviceAlarmConfigs() {
+  const { rows } = await query(
+    `SELECT d.id, d.device_id, d.imei, d.status, d.config, s.name AS site
+       FROM devices d LEFT JOIN sites s ON s.id = d.site_id
+      ORDER BY d.device_id ASC NULLS LAST, d.id ASC`
+  );
+  return rows.map((d) => {
+    const c = resolveConfig(d);
+    const thresholds = {};
+    for (const f of THRESHOLD_FIELDS) thresholds[f.key] = c[f.key];
+    return { id: d.id, device_id: d.device_id, imei: d.imei, status: d.status, site: d.site, thresholds };
+  });
+}
+
+// Apply a thresholds patch to one or many devices (per-device edit = one id,
+// batch = many). Merges over existing config so untouched keys are preserved.
+export async function batchSetAlarmConfig(ids = [], patch = {}) {
+  const clean = sanitizeThresholds(patch);
+  if (!ids.length || !Object.keys(clean).length) return 0;
+  const { rowCount } = await query(
+    `UPDATE devices SET config = COALESCE(config, '{}'::jsonb) || $2::jsonb
+      WHERE id = ANY($1::bigint[])`,
+    [ids.map(Number).filter(Number.isFinite), JSON.stringify(clean)]
+  );
+  return rowCount;
+}
 
 export async function findDeviceByImei(imei) {
   const { rows } = await query(
@@ -16,6 +61,25 @@ export async function findDeviceByImei(imei) {
 
 export async function touchDeviceLastSeen(id) {
   await query(`UPDATE devices SET last_seen = now() WHERE id = $1`, [id]);
+}
+
+/**
+ * Devices that have reported before but have now gone silent past their offline
+ * window (per-device config.offline_hours, default 24 h). Never-seen devices are
+ * excluded so a freshly-registered tracker isn't flagged before its first packet.
+ * Drives the Device Offline sweep.
+ */
+export async function listStaleDevices(defaultHours = 24) {
+  const { rows } = await query(
+    `SELECT d.id, d.device_id, d.imei, d.last_seen, s.name AS site,
+            EXTRACT(EPOCH FROM (now() - d.last_seen)) / 3600.0 AS hours_silent
+       FROM devices d
+       LEFT JOIN sites s ON s.id = d.site_id
+      WHERE d.last_seen IS NOT NULL
+        AND d.last_seen < now() - (COALESCE(NULLIF(d.config->>'offline_hours','')::numeric, $1) * interval '1 hour')`,
+    [defaultHours]
+  );
+  return rows;
 }
 
 export async function listDevices({ q, site_id, status, orientation } = {}) {

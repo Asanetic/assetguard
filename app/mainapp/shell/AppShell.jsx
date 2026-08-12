@@ -38,8 +38,12 @@ const MENU = [
   { key: "alarms", label: "Alarms", icon: "ti-bell-ringing", color: "#EF4444", children: [
       { key: "all_alarms", label: "All alarms", href: "/mainapp/alarms" },
       { key: "missed_alarms", label: "Missed alarms", href: "/mainapp/alarms/missed" },
+      { key: "alarmconfig", label: "Alarm thresholds", href: "/mainapp/alarmconfig" },
     ] },
-  { key: "playback", label: "Playback", icon: "ti-player-play", color: "#8B5CF6", href: "/mainapp/playback" },
+  { key: "playback", label: "Playback", icon: "ti-player-play", color: "#8B5CF6", children: [
+      { key: "route_playback", label: "Route playback", href: "/mainapp/playbackmap" },
+      { key: "playback_exports", label: "Exports", href: "/mainapp/playback/exports" },
+    ] },
   { key: "notifications", label: "Notifications", icon: "ti-bell", color: "#0EA5E9", href: "/mainapp/notifications" },
   { key: "logs", label: "Device logs", icon: "ti-file-text", color: "#64748B", href: "/mainapp/logs" },
   { key: "reports", label: "Reports", icon: "ti-report-analytics", color: "#059669", href: "/mainapp/reports" },

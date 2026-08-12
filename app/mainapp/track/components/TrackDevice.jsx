@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./track.module.css";
-import { fetchMapsConfig, loadGoogleMaps, createWaveOverlay, targetDeviceIcon, myLocationIcon } from "../../lib/googleMaps.js";
+import { fetchMapsConfig, loadGoogleMaps, createWaveOverlay, targetDeviceIcon, myLocationIcon, responderNavIcon } from "../../lib/googleMaps.js";
 import { announce, setGuidanceMuted, cancelGuidance } from "../../lib/navGuidance.js";
 
 const TARGET = "#EF4444", BLUE = "#2E6CF5";  // target device red, my-location blue
@@ -35,6 +35,26 @@ export default function TrackDevice() {
   const router = useRouter();
   const params = useSearchParams();
   const deviceId = params.get("device") || "";
+  const alarmId = params.get("alarm") || "";          // came from an alarm → allow jumping back to its details
+  const respondMode = params.get("respond") === "1"; // arrived via "Track and respond"
+
+  const [canRespond, setCanRespond] = useState(false);
+  const [permsReady, setPermsReady] = useState(false);
+  const canRespondRef = useRef(false);
+  const myUserId = useRef(null);
+  const respMarkers = useRef(new Map()); // userId -> { marker, info }
+  const respPollTimer = useRef(null);
+  useEffect(() => {
+    fetch("/api/mainapp/track/perms")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { const cr = !!d?.canRespond; setCanRespond(cr); canRespondRef.current = cr; myUserId.current = d?.userId ?? null; })
+      .catch(() => {})
+      .finally(() => setPermsReady(true));
+  }, []);
+  // Only a user allowed to respond, arriving via "Track and respond", sees their
+  // OWN location + gets directions. Everyone else (plain Track) watches the target
+  // device only — no my-location marker, no directions.
+  const showMine = respondMode && canRespond;
 
   const [device, setDevice] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -106,8 +126,11 @@ export default function TrackDevice() {
 
   // init map
   useEffect(() => {
-    if (loading || notFound || !devPos.current) return;
+    if (loading || notFound || !devPos.current || !permsReady) return;
     let cancelled = false;
+    // Plain Track viewers never get a my-location marker; only responders do.
+    const showMineLocal = respondMode && canRespondRef.current;
+    if (!showMineLocal) myPos.current = null;
     (async () => {
       try {
         const cfg = await fetchMapsConfig();
@@ -128,12 +151,14 @@ export default function TrackDevice() {
         // custom controls alongside Google's (my-location + blue guidance speaker).
         // Styled inline (Google-control look) because they're DOM nodes outside React.
         const CTRL = "width:40px;height:40px;border-radius:2px;background:#fff;border:0;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer;display:flex;align-items:center;justify-content:center;margin:10px 10px 0 0;font-size:20px;";
-        const myLocBtn = document.createElement("button");
-        myLocBtn.type = "button"; myLocBtn.title = "My location";
-        myLocBtn.style.cssText = CTRL + "color:#5f6368;";
-        myLocBtn.innerHTML = '<i class="ti ti-current-location"></i>';
-        myLocBtn.onclick = () => { if (myPos.current) map.panTo(myPos.current); };
-        map.controls[maps.ControlPosition.RIGHT_CENTER].push(myLocBtn);
+        if (showMineLocal) {
+          const myLocBtn = document.createElement("button");
+          myLocBtn.type = "button"; myLocBtn.title = "My location";
+          myLocBtn.style.cssText = CTRL + "color:#5f6368;";
+          myLocBtn.innerHTML = '<i class="ti ti-current-location"></i>';
+          myLocBtn.onclick = () => { if (myPos.current) map.panTo(myPos.current); };
+          map.controls[maps.ControlPosition.RIGHT_CENTER].push(myLocBtn);
+        }
 
         const gBtn = document.createElement("button");
         gBtn.type = "button"; gBtn.title = "Voice guidance";
@@ -165,23 +190,27 @@ export default function TrackDevice() {
         });
         devMarker.current = new maps.Marker({ map, position: devPos.current, icon: targetDeviceIcon(maps, devHeading.current), zIndex: 6, optimized: false });
         devMarker.current.addListener("click", () => setPopOpen((v) => !v));
-        myMarker.current = new maps.Marker({ map, position: myPos.current, icon: myLocationIcon(maps, 0), zIndex: 5, optimized: false });
-
-        if (maps.DirectionsService) {
-          dirService.current = new maps.DirectionsService();
-          dirRenderer.current = new maps.DirectionsRenderer({ map, suppressMarkers: true, preserveViewport: true, polylineOptions: { strokeColor: BLUE, strokeWeight: 6, strokeOpacity: 0.9 } });
+        if (showMineLocal) {
+          myMarker.current = new maps.Marker({ map, position: myPos.current, icon: myLocationIcon(maps, 0), zIndex: 5, optimized: false });
+          if (maps.DirectionsService) {
+            dirService.current = new maps.DirectionsService();
+            dirRenderer.current = new maps.DirectionsRenderer({ map, suppressMarkers: true, preserveViewport: true, polylineOptions: { strokeColor: BLUE, strokeWeight: 6, strokeOpacity: 0.9 } });
+          }
         }
 
         drawWaves();
         fitBoth();
         refreshDistance();
         setTimeout(repositionPopup, 60);
-        startGeolocation();
+        if (showMineLocal) startGeolocation();
+        // Every viewer (including plain-Track NOC) watches the responders.
+        pollResponders();
+        respPollTimer.current = setInterval(pollResponders, 5000);
       } catch (err) { setMapErr(err.message || "Map failed to load."); }
     })();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; if (respPollTimer.current) clearInterval(respPollTimer.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, notFound]);
+  }, [loading, notFound, permsReady]);
 
   // dynamic target: the device drifts every 4s (replace with live telemetry polling)
   useEffect(() => {
@@ -207,6 +236,74 @@ export default function TrackDevice() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, notFound]);
 
+  // Broadcast my position so other Track viewers can see me (responders only).
+  function broadcastPosition(pos) {
+    if (!deviceId || !pos) return;
+    fetch("/api/mainapp/track/position", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ device: deviceId, lat: pos.lat, lng: pos.lng }),
+    }).catch(() => {});
+  }
+
+  // Distinct colours for responders (all different from the red target + blue me).
+  const RESP_COLORS = ["#059669", "#EA580C", "#7C3AED", "#0891B2", "#DB2777", "#CA8A04"];
+
+  // Every Track viewer polls the active responders for this device and draws a
+  // navigation-arrow marker + a name/team tag for each (excluding themselves).
+  // Markers PERSIST — once a responder appears, closing the tag or their going
+  // idle does NOT remove the icon; it stays at its last known position.
+  async function pollResponders() {
+    const maps = mapsApi.current, map = gmap.current;
+    if (!maps || !map || !deviceId) return;
+    let list = [];
+    try {
+      const r = await fetch(`/api/mainapp/track/responders?device=${encodeURIComponent(deviceId)}`, { cache: "no-store" });
+      if (r.ok) list = (await r.json()).responders || [];
+    } catch { return; }
+    for (const rp of list) {
+      if (myUserId.current != null && rp.userId === myUserId.current) continue; // not myself
+      if (rp.lat == null || rp.lng == null) continue;
+      const pos = { lat: Number(rp.lat), lng: Number(rp.lng) };
+      let ent = respMarkers.current.get(rp.userId);
+      if (!ent) {
+        const color = RESP_COLORS[respMarkers.current.size % RESP_COLORS.length];
+        const marker = new maps.Marker({ map, position: pos, icon: responderNavIcon(maps, 0, color), zIndex: 7, optimized: false });
+        const info = new maps.InfoWindow({ content: labelHtml(rp.label, color), disableAutoPan: true });
+        info.open({ map, anchor: marker });
+        ent = { marker, info, label: rp.label, color, prev: null, data: rp };
+        // Clicking the responder icon pops their details (works any time, not just
+        // on fresh load).
+        marker.addListener("click", () => { ent.info.setContent(detailsHtml(ent.data, ent.color)); ent.info.open({ map, anchor: ent.marker }); });
+        respMarkers.current.set(rp.userId, ent);
+      } else {
+        const heading = ent.prev ? bearing(ent.prev, pos) : 0;
+        ent.marker.setPosition(pos);
+        ent.marker.setIcon(responderNavIcon(maps, heading, ent.color));
+        ent.data = rp;
+        if (ent.label !== rp.label) { ent.info.setContent(labelHtml(rp.label, ent.color)); ent.label = rp.label; }
+      }
+      ent.prev = pos;
+    }
+    drawWaves(); // pulse waves under the responder icons too
+    // NOTE: intentionally no removal of stale responders — the icon persists.
+  }
+  function labelHtml(text, color) {
+    return `<div style="font-weight:700;font-size:12px;color:${color || "#7A3E0A"};white-space:nowrap"><i class="ti ti-run"></i> ${String(text || "Responder").replace(/</g, "&lt;")}</div>`;
+  }
+  function detailsHtml(d, color) {
+    if (!d) return labelHtml("Responder", color);
+    const esc = (s) => String(s == null ? "" : s).replace(/</g, "&lt;");
+    let ago = "—";
+    try { const s = Math.max(0, Math.round((Date.now() - new Date(d.updatedAt).getTime()) / 1000)); ago = s < 60 ? `${s}s ago` : `${Math.round(s / 60)}m ago`; } catch {}
+    const coords = d.lat != null && d.lng != null ? `${Number(d.lat).toFixed(5)}, ${Number(d.lng).toFixed(5)}` : "—";
+    return `<div style="min-width:170px;font-size:12.5px;color:#0F274A">
+      <div style="font-weight:800;color:${color || "#0F274A"};display:flex;align-items:center;gap:6px"><i class="ti ti-run"></i> ${esc(d.name || "Responder")}</div>
+      <div style="margin-top:4px;color:#64748B">Team: <b style="color:#0F274A">${esc(d.team || "— (no team)")}</b></div>
+      <div style="color:#64748B">Position: ${coords}</div>
+      <div style="color:#94A3B8;font-size:11.5px;margin-top:3px">Updated ${ago}</div>
+    </div>`;
+  }
+
   function startGeolocation() {
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
     navigator.geolocation.watchPosition(
@@ -218,6 +315,7 @@ export default function TrackDevice() {
           myMarker.current.setPosition(np);
           if (prev) myMarker.current.setIcon(myLocationIcon(mapsApi.current, p.coords.heading ?? bearing(prev, np)));
         }
+        broadcastPosition(np);
         drawWaves(); refreshDistance(); maybeRoute();
       },
       () => { /* denied — keep the fallback origin */ },
@@ -238,11 +336,17 @@ export default function TrackDevice() {
     const pts = [];
     if (devPos.current) pts.push({ ...devPos.current, color: TARGET }); // target — live transmitting
     if (myPos.current) pts.push({ ...myPos.current, color: BLUE });    // my location
+    // responders pulse too, each in its own colour
+    for (const ent of respMarkers.current.values()) {
+      if (ent.prev) pts.push({ ...ent.prev, color: ent.color });
+    }
     waveRef.current.setPoints(pts);
   }
   function fitBoth() {
     const maps = mapsApi.current, map = gmap.current;
-    if (!maps || !map || !devPos.current || !myPos.current) return;
+    if (!maps || !map || !devPos.current) return;
+    // No my-location (plain Track viewer) — just center on the target device.
+    if (!myPos.current) { map.setCenter(devPos.current); map.setZoom(15); return; }
     const b = new maps.LatLngBounds(); b.extend(devPos.current); b.extend(myPos.current);
     map.fitBounds(b, 90);
   }
@@ -368,7 +472,9 @@ export default function TrackDevice() {
               <div className={styles.popRow}><span className={styles.popK}>Battery</span><span className={styles.popV} style={{ color: "#059669" }}>{battery}</span></div>
               <div className={styles.popRow}><span className={styles.popK}>Updated</span><span className={styles.popV}>{updatedSecs}s ago</span></div>
               <div className={styles.popBtns}>
-                <button className={styles.popBtn} onClick={() => flash("Device detail — coming soon")}>View device</button>
+                {alarmId
+                  ? <button className={`${styles.popBtn} ${styles.popBtnPrimary}`} onClick={() => router.push(`/mainapp/alarms/${encodeURIComponent(alarmId)}`)}><i className="ti ti-clipboard-list" style={{ fontSize: 15 }} /> View alarm details</button>
+                  : <button className={styles.popBtn} onClick={() => flash("Device detail — coming soon")}>View device</button>}
                 <button className={styles.popBtn} onClick={() => flash("Alerts muted for this device")}>Mute alerts</button>
               </div>
             </div>
@@ -389,17 +495,25 @@ export default function TrackDevice() {
       {/* bottom bar */}
       {!mapErr && device ? (
         <div className={styles.bar}>
-          <div className={styles.stat}><div className={styles.statK}>DISTANCE</div><div className={styles.statV}>{navOn ? distText : `${awayKm} km`}</div></div>
-          <div className={styles.sep} />
-          <div className={styles.stat}><div className={styles.statK}>EST. DRIVE</div><div className={styles.statV}>{navOn ? etaText : `~${Math.round(awayKm * 1.8)} min`}</div></div>
-          <div className={styles.sep} />
+          {showMine ? (
+            <>
+              <div className={styles.stat}><div className={styles.statK}>DISTANCE</div><div className={styles.statV}>{navOn ? distText : `${awayKm} km`}</div></div>
+              <div className={styles.sep} />
+              <div className={styles.stat}><div className={styles.statK}>EST. DRIVE</div><div className={styles.statV}>{navOn ? etaText : `~${Math.round(awayKm * 1.8)} min`}</div></div>
+              <div className={styles.sep} />
+            </>
+          ) : null}
           <div className={styles.stat}><div className={styles.statK}>DEVICE SPEED</div><div className={styles.statV}>{speed.current} km/h</div></div>
           {navOn ? <span className={styles.apiTag}><span className={styles.dot} />Live route via Google Directions API</span> : null}
           <span className={styles.spacer} />
-          <button className={styles.share} onClick={shareLoc} aria-label="Share live location"><i className="ti ti-share-2" /></button>
-          <button className={`${styles.directions} ${navOn ? styles.directionsStop : ""}`} onClick={toggleNav}>
-            <i className={navOn ? "ti ti-x" : "ti ti-directions"} style={{ fontSize: 18 }} />{navOn ? "Stop navigation" : "Get directions"}
-          </button>
+          {showMine ? <button className={styles.share} onClick={shareLoc} aria-label="Share live location"><i className="ti ti-share-2" /></button> : null}
+          {showMine ? (
+            <button className={`${styles.directions} ${navOn ? styles.directionsStop : ""}`} onClick={toggleNav}>
+              <i className={navOn ? "ti ti-x" : "ti ti-directions"} style={{ fontSize: 18 }} />{navOn ? "Stop navigation" : "Get directions"}
+            </button>
+          ) : (
+            <span className={styles.watching}><span className={styles.dot} />Watching response mission</span>
+          )}
         </div>
       ) : null}
 
