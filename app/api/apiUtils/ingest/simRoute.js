@@ -1,74 +1,84 @@
 // app/api/apiUtils/ingest/simRoute.js
-// Build a moving GL-28 route that walks the FULL critical-alarm procedure in order,
-// paced ~2 minutes apart, so Playback + the lifecycle log tell a clean story:
-//   1) Disturbance  — near the site (motion byte 00100008)
-//   2) Geofence     — the vehicle drives out past the fence
-//   3) Critical Motion — a 92 km/h spike while off-site
-// then it heads back. Timestamps are spread across the window so the telemetry
-// timeline reconstructs exactly. Pure string building — no I/O.
+// Build a moving GL-28 route that plays out a real vandalism scenario, in order,
+// ~2 minutes apart, over the real TCP pipeline:
+//   1) ON-SITE DISTURBANCE — vandals reach the asset and tamper with it (cutting
+//      cables, pulling it from the cabinet). The disturbance bit 00100008 is on
+//      every packet while the asset sits DEEP INSIDE the fence (~6 m). No geofence,
+//      no motion. The engine debounces the bit and raises ONE Disturbance on the
+//      4th packet.
+//   2) GEOFENCE EXIT — they carry it out; it crosses the 30 m fence.
+//   3) CRITICAL MOTION — at the road they put it on a motorbike and speed off; from
+//      here the tracker streams every 3 s for `fastMinutes`.
+// Alarm times come from each packet's own timestamp, so the three land ~2 min apart
+// and never overlap. Pure string building — no I/O.
 import { buildUD } from "./simPackets.js";
 
-export function buildCriticalRoute({ imei, lat, lng, start, paceSec = 120, stepSec = 20 } = {}) {
+export function buildCriticalRoute({
+  imei, lat, lng, start,
+  paceSec = 120,          // spacing between the three alarms
+  coarseStepSec = 20,     // reporting cadence before the motorbike
+  fastStepSec = 3,        // high-frequency cadence during Critical Motion
+  fastMinutes = 5,        // how long the 3 s streaming lasts
+  disturbStreak = 4,      // engine raises Disturbance on this packet (keep in sync)
+} = {}) {
   const baseLat = Number(lat), baseLng = Number(lng);
   const startMs = start instanceof Date ? start.getTime() : Number(start) || 0;
   const pace = Math.max(30, Number(paceSec) || 120);
-  const step = Math.max(5, Number(stepSec) || 20);
+  const cStep = Math.max(5, Number(coarseStepSec) || 20);
+  const fStep = Math.max(1, Number(fastStepSec) || 3);
+  const fastSec = Math.max(30, Math.round((Number(fastMinutes) || 5) * 60));
 
-  const tD = pace;          // disturbance   (near site)
-  const tG = 2 * pace;      // geofence exit (crossing the fence)
-  const tC = 3 * pace;      // critical motion (far out, 92 km/h)
-  const total = 5 * pace;   // + response/return tail
-  const N = Math.floor(total / step) + 1;
-
-  // distance from the site over time (km) — inside the fence, then out past it.
-  function kmAt(t) {
-    if (t < tG - 20) return 0.03;                                   // near site
-    if (t < tG + 20) { const f = (t - (tG - 20)) / 40; return 0.05 + f * 3.0; }   // cross fence
-    if (t < tC)      { const f = (t - (tG + 20)) / (tC - (tG + 20)); return 3.05 + f * 1.6; } // drive further out
-    if (t < total)   { const f = (t - tC) / (total - tC); return Math.max(0.3, 4.65 - f * 4.3); } // return home
-    return 0.3;
-  }
-  // NE bearing; convert km → degrees (≈111 km/deg), split diagonally so the
-  // straight-line distance from the site is ~kmAt(t).
+  // The Disturbance alarm lands on the Nth disturbing packet ≈ (N-1)*cStep in.
+  const tDisturb = Math.max(0, (Math.max(1, disturbStreak) - 1) * cStep);
+  const tG = tDisturb + pace;   // geofence exit, 2 min after the disturbance
+  const tC = tG + pace;         // motorbike / critical motion, 2 min after geofence
+  const totalSec = tC + fastSec;
   const cosLat = Math.max(0.2, Math.cos((baseLat * Math.PI) / 180));
-  function posAt(t) {
-    const d = kmAt(t) / 111;                 // degrees of great-circle offset
-    const c = d * 0.70710678;
-    return { lat: baseLat + c, lng: baseLng + c / cosLat };
+
+  // distance from the site (METRES) over time.
+  function metersAt(t) {
+    if (t < tG) return 6 + 3 * Math.abs(Math.sin(t / 7));           // ~6–9 m: deep inside the 30 m fence
+    if (t < tC) { const f = (t - tG) / (tC - tG); return 45 + f * (350 - 45); }   // walk out 45 → 350 m
+    const f = (t - tC) / (totalSec - tC); return 350 + f * (5200 - 350);          // motorbike 350 m → 5.2 km
   }
-  function speedAt(t, i) {
-    if (i === Math.round(tC / step)) return 92;               // critical motion spike
-    if (t < tG - 20) return 6 + (i % 3) * 3;                  // idling near site
-    if (t < tC) return 48 + (i % 5) * 4;                      // driving out
-    return 38 + (i % 4) * 3;                                  // returning
+  function speedAt(t) {
+    if (t < tG) return 1;                                           // stationary tampering (< critical speed)
+    if (t < tC) return 3;                                           // walking (< critical speed → no critical yet)
+    return 66 + Math.round(24 * Math.abs(Math.sin(t / 6)));         // motorbike 66–90 km/h
+  }
+  // NE bearing; convert metres → degrees (≈111 km/deg), split diagonally.
+  function posAt(t) {
+    const deg = metersAt(t) / 111000, c = deg * 0.70710678;
+    const w = t >= tC ? 0.00025 * Math.sin(t / 5) : 0;             // small wobble only while fleeing
+    return { lat: baseLat + c + w, lng: baseLng + (c - w) / cosLat };
   }
 
-  const critIdx = Math.round(tC / step);
-  const distIdx = Math.round(tD / step);
+  // timeline: coarse cadence up to the motorbike, then 3 s cadence to the end.
+  const times = [];
+  for (let t = 0; t <= tC; t += cStep) times.push(t);
+  for (let t = tC + fStep; t <= totalSec; t += fStep) times.push(t);
 
   const packets = [];
   const plan = [];
-  for (let i = 0; i < N; i++) {
-    const t = i * step;
+  times.forEach((t, i) => {
     const p = posAt(t);
-    let motionByte = "00000008";
+    const motionByte = "00100008";                                 // disturbance bit present throughout
     let label = null;
-    if (i === distIdx) { motionByte = "00100008"; label = "Disturbance"; }
-    if (i === critIdx) { label = "Critical motion"; }
-    const r = Math.min(1, kmAt(t) / 4.65);
-    const ts = new Date(startMs + i * step * 1000);
+    if (i === disturbStreak - 1) label = "Disturbance (raised here)";
+    else if (t === tG) label = "Geofence exit";
+    else if (Math.abs(t - tC) < 1) label = "Critical motion (motorbike)";
+    const ts = new Date(startMs + t * 1000);
     packets.push(buildUD({
-      imei, lat: p.lat, lng: p.lng, speed: speedAt(t, i), motionByte,
-      battery: Math.max(60, 92 - Math.round((t / total) * 12)), date: ts,
-      mems: { valid: true, x: 20 + Math.round(30 * r), y: -12, z: 1010, roll: 0.4, pitch: 0.9, temp: 30 },
+      imei, lat: p.lat, lng: p.lng, speed: speedAt(t), motionByte,
+      battery: Math.max(55, 92 - Math.round((t / totalSec) * 16)), date: ts,
+      mems: { valid: true, x: 20, y: -12, z: 1010, roll: 0.4, pitch: 0.9, temp: 30 },
     }));
-    plan.push({ i, t, lat: Number(p.lat.toFixed(6)), lng: Number(p.lng.toFixed(6)), speed: speedAt(t, i), label });
-  }
+    plan.push({ i, t, lat: Number(p.lat.toFixed(6)), lng: Number(p.lng.toFixed(6)), speed: speedAt(t), meters: Math.round(metersAt(t)), label });
+  });
 
   return {
-    packets, plan, count: N,
-    // seconds since route start for each procedure step (used to pace created_at)
-    eventOffsets: { DISTURBANCE: tD, GEOFENCE_EXIT: tG, CRITICAL_MOTION: tC },
+    packets, plan, count: times.length, totalSec,
+    tDisturb, tGeofence: tG, tCritical: tC,
     order: ["DISTURBANCE", "GEOFENCE_EXIT", "CRITICAL_MOTION"],
   };
 }

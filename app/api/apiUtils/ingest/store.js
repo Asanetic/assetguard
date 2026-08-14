@@ -8,9 +8,10 @@
 import { findDeviceByImei, touchDeviceLastSeen } from "../dataControl/devices.js";
 import { insertDeviceLog, insertUnknownLog } from "../dataControl/deviceLogs.js";
 import { insertTelemetry, updateDeviceState, getSiteLatLng } from "../dataControl/telemetry.js";
-import { insertLiveAlarm, clearOpenAlarm } from "../dataControl/alarms.js";
+import { insertLiveAlarm, clearOpenAlarm, disturbanceDecision } from "../dataControl/alarms.js";
 import { toTelemetry } from "./parse.js";
-import { evaluate, ALARM_TYPES } from "./alarmEngine.js";
+import { evaluate, resolveConfig, ALARM_TYPES } from "./alarmEngine.js";
+import { notifyAlarmRaised } from "../notify/alarmNotify.js";
 import { geolocate, reverseGeocodeRoad } from "./geolocate.js";
 import { isTechOnSite } from "./techOnSite.js";
 import { ensureOfflineSweep } from "./offlineSweep.js";
@@ -21,6 +22,33 @@ function motionState(key) {
   let s = globalThis.__agMotion.get(key);
   if (!s) { s = { breached: false, dyn: [], lastSteps: null }; globalThis.__agMotion.set(key, s); }
   return s;
+}
+
+// Reset a device's per-packet engine state (breach flag, MEMS window, disturbance
+// streak) — used by the simulator so each run starts clean and the 4th-packet
+// disturbance debounce restarts.
+export function resetMotion(key) {
+  try {
+    const m = globalThis.__agMotion; if (!m) return;
+    m.delete(key); m.delete(String(key)); m.delete(Number(key));
+  } catch {}
+}
+
+// Clear ALL in-memory engine counters — used by the simulator's "reset" so a fresh
+// scenario ALWAYS starts the disturbance debounce from zero (raises on the Nth,
+// never earlier). Counters simply rebuild from incoming packets.
+export function resetAllMotion() { try { globalThis.__agMotion?.clear(); } catch {} }
+
+// Incident cutoff: alarms before this instant (per device key) are NOT grouped into
+// new episodes — so a simulator restart forces the next Disturbance to open a fresh
+// incident, WITHOUT the system closing any alarms. ms = epoch millis.
+export function setIncidentCutoff(key, ms) {
+  if (!globalThis.__agIncidentCut) globalThis.__agIncidentCut = new Map();
+  globalThis.__agIncidentCut.set(String(key), ms);
+}
+function getIncidentCutoff(key) {
+  const m = globalThis.__agIncidentCut; if (!m) return null;
+  return m.get(String(key)) ?? null;
 }
 
 export async function resolveAndStore(rec, ip, port) {
@@ -144,19 +172,83 @@ export async function resolveAndStore(rec, ip, port) {
     try { await updateDeviceState(device.id, t); } catch { try { await touchDeviceLastSeen(device.id); } catch {} }
     // The device just reported, so it isn't offline — clear any open offline alarm.
     try { await clearOpenAlarm(device.device_id || device.imei, ALARM_TYPES.DEVICE_OFFLINE); } catch {}
+
+    const deviceIdText = device.device_id || device.imei;
+    const at = t.deviceTime || rec.deviceTime || null;
+    const disturbThreshold = resolveConfig(device).disturb_streak; // default 4
+
+    // Two DIFFERENT day-scoped anchors — they must not be conflated:
+    //   • dayStartIso — start of the report's EAT day. Used as the INCIDENT-TYING
+    //     window so Disturbance → Geofence → Critical on the same device/day always
+    //     share one incident (a new day is a new incident). This is NOT moved by a
+    //     simulator reset, so simulating the geofence/critical AFTER the disturbance
+    //     (even with a reset in between) still ties them to that day's disturbance.
+    //   • countSince — same day start, but never earlier than a simulator-restart
+    //     cutoff. Used ONLY as the disturbance COUNT lower bound, so each sim run
+    //     restarts the 1-2-3-4 count (raise on the 4th, not the 1st).
+    const atMs = Date.parse(at || "") || Date.now();
+    const eat = new Date(atMs + 3 * 3600 * 1000);                  // shift to EAT wall clock
+    const eatMidnightMs = Date.UTC(eat.getUTCFullYear(), eat.getUTCMonth(), eat.getUTCDate()) - 3 * 3600 * 1000;
+    const simCut = getIncidentCutoff(device.id) || 0;
+    const dayStartIso = new Date(eatMidnightMs).toISOString();
+    const countSince = new Date(Math.max(eatMidnightMs, simCut)).toISOString();
+
     for (const a of alarms) {
+      const isDisturb = a.type === ALARM_TYPES.DISTURBANCE || a.type === ALARM_TYPES.DISTURBANCE_TECH;
+
+      // Disturbance day-rule: skip the day's 1st-3rd, log the alarm on the 4th, and
+      // for the 5th+ (or if one is already open today) log the event only. A new EAT
+      // day raises a fresh alarm regardless of an un-closed one from a previous day.
+      if (isDisturb) {
+        try {
+          const dec = await disturbanceDecision(deviceIdText, a.type, at, disturbThreshold, countSince);
+          if (dec.action === "raise") {
+            const row = await insertLiveAlarm({
+              alarmType: a.type, value: a.value, deviceIdText,
+              site: device.site || null, serial: device.imei || rec.imei,
+              lat: site?.lat ?? a.lat, lng: site?.lng ?? a.lng,
+              at, incidentSince: dayStartIso,
+            });
+            // Every CRITICAL alarm that is actually raised notifies the site's contacts.
+            if (row?.priority === "Critical") {
+              console.log(`[NOTIFY] firing for ${row.id} (${row.name}) site_id=${device.site_id}`);
+              try { await notifyAlarmRaised(row, { siteId: device.site_id }); }
+              catch (e) { console.error("[NOTIFY] hook error:", e?.message || e); }
+            } else if (!row) {
+              console.log(`[disturbance] raise decided but alarm was de-duped (already open) — no notification`);
+            }
+            console.log(`[disturbance] ${deviceIdText} count=${dec.count}/${dec.threshold} → RAISED ${row?.id || "(none)"}`);
+          } else {
+            // skip (1-3) or event (5+/already open today) — the telemetry row is the log.
+            console.log(`[disturbance] ${deviceIdText} count=${dec.count}/${dec.threshold} → ${dec.action}`);
+          }
+        } catch (e) { console.error("[disturbance] gate error:", e?.message || e); }
+        continue;
+      }
+
       try {
-        await insertLiveAlarm({
-          alarmType: a.type, value: a.value,
-          deviceIdText: device.device_id || device.imei,
+        const row = await insertLiveAlarm({
+          alarmType: a.type, value: a.value, deviceIdText,
           site: device.site || null, serial: device.imei || rec.imei,
           // Alarm location is the SITE location (where the alarm belongs), not the
           // device's current position. Fall back to device position only if the
           // site has no coordinates.
           lat: site?.lat ?? a.lat, lng: site?.lng ?? a.lng,
           road: a.type === ALARM_TYPES.CRITICAL_MOTION ? road : undefined,
+          // Alarm time = the packet's own timestamp, so "x min ago" is real.
+          // Tie by EAT day (not the reset cutoff) so escalations attach to the
+          // day's disturbance even when simulated as a separate step.
+          at, incidentSince: dayStartIso,
         });
-      } catch {}
+        // Every CRITICAL alarm that is actually raised notifies the site's contacts.
+        if (row?.priority === "Critical") {
+          console.log(`[NOTIFY] firing for ${row.id} (${row.name}) site_id=${device.site_id}`);
+          try { await notifyAlarmRaised(row, { siteId: device.site_id }); }
+          catch (e) { console.error("[NOTIFY] hook error:", e?.message || e); }
+        } else if (!row) {
+          console.log(`[alarm] ${a.type} not raised (already open in today's incident) — no notification`);
+        }
+      } catch (e) { console.error("[alarm] insert error:", e?.message || e); }
     }
   }
 

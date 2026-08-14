@@ -20,6 +20,11 @@ function coordsOf(a) {
   const lng = a.lng != null ? Number(a.lng) : null;
   return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
 }
+function fmtEAT(v) {
+  if (!v) return "";
+  try { return new Date(v).toLocaleString("en-GB", { timeZone: "Africa/Nairobi", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) + " EAT"; }
+  catch { return ""; }
+}
 function relTime(v) {
   if (!v) return "—";
   const t = new Date(v).getTime();
@@ -245,7 +250,7 @@ export default function AlarmsMap() {
                     <div className={styles.cardSub}>{a.device_id} — {a.site}</div>
                     <div className={styles.cardMeta}>
                       <span className={styles.sev} style={{ color: c }}><span className={styles.dot} style={{ background: c }} />{a.priority}</span>
-                      <span className={styles.time}>{relTime(a.created_at)}</span>
+                      <span className={styles.time} title={fmtEAT(a.created_at)}>{relTime(a.created_at)}</span>
                       <span className={styles.view}>View <i className="ti ti-chevron-right" /></span>
                     </div>
                   </div>
@@ -268,7 +273,7 @@ export default function AlarmsMap() {
                 </div>
                 <div className={styles.popBody}>
                   <div className={styles.popRow}><span className={styles.popLbl}>Site</span><span className={styles.popVal}>{popup.site}</span></div>
-                  <div className={styles.popRow}><span className={styles.popLbl}>Time</span><span className={styles.popVal}>{relTime(popup.created_at)}</span></div>
+                  <div className={styles.popRow}><span className={styles.popLbl}>Time</span><span className={styles.popVal} title={fmtEAT(popup.created_at)}>{relTime(popup.created_at)}</span></div>
                   <div className={styles.popRow}><span className={styles.popLbl}>Serial</span><span className={styles.popSerial}>{popup.serial}</span></div>
                   <div className={styles.popActions}>
                     {ackView(popup, viewer).canAck && <button type="button" className={styles.popAck} onClick={() => setAckId(popup.id)}>Acknowledge</button>}

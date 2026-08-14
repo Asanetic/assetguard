@@ -15,6 +15,16 @@ const PRIORITIES = ["All priorities", "Critical", "High", "Medium", "Low"];
 const STATUSES = ["All statuses", "Open", "Acknowledged", "Closed"];
 const CLOSED_GREEN = "#059669";
 
+// Absolute time in East Africa Time (Africa/Nairobi, UTC+3) — e.g. "13 Aug 2026 @ 12:00:23 pm".
+function fmtStampEAT(v) {
+  if (!v) return "—";
+  try {
+    const d = new Date(v);
+    const date = d.toLocaleDateString("en-GB", { timeZone: "Africa/Nairobi", day: "2-digit", month: "short", year: "numeric" });
+    const time = d.toLocaleTimeString("en-US", { timeZone: "Africa/Nairobi", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }).toLowerCase();
+    return `${date} @ ${time}`;
+  } catch { return "—"; }
+}
 function relTime(v) {
   if (!v) return "—";
   const t = new Date(v).getTime();
@@ -142,7 +152,10 @@ export default function AllAlarms() {
                       </td>
                       <td><span className={styles.sev} style={{ color: col }}><span className={styles.dot} style={{ background: col }} />{a.priority}</span></td>
                       <td><span className={`${styles.pill} ${pillClass(av.status)}`}>{av.status.toUpperCase()}</span></td>
-                      <td className={styles.time}>{relTime(a.created_at)}</td>
+                      <td className={styles.time}>
+                        <div className={styles.timeStamp}>{fmtStampEAT(a.created_at)}</div>
+                        <div className={styles.timeAgo}>{relTime(a.created_at)}</div>
+                      </td>
                       <td>
                         <div className={styles.acts}>
                           {av.canAck && <button type="button" className={styles.ackBtn} onClick={() => setAckId(a.id)}>Acknowledge</button>}

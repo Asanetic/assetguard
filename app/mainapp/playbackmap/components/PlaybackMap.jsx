@@ -19,6 +19,11 @@ const SPEEDS = [1, 2, 3, 4, 5];
 const TICK_MS = 200, STEP_SEC = 25; // prototype cadence: +25s of route time per 200ms at 1×
 
 function pad(n) { return (n < 10 ? "0" : "") + n; }
+function todayStr() { try { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; } catch { return ""; } }
+function nowLocalInput() { try { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; } catch { return ""; } }
+// datetime-local value ("YYYY-MM-DDTHH:MM") → ISO with EAT offset so the server
+// filters the exact wall-clock window the user picked, regardless of browser tz.
+function eatIso(v) { if (!v) return null; const s = v.length === 16 ? `${v}:00` : v; return `${s}+03:00`; }
 function fmtClock(startSec, t) { const s = startSec + t; return `${pad(Math.floor(s / 3600) % 24)}:${pad(Math.floor((s % 3600) / 60))}:${pad(Math.floor(s % 60))}`; }
 function fmtHM(startSec, t) { const s = startSec + t; return `${pad(Math.floor(s / 3600) % 24)}:${pad(Math.floor((s % 3600) / 60))}`; }
 
@@ -36,10 +41,13 @@ export default function PlaybackMap() {
   const qsDate = params.get("date");
 
   const [devices, setDevices] = useState([]);
-  const [deviceId, setDeviceId] = useState(qsDevice || "001_NairobiHeadquarters_V");
-  const [deviceQ, setDeviceQ] = useState(qsDevice || "001_NairobiHeadquarters_V");
+  const [deviceId, setDeviceId] = useState(qsDevice || "");
+  const [deviceQ, setDeviceQ] = useState(qsDevice || "");
   const [openDev, setOpenDev] = useState(false);
-  const [date, setDate] = useState(qsDate || "2026-07-07");
+  // datetime range (local browser time = EAT for KE users). Default: the chosen day
+  // (or today) 00:00 → now.
+  const [from, setFrom] = useState(qsDate ? `${qsDate}T00:00` : `${todayStr()}T00:00`);
+  const [to, setTo] = useState(qsDate ? `${qsDate}T23:59` : nowLocalInput());
   const [route, setRoute] = useState(null);
   const [incidents, setIncidents] = useState([]);
   const [exporting, setExporting] = useState(false);
@@ -70,25 +78,31 @@ export default function PlaybackMap() {
       try {
         const r = await fetch("/api/mainapp/devices", { cache: "no-store" });
         const d = r.ok ? await r.json() : { devices: [] };
-        setDevices((d.devices || []).map((x) => x.device_id).filter(Boolean));
+        const ids = (d.devices || []).map((x) => x.device_id).filter(Boolean);
+        setDevices(ids);
+        // Default to the first real device if none was chosen via the URL.
+        if (!qsDevice && !deviceId && ids.length) { setDeviceId(ids[0]); setDeviceQ(ids[0]); }
       } catch { /* keep */ }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // load route on device/date change
+  // load route on device / range change
   useEffect(() => {
+    if (!deviceId || !from || !to) { setLoading(false); return; }
     let alive = true;
     setLoading(true); setPlaying(false); setT(0); stopToastRef.current = false;
     (async () => {
       try {
-        const r = await fetch(`/api/mainapp/playback?device_id=${encodeURIComponent(deviceId)}&date=${date}`, { cache: "no-store" });
+        const qs = `device_id=${encodeURIComponent(deviceId)}&from=${encodeURIComponent(eatIso(from))}&to=${encodeURIComponent(eatIso(to))}`;
+        const r = await fetch(`/api/mainapp/playback?${qs}`, { cache: "no-store" });
         const d = r.ok ? await r.json() : { route: null, incidents: [] };
         if (alive) { setRoute(d.route || null); setIncidents(Array.isArray(d.incidents) ? d.incidents : []); }
       } catch { if (alive) { setRoute(null); setIncidents([]); } }
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
-  }, [deviceId, date]);
+  }, [deviceId, from, to]);
 
   useEffect(() => {
     function onDoc(e) { if (devWrap.current && !devWrap.current.contains(e.target)) setOpenDev(false); }
@@ -99,6 +113,9 @@ export default function PlaybackMap() {
   const points = route?.points || [];
   const totalT = points.length ? points[points.length - 1].t : 0;
   const startSec = route?.start_sec ?? 25200;
+  // labels for exports + the transport bar (the day, and the full range)
+  const fileDate = (from ? from.slice(0, 10) : todayStr());
+  const rangeLabel = (from && to) ? `${from.replace("T", " ")} → ${to.slice(11)}` : fileDate;
 
   // cumulative distance (km) at each point, for the live distance readout
   const cum = useMemo(() => {
@@ -253,7 +270,7 @@ export default function PlaybackMap() {
     let recCtl = null;
     try {
       // Ask for the screen share first (needs the click gesture), then play.
-      recCtl = await startScreenRecording({ deviceId, date });
+      recCtl = await startScreenRecording({ deviceId, date: fileDate });
       flash("Recording the map… choose “This tab” if prompted");
       await new Promise((r) => setTimeout(r, 600)); // let the share settle
       // Drive the playback slowly ourselves (the 1× loop is too fast to record):
@@ -273,14 +290,14 @@ export default function PlaybackMap() {
       recCtl.stop();
       const { blob, name } = await recCtl.done;
       const videoUrl = URL.createObjectURL(blob);
-      const csvUrl = URL.createObjectURL(new Blob([buildRouteCsv(route, incidents, deviceId, date)], { type: "text/csv;charset=utf-8;" }));
+      const csvUrl = URL.createObjectURL(new Blob([buildRouteCsv(route, incidents, deviceId, fileDate)], { type: "text/csv;charset=utf-8;" }));
       addExport({
-        device: deviceId, date,
+        device: deviceId, date: fileDate,
         durationMin: route.summary?.duration_min ?? Math.round(totalT / 60),
         distanceKm: route.summary?.total_km ?? null,
         incidents: incidents.length,
         video: { url: videoUrl, name },
-        csv: { url: csvUrl, name: `${deviceId}_${date}_route.csv` },
+        csv: { url: csvUrl, name: `${deviceId}_${fileDate}_route.csv` },
       });
       flash("Export ready — opening Exports…");
       setTimeout(() => router.push("/mainapp/playback/exports"), 800);
@@ -314,8 +331,15 @@ export default function PlaybackMap() {
             )}
           </div>
 
-          <div className={styles.lab}>DATE</div>
-          <input type="date" className={styles.in} value={date} onChange={(e) => setDate(e.target.value)} />
+          <div className={styles.lab}>FROM</div>
+          <input type="datetime-local" className={styles.in} value={from} max={to} onChange={(e) => setFrom(e.target.value)} />
+          <div className={styles.lab} style={{ marginTop: 8 }}>TO</div>
+          <input type="datetime-local" className={styles.in} value={to} min={from} onChange={(e) => setTo(e.target.value)} />
+          <div className={styles.quick}>
+            <button type="button" onClick={() => { setFrom(`${todayStr()}T00:00`); setTo(nowLocalInput()); }}>Today</button>
+            <button type="button" onClick={() => { const d = new Date(Date.now() - 864e5); const p = (n) => (n < 10 ? "0" : "") + n; const ds = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; setFrom(`${ds}T00:00`); setTo(`${ds}T23:59`); }}>Yesterday</button>
+            <button type="button" onClick={() => { const now = new Date(); const p = (n) => (n < 10 ? "0" : "") + n; const f = new Date(now.getTime() - 3600e3); setFrom(`${f.getFullYear()}-${p(f.getMonth() + 1)}-${p(f.getDate())}T${p(f.getHours())}:${p(f.getMinutes())}`); setTo(nowLocalInput()); }}>Last hour</button>
+          </div>
 
           {route ? (
             <>
@@ -361,7 +385,7 @@ export default function PlaybackMap() {
               <a className={styles.exportsLink} href="/mainapp/playback/exports"><i className="ti ti-files" style={{ fontSize: 14 }} /> View exports</a>
             </>
           ) : !loading ? (
-            <div style={{ marginTop: 18, fontSize: 12.5, color: "#94a3b8" }}>No route recorded for this device on this date.</div>
+            <div style={{ marginTop: 18, fontSize: 12.5, color: "#94a3b8" }}>No route recorded for this device in this time range.</div>
           ) : null}
         </div>
 
@@ -391,7 +415,7 @@ export default function PlaybackMap() {
               <div className={styles.barTop}>
                 <div style={{ display: "flex", gap: 8 }}>
                   <span className={styles.dropbox}>{deviceId}</span>
-                  <span className={styles.dropbox}>{new Date(date + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                  <span className={styles.dropbox}>{rangeLabel}</span>
                 </div>
                 <div className={styles.readout}>
                   <span className={styles.read}><i className="ti ti-clock" style={{ color: "#94a3b8" }} />{fmtClock(startSec, t)}</span>

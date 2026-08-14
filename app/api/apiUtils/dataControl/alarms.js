@@ -29,10 +29,10 @@ export async function listAlarms({ priority, q, status, includeClosed = false, r
     where.push(`(lower(name) LIKE $${i} OR lower(device_id) LIKE $${i} OR lower(site) LIKE $${i} OR lower(serial) LIKE $${i} OR lower(id) LIKE $${i})`);
   }
   const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
-  // Open first, then Acknowledged, then Closed; newest within each.
+  // Latest alarm on top (newest first), regardless of status.
   const { rows } = await query(
     `SELECT * FROM alarms ${clause}
-      ORDER BY (status = 'Open') DESC, (status = 'Acknowledged') DESC, created_at DESC`,
+      ORDER BY created_at DESC, id DESC`,
     params
   );
   return rows;
@@ -77,60 +77,156 @@ const LIVE_META = {
   NOTIFICATION_FAILED:  { priority: "Medium",   name: () => `Notification Failed To Send` },
 };
 
+// Incident (episode) grouping. One Disturbance → one Geofence → one Critical share
+// an incident_id. A new Disturbance opens a NEW incident unless the SAME episode is
+// still ongoing (an OPEN disturbance for the device within INCIDENT_TTL). Once the
+// episode is closed, older than the TTL, or the simulator was restarted (incidentSince
+// cutoff), the next Disturbance starts a fresh incident.
+const INCIDENT_TTL_MS = 6 * 3600 * 1000;   // 6 hours
+const EPISODE_TYPES = new Set(["DISTURBANCE", "GEOFENCE_EXIT", "CRITICAL_MOTION"]);
+
 /**
- * Insert one live alarm into the shared `alarms` table (status 'Open', so it
- * counts toward the nav badge + speaker). De-duped: while an alarm of the same
- * (device, type) is still Open/Acknowledged, a repeat is a no-op — so a condition
- * that persists every second doesn't stack rows. Returns the new row or null.
+ * Insert one live alarm, grouped into an incident. Returns the new row, or null
+ * when it's a repeat within the same episode (deduped).
  */
-export async function insertLiveAlarm({ alarmType, value, deviceIdText, site, serial, lat, lng, road }) {
+export async function insertLiveAlarm({ alarmType, value, deviceIdText, site, serial, lat, lng, road, at, incidentSince }) {
   const meta = LIVE_META[alarmType] || { priority: "Medium", name: () => alarmType };
   const name = meta.name(value, { road });
-  // Alarm location is ALWAYS the SITE location, for every alarm category. When a
-  // caller doesn't supply coordinates (e.g. the Device Offline sweep, which has no
-  // packet position), resolve the device's site coordinates so the alarm still
-  // pins on the map instead of vanishing.
+  // Alarm location is ALWAYS the SITE location. When a caller doesn't supply coords
+  // (e.g. the Device Offline sweep) resolve the device's site so it still pins.
   let plat = lat ?? null, plng = lng ?? null;
   if ((plat == null || plng == null) && deviceIdText) {
     try {
       const { rows: sc } = await query(
         `SELECT s.lat, s.lng FROM devices d LEFT JOIN sites s ON s.id = d.site_id
-          WHERE d.device_id = $1 OR d.imei = $1 LIMIT 1`,
-        [deviceIdText]
-      );
+          WHERE d.device_id = $1 OR d.imei = $1 LIMIT 1`, [deviceIdText]);
       if (sc[0]) { if (plat == null) plat = sc[0].lat; if (plng == null) plng = sc[0].lng; }
     } catch (e) { console.error("[insertLiveAlarm] site coord lookup:", e?.message || e); }
   }
   lat = plat; lng = plng;
-  // Try to store the road (Critical Motion) too; fall back to the core insert if
-  // the alarms.road column hasn't been migrated yet.
+
+  // ---- resolve the incident + per-episode de-dupe --------------------------
+  const refMs = at ? Date.parse(at) : Date.now();
+  let winStartMs = (Number.isFinite(refMs) ? refMs : Date.now()) - INCIDENT_TTL_MS;
+  if (incidentSince) { const s = Date.parse(incidentSince); if (Number.isFinite(s)) winStartMs = Math.max(winStartMs, s); }
+  const winStart = new Date(winStartMs).toISOString();
+  const refIso = new Date(Number.isFinite(refMs) ? refMs : Date.now()).toISOString();
+
+  let incidentId = null;   // attach to this; null => generate a new incident
+  try {
+    // the device's active episode = most recent OPEN, incident-tagged alarm in the
+    // window and no newer than this packet (can't join an episode from the future).
+    const act = await query(
+      `SELECT incident_id FROM alarms
+        WHERE device_id = $1 AND incident_id IS NOT NULL AND status <> 'Closed'
+          AND created_at > $2::timestamptz AND created_at <= $3::timestamptz
+        ORDER BY created_at DESC LIMIT 1`, [deviceIdText, winStart, refIso]);
+    const activeInc = act.rows[0]?.incident_id || null;
+
+    if (EPISODE_TYPES.has(alarmType)) {
+      if (activeInc) {
+        const has = await query(
+          `SELECT 1 FROM alarms WHERE incident_id = $1 AND alarm_type = $2 AND status <> 'Closed' LIMIT 1`,
+          [activeInc, alarmType]);
+        if (has.rows[0]) return null;          // this episode already has this alarm type
+        incidentId = activeInc;                 // attach (e.g. geofence/critical joins the disturbance)
+      }
+      // no active episode → incidentId stays null → a fresh incident is generated
+    } else {
+      // non-episode types (battery/temp/offline/…): one open per device+type,
+      // tagged onto the active episode if there is one.
+      const has = await query(
+        `SELECT 1 FROM alarms WHERE device_id = $1 AND alarm_type = $2 AND status <> 'Closed' LIMIT 1`,
+        [deviceIdText, alarmType]);
+      if (has.rows[0]) return null;
+      incidentId = activeInc;
+    }
+  } catch (e) { console.error("[insertLiveAlarm] incident resolve:", e?.message || e); }
+
+  // ---- insert (COALESCE generates a new incident id when none was attached) --
+  const NEWINC = "'INC-' || to_char(now(), 'YYYY') || '-' || nextval('alarms_incident_seq')";
   try {
     const { rows } = await query(
-      `INSERT INTO alarms (id, name, priority, device_id, site, serial, status, lat, lng, alarm_type, source, road)
+      `INSERT INTO alarms (id, name, priority, device_id, site, serial, status, lat, lng, alarm_type, source, road, created_at, incident_id)
          SELECT 'ALM-' || to_char(now(), 'YYYY') || '-' || nextval('alarms_live_seq'),
-                $1, $2, $3, $4, $5, 'Open', $6, $7, $8, 'device', $9
-          WHERE NOT EXISTS (
-            SELECT 1 FROM alarms WHERE device_id = $3 AND alarm_type = $8 AND status <> 'Closed'
-          )
+                $1, $2, $3, $4, $5, 'Open', $6, $7, $8, 'device', $9, COALESCE($10::timestamptz, now()),
+                COALESCE($11::text, ${NEWINC})
        RETURNING *`,
       [name, meta.priority, deviceIdText || null, site || null, serial || null,
-       lat ?? null, lng ?? null, alarmType, road ?? null]
+       lat ?? null, lng ?? null, alarmType, road ?? null, at ?? null, incidentId]
     );
-    return rows[0] || null; // null = de-duped (already open)
+    return rows[0] || null;
   } catch {
     const { rows } = await query(
-      `INSERT INTO alarms (id, name, priority, device_id, site, serial, status, lat, lng, alarm_type, source)
+      `INSERT INTO alarms (id, name, priority, device_id, site, serial, status, lat, lng, alarm_type, source, created_at, incident_id)
          SELECT 'ALM-' || to_char(now(), 'YYYY') || '-' || nextval('alarms_live_seq'),
-                $1, $2, $3, $4, $5, 'Open', $6, $7, $8, 'device'
-          WHERE NOT EXISTS (
-            SELECT 1 FROM alarms WHERE device_id = $3 AND alarm_type = $8 AND status <> 'Closed'
-          )
+                $1, $2, $3, $4, $5, 'Open', $6, $7, $8, 'device', COALESCE($9::timestamptz, now()),
+                COALESCE($10::text, ${NEWINC})
        RETURNING *`,
       [name, meta.priority, deviceIdText || null, site || null, serial || null,
-       lat ?? null, lng ?? null, alarmType]
+       lat ?? null, lng ?? null, alarmType, at ?? null, incidentId]
     );
     return rows[0] || null;
   }
+}
+
+// ---- Disturbance day-rule -------------------------------------------------
+// Decide what to do with an incoming disturbance report, purely from stored data:
+//   count = disturbance-bit telemetry reports for this device in the CURRENT run
+//           (since `sinceIso` = EAT-midnight, or a later simulator-restart cutoff)
+//   'skip'  → count < threshold (the run's 1st..3rd): no alarm.
+//   'raise' → count >= threshold AND no open Disturbance for this device today:
+//             log the alarm (the 4th).
+//   'event' → an open Disturbance already exists for this device today: don't log a
+//             new alarm (the 5th and beyond, or a simulator re-run the same day) —
+//             the telemetry row itself is the event record.
+// A NEW EAT day starts a fresh count and its own open-alarm check, so a genuinely
+// new disturbance raises its own alarm even if yesterday's is still open (human
+// error left it un-closed) — the alarms just pile up, one per device per day. The
+// count is bounded by the reset cutoff so each simulator run restarts at 1 and
+// raises on the 4th (never on the 1st just because the day already had reports).
+const EAT_TZ = "Africa/Nairobi";
+export async function disturbanceDecision(deviceIdText, alarmType, atIso, threshold = 4, sinceIso = null) {
+  const dev = String(deviceIdText || "");
+  const thr = Math.max(1, Number(threshold) || 4);
+  let count = 0, existing = false;
+  try {
+    // Count the disturbance reports of the CURRENT run only — from `sinceIso` (the
+    // report's EAT-midnight, or later: a simulator-restart cutoff). We bound by
+    // `received_at` (the SERVER ingest time), NOT the packet's device_time: the
+    // simulator reset cutoff is wall-clock, and a step-through frame is time-stamped
+    // when it is drawn (before you click Send), so a device_time bound dropped the
+    // first frame and the count ran one behind (0,1,2,3 instead of 1,2,3,4).
+    // received_at is monotonic and always lands after the reset, so the current
+    // packet (already inserted before this runs) is counted and the 4th raises.
+    // Disturbance bit = 3rd digit of the 8-hex status word = '1' (see decodeStatus),
+    // read from `motion_byte` (a CORE column) so it works with or without the
+    // telemetry_extras migration and on any Postgres (18 local / 16 VPS).
+    const { rows } = await query(
+      `SELECT count(*)::int AS n
+         FROM device_telemetry dt
+         JOIN devices d ON d.id = dt.device_id
+        WHERE (d.device_id = $1 OR d.imei = $1)
+          AND substr(upper(dt.motion_byte), 3, 1) = '1'
+          AND dt.received_at > COALESCE($2::timestamptz,
+                date_trunc('day', now() AT TIME ZONE $4) AT TIME ZONE $4)`,
+      [dev, sinceIso || null, atIso || null, EAT_TZ]);
+    count = rows[0]?.n || 0;
+  } catch (e) { console.error("[disturbanceDecision count]", e?.message || e); }
+  try {
+    const { rows } = await query(
+      `SELECT 1 FROM alarms
+        WHERE device_id = $1 AND alarm_type = $2 AND status <> 'Closed'
+          AND (created_at AT TIME ZONE $4)::date
+            = (COALESCE($3::timestamptz, now()) AT TIME ZONE $4)::date
+        LIMIT 1`,
+      [dev, alarmType, atIso || null, EAT_TZ]);
+    existing = !!rows[0];
+  } catch (e) { console.error("[disturbanceDecision existing]", e?.message || e); }
+  let action = "skip";
+  if (existing) action = "event";
+  else if (count >= thr) action = "raise";
+  return { action, count, existing, threshold: thr };
 }
 
 // Auto-clear an open alarm of a given type for a device (used by the offline sweep
@@ -160,20 +256,27 @@ export async function getAlarm(id) {
   return rows[0] || null;
 }
 
-// Other alarms on the same device around this one — the geofence / critical-motion
-// / preceding alarms that belong to the same event. Window: 60 min before to 30
-// min after the anchor alarm.
+// Alarms that belong to the SAME incident (episode) as this one — its disturbance,
+// geofence and critical. STRICTLY by incident_id (no time-window fallback, which
+// over-tied unrelated alarms). A fresh alarm has its own incident_id, so it is never
+// tied to a prior event.
+//
+// Tying applies only while the anchor is NON-closed (Open or Acknowledged), and only
+// its still-open members are listed:
+//   • Viewing an OPEN/ACKNOWLEDGED Disturbance → logs its Geofence Violation and
+//     Critical Motion escalations under its lifecycle (the sequence).
+//   • Viewing a CLOSED alarm (disturbance included) → no links at all.
+//   • A CLOSED escalation is not listed under an open disturbance.
 export async function getLinkedAlarms(alarm) {
-  if (!alarm || !alarm.device_id) return [];
+  if (!alarm || !alarm.incident_id) return [];
+  if (alarm.status === "Closed") return [];
   try {
     const { rows } = await query(
-      `SELECT id, name, priority, alarm_type, status, created_at
+      `SELECT id, name, priority, alarm_type, status, created_at, incident_id
          FROM alarms
-        WHERE device_id = $1 AND id <> $2
-          AND created_at >= $3::timestamptz - interval '60 minutes'
-          AND created_at <= $3::timestamptz + interval '30 minutes'
+        WHERE incident_id = $1 AND id <> $2 AND status <> 'Closed'
         ORDER BY created_at ASC`,
-      [alarm.device_id, alarm.id, alarm.created_at]
+      [alarm.incident_id, alarm.id]
     );
     return rows;
   } catch (e) {
@@ -247,13 +350,47 @@ export async function getAlarmDeviceSnapshot(deviceIdText) {
 // all under this event, sorted oldest-first.
 export function buildLifecycle(alarm, linked = [], responses = []) {
   const ev = [];
+  // The incident's originating Disturbance — geofence & critical-motion in the SAME
+  // incident are escalations of it, so we tie them back to that disturbance and its
+  // timestamp. Look across the anchor + linked (all share one incident_id).
+  const fmtEAT = (v) => {
+    if (!v) return "";
+    try {
+      return new Date(v).toLocaleString("en-GB", {
+        timeZone: "Africa/Nairobi", day: "2-digit", month: "short",
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+      }) + " EAT";
+    } catch { return ""; }
+  };
+  const isDisturb = (ty) => ty === "DISTURBANCE" || ty === "DISTURBANCE_TECH";
+  const isEscalation = (ty) => ty === "GEOFENCE_EXIT" || ty === "CRITICAL_MOTION";
+  const anchorIsDisturbance = isDisturb(alarm.alarm_type);
+  const disturbance = [alarm, ...linked]
+    .filter((a) => isDisturb(a.alarm_type))
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0] || null;
+  const closedTag = (a) => (a.status === "Closed" ? " · closed" : "");
+  // Detail line for an alarm event:
+  //   • Viewing the DISTURBANCE → its geofence/critical read as "Escalation of this
+  //     disturbance" (this is the disturbance's own case-file sequence).
+  //   • Viewing an escalation → it ties back to its disturbance + timestamp.
+  const alarmDetail = (a, base, { anchor = false } = {}) => {
+    if (isEscalation(a.alarm_type)) {
+      if (anchorIsDisturbance && !anchor) return `Escalation of this disturbance${closedTag(a)}`;
+      return disturbance
+        ? `Tied to Disturbance · ${fmtEAT(disturbance.created_at)}${closedTag(a)}`
+        : `${base}${closedTag(a)}`;
+    }
+    return base;
+  };
   // The anchor alarm + every linked alarm on the same device appear as alarm
   // events, titled by name; the anchor is tagged "(this alarm)".
   ev.push({ at: alarm.created_at, kind: "alarm", alarmType: alarm.alarm_type, thisAlarm: true,
-    title: alarm.name, detail: `This alarm · ${alarm.device_id || ""}`.trim() });
+    title: alarm.name, detail: alarmDetail(alarm, `This alarm · ${alarm.device_id || ""}`.trim(), { anchor: true }),
+    incident_id: alarm.incident_id || null });
   for (const l of linked) {
     ev.push({ at: l.created_at, kind: "alarm", alarmType: l.alarm_type,
-      title: l.name, detail: `Linked ${l.priority} alarm · same device` });
+      title: l.name, detail: alarmDetail(l, `Linked ${l.priority} alarm · same device`),
+      incident_id: l.incident_id || null });
   }
   // Response started — one per responder (several may respond); team name if the
   // responder is on a team, otherwise just their name.

@@ -4,11 +4,58 @@
 .sub { font-size: 12.5px; color: #64748B; margin-top: 2px; max-width: 620px; }
 
 .headRight { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.critDev { max-width: 220px; border: 1px solid #E2E8F0; border-radius: 9px; padding: 8px 10px; font-size: 12.5px; font-weight: 700; color: #0F274A; background: #fff; font-family: inherit; cursor: pointer; }
 .critBtn { display: inline-flex; align-items: center; gap: 6px; background: #EF4444; color: #fff; border: none; font-size: 12.5px; font-weight: 800; padding: 8px 13px; border-radius: 9px; cursor: pointer; font-family: inherit; }
 .critBtn:hover { background: #DC2626; }
 .critBtn:disabled { opacity: .6; cursor: default; }
 .pbLink { display: inline-flex; align-items: center; gap: 6px; background: #8B5CF6; color: #fff; text-decoration: none; font-size: 12.5px; font-weight: 700; padding: 8px 13px; border-radius: 9px; }
 .pbLink:hover { background: #7C3AED; }
+
+/* step-through scenario */
+.stepCard { border: 1px solid #EEF2F7; border-radius: 12px; background: #fff; padding: 16px 18px; }
+.stepHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.stepTitle { font-size: 15px; font-weight: 800; color: #0F274A; }
+.stepSub { font-size: 12px; color: #64748B; margin-top: 3px; max-width: 640px; }
+.stepBtns { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.stepProg { font-size: 12px; font-weight: 800; color: #64748B; background: #F1F5F9; border-radius: 999px; padding: 5px 11px; }
+.stepGo { display: inline-flex; align-items: center; gap: 6px; background: #2E6CF5; color: #fff; border: none; border-radius: 9px; padding: 9px 15px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit; }
+.stepGo:hover { background: #2558CF; } .stepGo:disabled { opacity: .55; cursor: default; }
+.stepReset { display: inline-flex; align-items: center; gap: 6px; background: #fff; color: #334155; border: 1px solid #E2E8F0; border-radius: 9px; padding: 9px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.stepReset:hover { border-color: #CBD5E1; }
+
+.stepNext { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; background: #EFF4FF; border: 1px solid #DBE4FF; border-radius: 10px; padding: 9px 12px; }
+.stepNextTag { font-size: 10.5px; font-weight: 800; letter-spacing: .05em; color: #fff; background: #2E6CF5; border-radius: 5px; padding: 3px 7px; }
+.stepNextPhase { font-weight: 800; color: #1D4ED8; font-size: 12.5px; }
+.stepNextLabel { color: #0F274A; font-size: 12.5px; font-weight: 600; }
+.stepNextMeta { color: #64748B; font-size: 11.5px; }
+.stepExpect { margin-left: auto; font-weight: 800; font-size: 11.5px; color: #B91C1C; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 999px; padding: 3px 10px; }
+
+.stepFrameWrap { margin-top: 10px; }
+.stepFrameTop { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+.stepFrameLbl { font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: .04em; }
+.stepFrameHint { font-weight: 600; text-transform: none; letter-spacing: 0; color: #94A3B8; }
+.stepRegen { display: inline-flex; align-items: center; gap: 5px; background: #fff; color: #334155; border: 1px solid #E2E8F0; border-radius: 8px; padding: 4px 9px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.stepRegen:hover { border-color: #CBD5E1; }
+/* editable raw frame — click to change battery/speed/coords, then send */
+.stepFrame { display: block; width: 100%; box-sizing: border-box; background: #0B1220; color: #7DD3FC; border: 1px solid #1E293B; border-radius: 10px; padding: 11px 13px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.55; word-break: break-all; white-space: pre-wrap; resize: vertical; min-height: 66px; }
+.stepFrame:focus { outline: none; border-color: #2E6CF5; box-shadow: 0 0 0 3px rgba(46,108,245,.18); }
+
+/* two panes: scenario frames | transcript, side by side */
+.stepBottom { display: flex; gap: 14px; margin-top: 12px; align-items: stretch; flex-wrap: wrap; }
+.stepPane { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; }
+.stepPaneH { font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+
+.stepList { border: 1px solid #EEF2F7; border-radius: 10px; overflow: hidden; max-height: 320px; overflow-y: auto; flex: 1; }
+.stepRow { display: grid; grid-template-columns: 24px 1fr auto auto; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid #F4F7FB; font-size: 12px; }
+.stepRow:last-child { border-bottom: none; }
+.stepRowSent { opacity: .5; }
+.stepRowNext { background: #F0F7FF; }
+.stepNum { color: #94A3B8; font-weight: 700; }
+.stepMain { min-width: 0; }
+.stepMainTop { color: #0F274A; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stepMainSub { color: #64748B; font-size: 11px; font-variant-numeric: tabular-nums; }
+.stepBadge { font-size: 10px; font-weight: 800; color: #B91C1C; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 999px; padding: 2px 7px; white-space: nowrap; }
+.stepState { color: #2563EB; font-weight: 800; white-space: nowrap; }
 
 .mapCard { border: 1px solid #EEF2F7; border-radius: 12px; overflow: hidden; background: #fff; }
 .map { width: 100%; height: 300px; }
@@ -67,12 +114,13 @@
 .stream { background: #fff; border: 1px solid #E2E8F0; color: #334155; }
 .streamOn { background: #FEE2E2; border-color: #FCA5A5; color: #B91C1C; }
 
-.logWrap { max-height: 360px; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
+.logWrap { max-height: 360px; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 6px; }
 .logEmpty { color: #94A3B8; font-size: 12.5px; padding: 10px 2px; }
-.logRow { display: flex; gap: 9px; font-size: 12px; color: #334155; border-bottom: 1px solid #F4F7FB; padding-bottom: 6px; }
+.logRow { display: flex; gap: 9px; font-size: 12px; color: #334155; border-bottom: 1px solid #F4F7FB; padding-bottom: 6px; min-width: 0; }
 .logErr { color: #B91C1C; }
-.logAt { color: #94A3B8; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.logMsg { flex: 1; }
+.logAt { color: #94A3B8; font-variant-numeric: tabular-nums; white-space: nowrap; flex: none; }
+.logMsg { flex: 1; min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
 .logAlarm { color: #B91C1C; font-weight: 700; }
 .logAck { color: #059669; }
-.logPkt { font-family: ui-monospace, monospace; font-size: 10.5px; color: #94A3B8; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* wrap the raw frame nicely instead of scrolling sideways */
+.logPkt { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10.5px; color: #475569; margin-top: 4px; background: #F8FAFC; border: 1px solid #EEF2F7; border-radius: 6px; padding: 5px 7px; white-space: pre-wrap; word-break: break-all; overflow-wrap: anywhere; }

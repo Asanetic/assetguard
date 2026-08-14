@@ -1,0 +1,75 @@
+.page { display: flex; flex-direction: column; gap: 16px; }
+.muted { color: #94A3B8; font-size: 13.5px; }
+.err { color: #B91C1C; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+
+.head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.title { font-size: 22px; font-weight: 800; color: #0F274A; }
+.sub { font-size: 13px; color: #64748B; margin-top: 2px; }
+.ok { display: inline-flex; align-items: center; gap: 7px; background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 6px 13px; }
+.okDot { width: 8px; height: 8px; border-radius: 999px; background: #10B981; box-shadow: 0 0 0 3px rgba(16,185,129,.2); }
+
+/* KPI tiles */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 1000px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+.kpi { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fff; border: 1px solid #EEF2F7; border-radius: 14px; padding: 16px 18px; text-decoration: none; transition: box-shadow .15s, transform .05s; }
+.kpi:hover { box-shadow: 0 8px 22px rgba(15,23,42,.08); transform: translateY(-1px); }
+.kpiLabel { font-size: 11px; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: .05em; }
+.kpiValue { font-size: 30px; font-weight: 800; color: #0F274A; line-height: 1.05; margin-top: 4px; }
+.kpiSub { font-size: 12px; color: #64748B; margin-top: 4px; }
+.kpiIcon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 21px; flex: none; }
+
+.cols { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 1000px) { .cols { grid-template-columns: 1fr; } }
+.cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 800px) { .cols2 { grid-template-columns: 1fr; } }
+.left, .right { display: flex; flex-direction: column; gap: 16px; }
+.card { background: #fff; border: 1px solid #EEF2F7; border-radius: 14px; padding: 18px 20px; }
+.cardHead { font-size: 12px; font-weight: 800; color: #0F274A; letter-spacing: .01em; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+.viewAll { color: #2E6CF5; font-size: 12px; font-weight: 700; text-decoration: none; }
+.since { color: #94A3B8; font-size: 11.5px; font-weight: 600; }
+
+/* alarms by category — colour-coded horizontal bars */
+.dot { width: 9px; height: 9px; border-radius: 999px; flex: none; }
+.catBars { display: flex; flex-direction: column; gap: 11px; }
+.catBarRow { display: grid; grid-template-columns: 150px 1fr auto; align-items: center; gap: 10px; text-decoration: none; padding: 2px 4px; border-radius: 8px; }
+.catBarRow:hover { background: #F8FAFC; }
+.catBarLbl { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: #334155; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.catBarTrack { height: 12px; background: #F1F5F9; border-radius: 999px; overflow: hidden; }
+.catBarFill { display: block; height: 100%; border-radius: 999px; min-width: 3px; transition: width .3s; }
+.catBarN { display: inline-flex; align-items: baseline; gap: 7px; font-weight: 800; color: #0F274A; font-size: 13px; font-variant-numeric: tabular-nums; }
+.catBarOpen { font-style: normal; font-weight: 700; font-size: 10.5px; color: #B91C1C; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 999px; padding: 1px 7px; }
+.empty { color: #94A3B8; text-align: center; padding: 18px; font-size: 13px; }
+
+/* today's telemetry mini stats */
+.miniStats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 640px) { .miniStats { grid-template-columns: repeat(2, 1fr); } }
+.mini { background: #F8FAFC; border: 1px solid #EEF2F7; border-radius: 12px; padding: 14px; text-align: center; }
+.miniN { font-size: 22px; font-weight: 800; color: #0F274A; }
+.miniK { font-size: 11.5px; color: #64748B; margin-top: 3px; }
+
+/* donut */
+.donutWrap { display: grid; place-items: center; padding: 4px 0 8px; }
+.donutN { font-size: 26px; font-weight: 800; fill: #0F274A; }
+.donutC { font-size: 9px; fill: #94A3B8; letter-spacing: .08em; }
+.legend { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
+.legRow { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #F4F7FB; }
+.legRow:last-child { border-bottom: none; }
+.legL { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; }
+.legN { color: #0F274A; font-size: 14px; }
+
+/* vertical bars */
+.barsV { display: flex; align-items: flex-end; gap: 8px; height: 130px; }
+.barsVTall { height: 200px; }
+.barVcol { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; min-width: 0; }
+.barVwrap { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.barV { width: 60%; max-width: 34px; border-radius: 6px 6px 3px 3px; position: relative; min-height: 3px; transition: height .3s; }
+.barVn { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10.5px; font-weight: 700; color: #64748B; }
+.barVlbl { font-size: 10.5px; color: #94A3B8; margin-top: 7px; font-weight: 600; white-space: nowrap; }
+
+/* horizontal bars */
+.barsH { display: flex; flex-direction: column; gap: 11px; }
+.barHrow { display: grid; grid-template-columns: 150px 1fr 34px; align-items: center; gap: 10px; }
+.barHlbl { font-size: 12.5px; color: #334155; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barHtrack { height: 12px; background: #F1F5F9; border-radius: 999px; overflow: hidden; }
+.barHfill { display: block; height: 100%; border-radius: 999px; min-width: 3px; transition: width .3s; }
+.barHn { text-align: right; font-weight: 800; color: #0F274A; font-size: 13px; font-variant-numeric: tabular-nums; }

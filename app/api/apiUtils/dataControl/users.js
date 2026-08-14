@@ -138,6 +138,22 @@ export async function updateUserProfile(id, { name, email, phone, companyId }) {
   return rows[0] || null;
 }
 
+/** Self-service: update ONLY your own name / phone (never role/email/company). */
+export async function updateSelfProfile(id, { name, phone } = {}) {
+  const { rows } = await query(
+    `UPDATE users SET name = COALESCE($2, name), phone = COALESCE($3, phone)
+      WHERE id = $1 RETURNING id`,
+    [id, name ?? null, phone ?? null]
+  );
+  return rows[0] || null;
+}
+
+/** Password hash for one user (id) — for verifying the current password on change. */
+export async function getPasswordHash(id) {
+  const { rows } = await query(`SELECT password FROM users WHERE id = $1 LIMIT 1`, [id]);
+  return rows[0]?.password || null;
+}
+
 /** Permanently delete a user. */
 export async function deleteUser(id) {
   await query(`DELETE FROM users WHERE id = $1`, [id]);

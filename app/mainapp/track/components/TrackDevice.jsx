@@ -212,29 +212,39 @@ export default function TrackDevice() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, notFound, permsReady]);
 
-  // dynamic target: the device drifts every 4s (replace with live telemetry polling)
+  // Live target: poll the device's REAL latest position from telemetry (what the
+  // tracker / simulator actually reported) every 4s and move the marker there.
+  const lastTelAt = useRef(null);
   useEffect(() => {
     if (loading || notFound) return;
-    const id = setInterval(() => {
-      if (!devPos.current || !devStart.current) return;
-      const prev = { ...devPos.current };
-      const next = {
-        lat: Math.max(devStart.current.lat - 0.03, Math.min(devStart.current.lat + 0.03, devPos.current.lat + (Math.random() - 0.5) * 0.01)),
-        lng: Math.max(devStart.current.lng - 0.03, Math.min(devStart.current.lng + 0.03, devPos.current.lng + (Math.random() - 0.5) * 0.01)),
-      };
-      devPos.current = next;
-      devHeading.current = bearing(prev, next);
-      trail.current.push(next); if (trail.current.length > 12) trail.current.shift();
-      speed.current = Math.max(3, Math.round(6 + (Math.random() - 0.5) * 6));
-      setBreach((b) => Math.max(140, Math.round(b + (Math.random() - 0.5) * 46)));
-      setUpdatedSecs(1);
-      applyDevice();
-      refreshDistance();
-      maybeRoute();
-    }, 4000);
-    return () => clearInterval(id);
+    let alive = true;
+    async function tick() {
+      try {
+        const r = await fetch(`/api/mainapp/track/live?device=${encodeURIComponent(deviceId)}`, { cache: "no-store" });
+        if (!r.ok) return;
+        const { pos } = await r.json();
+        if (!alive || !pos || pos.lat == null || pos.lng == null) return;
+        // ignore if the timestamp hasn't advanced (no new packet)
+        if (pos.at && lastTelAt.current === pos.at) return;
+        lastTelAt.current = pos.at || null;
+        const prev = devPos.current ? { ...devPos.current } : null;
+        const next = { lat: Number(pos.lat), lng: Number(pos.lng) };
+        devPos.current = next;
+        if (!devStart.current) devStart.current = next;
+        if (prev) devHeading.current = bearing(prev, next);
+        trail.current.push(next); if (trail.current.length > 40) trail.current.shift();
+        if (pos.speed != null) speed.current = pos.speed;
+        setUpdatedSecs(1);
+        applyDevice();
+        refreshDistance();
+        maybeRoute();
+      } catch { /* keep last position */ }
+    }
+    tick();
+    const id = setInterval(tick, 4000);
+    return () => { alive = false; clearInterval(id); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, notFound]);
+  }, [loading, notFound, deviceId]);
 
   // Broadcast my position so other Track viewers can see me (responders only).
   function broadcastPosition(pos) {

@@ -98,6 +98,75 @@ export async function routeFromTelemetry(deviceIdText, date) {
   };
 }
 
+const EAT_OFFSET = 3 * 3600; // Africa/Nairobi = UTC+3 (for display clock)
+
+/** Build a playback route from device_telemetry within a from→to datetime range. */
+export async function routeFromTelemetryRange(deviceIdText, fromIso, toIso) {
+  const { rows } = await query(
+    `SELECT COALESCE(t.device_time, t.received_at) AS ts, t.lat, t.lng, t.speed
+       FROM device_telemetry t
+       JOIN devices d ON d.id = t.device_id
+      WHERE d.device_id = $1
+        AND t.lat IS NOT NULL AND t.lng IS NOT NULL
+        AND COALESCE(t.device_time, t.received_at) >= $2::timestamptz
+        AND COALESCE(t.device_time, t.received_at) <= $3::timestamptz
+      ORDER BY ts ASC`,
+    [String(deviceIdText || ""), fromIso, toIso]
+  );
+  if (rows.length < 2) return null;
+
+  const t0 = new Date(rows[0].ts).getTime();
+  // clock shown in EAT so it matches the from/to the user picked
+  const start_sec = ((Math.floor(t0 / 1000) + EAT_OFFSET) % 86400 + 86400) % 86400;
+
+  const points = rows.map((r) => ({
+    t: Math.max(0, Math.round((new Date(r.ts).getTime() - t0) / 1000)),
+    lat: Number(r.lat), lng: Number(r.lng), spd: Math.round(Number(r.speed) || 0),
+  }));
+
+  let total_km = 0, max_speed = 0, stops = 0, stop_min = 0;
+  const waypoints = [{ label: "Start", kind: "start", t: points[0].t, lat: points[0].lat, lng: points[0].lng }];
+  for (let i = 1; i < points.length; i++) {
+    total_km += haversineKm(points[i - 1], points[i]);
+    max_speed = Math.max(max_speed, points[i].spd);
+    if (points[i].spd === 0 && points[i - 1].spd > 0 && waypoints.filter((w) => w.kind === "stop").length < 12) {
+      const dwell = i + 1 < points.length ? Math.round((points[i + 1].t - points[i].t) / 60) : 0;
+      waypoints.push({ label: `Stop ${waypoints.filter((w) => w.kind === "stop").length + 1}`, kind: "stop", t: points[i].t, lat: points[i].lat, lng: points[i].lng, stop_min: dwell });
+      stops += 1; stop_min += dwell;
+    }
+  }
+  const last = points[points.length - 1];
+  waypoints.push({ label: "End", kind: "end", t: last.t, lat: last.lat, lng: last.lng });
+
+  return {
+    device_id: String(deviceIdText), from: fromIso, to: toIso, source: "telemetry",
+    points, waypoints, start_sec, t0Ms: t0,
+    summary: {
+      total_km: Number(total_km.toFixed(2)), duration_min: Math.max(1, Math.round(last.t / 60)),
+      max_speed, stops, stop_min, total_km_day: Number(total_km.toFixed(2)),
+    },
+  };
+}
+
+/** Incidents (alarms) within a from→to range, timed relative to the route start. */
+export async function getIncidentsRange(deviceIdText, fromIso, toIso, startMs) {
+  const { rows } = await query(
+    `SELECT id, name, priority, alarm_type, lat, lng, created_at AS at,
+            (EXTRACT(EPOCH FROM created_at) * 1000)::bigint AS ms
+       FROM alarms
+      WHERE device_id = $1 AND lat IS NOT NULL AND lng IS NOT NULL
+        AND created_at >= $2::timestamptz AND created_at <= $3::timestamptz
+      ORDER BY created_at ASC`,
+    [String(deviceIdText || ""), fromIso, toIso]
+  );
+  const base = Number(startMs) || (fromIso ? Date.parse(fromIso) : 0);
+  return rows.map((r) => ({
+    id: r.id, name: r.name, priority: r.priority, alarm_type: r.alarm_type,
+    lat: Number(r.lat), lng: Number(r.lng), at: r.at,
+    t: Math.max(0, Math.round((Number(r.ms) - base) / 1000)),
+  }));
+}
+
 /**
  * Incidents (alarms) for a device on a date, as playback overlay + CSV rows.
  * Alarm location is the SITE location; `t` is seconds since the route's start so

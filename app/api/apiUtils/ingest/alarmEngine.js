@@ -27,8 +27,8 @@ export const ALARM_TYPES = {
   DISTURBANCE: "DISTURBANCE",
   DISTURBANCE_TECH: "DISTURBANCE_TECH",     // a disturbance while a tech is on site (Low)
   CRITICAL_MOTION: "CRITICAL_MOTION",
-  LOW_BATTERY: "LOW_BATTERY",               // ≤ low_battery_pct  (High)
-  CRITICAL_LOW_BATTERY: "CRITICAL_LOW_BATTERY", // ≤ critical_battery_pct (Critical)
+  LOW_BATTERY: "LOW_BATTERY",               // ≤ low_battery_pct  (Medium)
+  CRITICAL_LOW_BATTERY: "CRITICAL_LOW_BATTERY", // ≤ critical_battery_pct (High)
   GEOFENCE_EXIT: "GEOFENCE_EXIT",
   HIGH_TEMPERATURE: "HIGH_TEMPERATURE",
   DEVICE_OFFLINE: "DEVICE_OFFLINE",
@@ -39,8 +39,8 @@ export const ALARM_TYPES = {
 // Confirmed defaults (see claude/alarms-and-severity.md). Every one is overridable
 // per device via devices.config, and editable per-device or in batch from the UI.
 export const DEFAULTS = {
-  low_battery_pct: 20,        // ≤ this and > critical => Low Battery (High)
-  critical_battery_pct: 10,   // ≤ this => Critical Low Battery (Critical)
+  low_battery_pct: 20,        // ≤ this and > critical => Low Battery (Medium)
+  critical_battery_pct: 10,   // ≤ this => Critical Low Battery (High)
   high_temp_c: 55,            // > this => High Temperature (High)
   offline_hours: 24,          // last_seen older than this => Device Offline (High)
   low_data_mb: 1,             // SIM bundle ≤ this (MB) => Low Data (Medium)
@@ -49,6 +49,11 @@ export const DEFAULTS = {
   disturb_mems_mg: 300,   // transient spike => disturbance
   motion_mems_mg: 600,    // elevated reading; ≥2 in the window => sustained (critical)
   window: 3,              // how many recent MEMS readings define "sustained"
+  disturb_streak: 4,      // the 00100008 bit is present continuously while moving;
+                          // require this many packets carrying it before raising a
+                          // Disturbance (raise it as the Nth arrives).
+  disturb_window_sec: 300, // the streak must accumulate within this window (5 min);
+                           // if the run takes longer, the counter resets.
 };
 
 const numOr = (v, d) => { const n = Number(v); return Number.isFinite(n) ? n : d; };
@@ -58,8 +63,8 @@ const numOr = (v, d) => { const n = Number(v); return Number.isFinite(n) ? n : d
 // devices.config; anything unset falls back to DEFAULTS.
 export const THRESHOLD_FIELDS = [
   { key: "high_temp_c",          label: "High Temperature", unit: "°C",   min: 0,   max: 150,   tier: "High",     help: "Alarm when enclosure temp is above this." },
-  { key: "low_battery_pct",      label: "Low Battery",      unit: "%",    min: 1,   max: 100,   tier: "High",     help: "Alarm at or below this charge." },
-  { key: "critical_battery_pct", label: "Critical Battery", unit: "%",    min: 1,   max: 100,   tier: "Critical", help: "Escalates to Critical at or below this charge." },
+  { key: "low_battery_pct",      label: "Low Battery",      unit: "%",    min: 1,   max: 100,   tier: "Medium",   help: "Alarm at or below this charge." },
+  { key: "critical_battery_pct", label: "Critical Battery", unit: "%",    min: 1,   max: 100,   tier: "High",     help: "Escalates to High at or below this charge." },
   { key: "offline_hours",        label: "Device Offline",   unit: "h",    min: 1,   max: 720,   tier: "High",     help: "Alarm when not seen for longer than this." },
   { key: "low_data_mb",          label: "Low Data",         unit: "MB",   min: 0,   max: 100000,tier: "Medium",   help: "Alarm when SIM bundle is at or below this." },
   { key: "geofence_radius_m",    label: "Geofence Radius",  unit: "m",    min: 5,   max: 100000,tier: "Critical", help: "Distance from site that counts as a violation." },
@@ -81,6 +86,8 @@ export function resolveConfig(device) {
     disturb_mems_mg: numOr(c.disturb_mems_mg, numOr(c.disturbance?.mems_mg, DEFAULTS.disturb_mems_mg)),
     motion_mems_mg: numOr(c.motion_mems_mg, numOr(c.motion?.mems_mg, DEFAULTS.motion_mems_mg)),
     window: numOr(c.window, numOr(c.motion?.window, DEFAULTS.window)),
+    disturb_streak: Math.max(1, numOr(c.disturb_streak, DEFAULTS.disturb_streak)),
+    disturb_window_sec: Math.max(30, numOr(c.disturb_window_sec, DEFAULTS.disturb_window_sec)),
   };
 }
 
@@ -149,29 +156,36 @@ export function evaluate(t, device, site, state = {}, ctx = {}) {
       ...at, value: critVal });
   }
 
-  // ---- disturbance (gospel status bit, or a transient spike that isn't sustained) ----
-  // If a technician is on site, a disturbance is expected work — downgrade THIS
-  // alarm (only) to the Low "tech on site" type. Every other alarm is untouched.
+  // ---- disturbance (gospel status bit) ----
+  // Emit a Disturbance CANDIDATE whenever the 00100008 status bit is present. The
+  // decision to actually raise the alarm is NOT made here — it's made downstream in
+  // disturbanceDecision() against the stored telemetry, so it can count the day's
+  // disturbance reports and de-dupe against an already-open alarm:
+  //     count 1-3 → skip · count 4 → log the alarm · 5+ (or one already open today)
+  //     → log the event only · a new EAT day raises a fresh alarm regardless.
+  // Counting from the DB (not an in-memory streak) survives restarts and never
+  // double-fires. If a technician is on site the disturbance is expected work, so
+  // it downgrades to the Low "tech on site" type (this alarm only).
   const disturbBit = !!(t.status && t.status.disturbance);
-  const transientSpike = dyn != null && dyn >= c.disturb_mems_mg && !sustained && !critical;
-  if (disturbBit || transientSpike) {
+  if (disturbBit) {
     const techOnSite = !!ctx.techOnSite;
     alarms.push({
       type: techOnSite ? ALARM_TYPES.DISTURBANCE_TECH : ALARM_TYPES.DISTURBANCE,
       severity: techOnSite ? "info" : "critical",
       message: techOnSite
         ? `Disturbance on ${name} — technician on site`
-        : (disturbBit ? `Disturbance on ${name} (status ${t.status.word})` : `Disturbance on ${name} (impact ${dyn} mg)`),
-      ...at, value: disturbBit ? t.status.word : dyn });
+        : `Disturbance on ${name} (status ${t.status.word})`,
+      ...at, value: t.status.word });
   }
 
-  // ---- battery: Critical Low (≤ critical %) escalates above Low Battery (≤ %) ----
+  // ---- battery: Critical Low (≤ critical %) is HIGH; Low Battery (≤ %) is MEDIUM
+  //      (per contract — neither is a Critical-tier alarm). ----
   if (t.battery != null && t.battery <= c.critical_battery_pct) {
-    alarms.push({ type: ALARM_TYPES.CRITICAL_LOW_BATTERY, severity: "critical",
+    alarms.push({ type: ALARM_TYPES.CRITICAL_LOW_BATTERY, severity: "warning",
       message: `Critical low battery — ${name} at ${t.battery}% (critical ≤ ${c.critical_battery_pct}%)`,
       ...at, value: t.battery });
   } else if (t.battery != null && t.battery <= c.low_battery_pct) {
-    alarms.push({ type: ALARM_TYPES.LOW_BATTERY, severity: "warning",
+    alarms.push({ type: ALARM_TYPES.LOW_BATTERY, severity: "info",
       message: `Low battery — ${name} at ${t.battery}% (threshold ${c.low_battery_pct}%)`,
       ...at, value: t.battery });
   }

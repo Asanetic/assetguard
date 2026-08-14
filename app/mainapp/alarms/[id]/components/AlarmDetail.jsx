@@ -16,7 +16,10 @@ const PRIO = {
   Medium:   { cls: "pMedium" },
   Low:      { cls: "pLow" },
 };
-function fmt(ts) { try { return new Date(ts).toLocaleString(undefined, { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }); } catch { return "—"; } }
+// All alarm times display in East Africa Time (Africa/Nairobi, UTC+3) regardless
+// of the viewer's device timezone.
+const EAT = "Africa/Nairobi";
+function fmt(ts) { try { return new Date(ts).toLocaleString("en-GB", { timeZone: EAT, day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }); } catch { return "—"; } }
 // Downscale + JPEG-compress a photo in the browser BEFORE it becomes a data URL.
 // Big phone photos (several MB) used to be silently dropped above ~1.9 MB; now
 // they're shrunk to a ≤1600px JPEG that comfortably fits the server's per-photo

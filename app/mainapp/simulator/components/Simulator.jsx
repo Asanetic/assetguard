@@ -22,6 +22,48 @@ const SCENARIOS = [
 function now() { try { return new Date().toLocaleTimeString(); } catch { return ""; } }
 function todayUTC() { try { return new Date().toISOString().slice(0, 10); } catch { return ""; } }
 
+// Build the EXACT GL-28 frame the server will send (mirrors ingest/simPackets.buildUD)
+// so you can preview + confirm the wire data before firing. Only the timestamp is
+// live — the server re-stamps it at send time.
+function padz(n, w) { return String(n).padStart(w, "0"); }
+function previewFrame(step, imei) {
+  if (!step || !imei) return "";
+  const d = new Date();
+  const date = padz(d.getUTCDate(), 2) + padz(d.getUTCMonth() + 1, 2) + padz(d.getUTCFullYear() % 100, 2);
+  const time = padz(d.getUTCHours(), 2) + padz(d.getUTCMinutes(), 2) + padz(d.getUTCSeconds(), 2);
+  const lat = Number(step.lat), lng = Number(step.lng);
+  const aLat = Math.abs(lat).toFixed(6), aLng = Math.abs(lng).toFixed(6);
+  const latH = lat < 0 ? "S" : "N", lngH = lng < 0 ? "W" : "E";
+  const speed = step.speed, angle = 0, altitude = 1650, sats = 9, gsm = 80, battery = 88, fix = "A";
+  const m = { valid: true, x: 20, y: -12, z: 1010, roll: 0.4, pitch: 0.9, temp: 30 };
+  const memsTail = `,${m.valid ? "+1" : "+0"},${m.x},${m.y},${m.z},${m.roll},${m.pitch},${m.temp}`;
+  const body =
+    `UD,${date},${time},${fix},${aLat},${latH},${aLng},${lngH},` +
+    `${speed},${angle},${altitude},${sats},${gsm},${battery},0,0,${step.motionByte},` +
+    `1,255,639,02,10256,93847880,155,` +
+    `HomeWiFi,F4:2A:7D:50:DD:C6,-87` + memsTail;
+  const len = padz(body.length.toString(16).toUpperCase(), 4);
+  return `[3G*${imei}*${len}*${body}]`;
+}
+
+// A 20-frame vandalism scenario you fire one packet at a time. The FRAME CONTENT
+// (position / speed / motion byte) is what makes the engine raise each alarm:
+//   • 5× on-site disturbance (deep inside the 30 m fence) — the 4th raises Disturbance
+//   • 3× carrying out — the 1st crosses the fence → Geofence Exit
+//   • 12× motorbike escape (fast, off-site) — the 1st → Critical Motion
+function scenarioSteps(base) {
+  const bLat = Number(base?.lat) || 0, bLng = Number(base?.lng) || 0;
+  const cosLat = Math.max(0.2, Math.cos((bLat * Math.PI) / 180));
+  const at = (m) => { const deg = m / 111000, c = deg * 0.70710678; return { lat: Number((bLat + c).toFixed(6)), lng: Number((bLng + c / cosLat).toFixed(6)) }; };
+  const S = [];
+  const add = (phase, label, expects, meters, speed) => { const p = at(meters); S.push({ phase, label, expects, meters: Math.round(meters), speed, motionByte: "00100008", lat: p.lat, lng: p.lng }); };
+  [6, 7, 8, 7, 9].forEach((m, i) => add("On-site disturbance", i < 3 ? `Tampering ${i + 1}` : (i === 3 ? "Tampering 4 → raises DISTURBANCE" : "Tampering 5"), i === 3 ? "DISTURBANCE" : null, m, 1));
+  [45, 150, 300].forEach((m, i) => add("Carrying out", i === 0 ? "Cross the 30 m fence → GEOFENCE EXIT" : "Walking to the road", i === 0 ? "GEOFENCE_EXIT" : null, m, 3));
+  [[420, 72], [900, 80], [1500, 86], [2200, 90], [2900, 88], [3500, 84], [4100, 82], [4600, 86], [5000, 90], [5400, 84], [5800, 80], [6200, 78]]
+    .forEach(([m, s], i) => add("Motorbike escape", i === 0 ? "On the motorbike → CRITICAL MOTION" : `Fleeing ${i + 1}`, i === 0 ? "CRITICAL_MOTION" : null, m, s));
+  return S; // 20 frames
+}
+
 export default function Simulator() {
   const [devices, setDevices] = useState([]);
   const [imei, setImei] = useState("");
@@ -46,6 +88,10 @@ export default function Simulator() {
   const [busy, setBusy] = useState(false);
   const [simBusy, setSimBusy] = useState(false);
   const [simDate, setSimDate] = useState("");
+  const [steps, setSteps] = useState([]);      // manual step-through scenario
+  const [stepIdx, setStepIdx] = useState(0);   // how many frames sent
+  const [stepBusy, setStepBusy] = useState(false);
+  const [frameEdit, setFrameEdit] = useState(""); // editable raw frame to send next
   const [log, setLog] = useState([]);
 
   // map + path
@@ -227,15 +273,55 @@ export default function Simulator() {
       const d = await r.json().catch(() => ({}));
       if (!r.ok || d.error) { pushLog({ err: d.error || "Simulation failed" }); return; }
       setSimDate(d.date || "");
-      pushLog({ ok: true, mode: "inject", count: d.stored, who: imei,
-        detail: `critical procedure done — ${(d.procedure || []).join(" → ")} @ ${Math.round((d.pace_seconds || 120) / 60)} min pace · ${d.points} pts · date ${d.date}${d.response_on ? ` · response ${d.response_on}` : ""}`,
+      pushLog({ ok: true, mode: "tcp", count: d.sent, who: imei,
+        detail: `vandalism scenario over TCP → ${d.host || "127.0.0.1"}:${d.port} — on-site disturbance, then geofence exit, then critical motion (motorbike) @ ${Math.round((d.pace_seconds || 120) / 60)} min pace, then ${d.fast_step_seconds || 3}s streaming for ${d.fast_minutes || 5} min · ${d.points} pts · date ${d.date}`,
         packets: [], alarms: d.alarms || [] });
     } catch { pushLog({ err: "Network error" }); }
     finally { setSimBusy(false); }
   }
 
+  // (Re)build the step-through scenario whenever the selected device/site changes.
+  useEffect(() => { setSteps(scenarioSteps(base)); setStepIdx(0); }, [base.lat, base.lng]);
+  // Load the next frame into the editable box whenever the step (or device) changes,
+  // with a fresh timestamp. The user can then tweak battery/speed/coords before sending.
+  useEffect(() => { setFrameEdit(previewFrame(steps[stepIdx], imei)); }, [stepIdx, imei, steps]);
+
+  // Fire the NEXT frame over the real TCP port. Frame content decides the alarm.
+  async function sendNextStep() {
+    if (!imei) { pushLog({ err: "Pick a device first" }); return; }
+    if (stepIdx >= steps.length) { pushLog({ err: "Scenario complete — press Restart to run it again" }); return; }
+    const s = steps[stepIdx];
+    const raw = (frameEdit || "").trim();
+    if (!raw) { pushLog({ err: "Nothing to send — the frame is empty" }); return; }
+    setStepBusy(true);
+    try {
+      const r = await fetch("/api/mainapp/ingest/sim-frame", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imei, raw, reset: stepIdx === 0 }),   // send the (possibly edited) raw frame verbatim
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || d.error) { pushLog({ err: d.error || "Send failed" }); return; }
+      pushLog({ ok: true, mode: "tcp", count: 1, who: imei,
+        detail: `step ${stepIdx + 1}/${steps.length} · ${s.phase} — ${s.label}${s.expects ? ` · ⇒ ${s.expects}` : ""} · port ${d.port}`,
+        packets: [d.frame], alarms: s.expects ? [s.expects] : [] });
+      setStepIdx((i) => i + 1);
+      setSimDate(todayUTC());   // real-time data lands under today → open it in Playback
+    } catch { pushLog({ err: "Network error" }); }
+    finally { setStepBusy(false); }
+  }
+  async function restartScenario() {
+    setStepIdx(0);
+    // Clear the engine counters on the server NOW so the disturbance debounce truly
+    // restarts from zero — it will only raise on the 4th disturbance packet again.
+    if (imei) {
+      try { await fetch("/api/mainapp/ingest/sim-frame", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ imei, resetOnly: true }) }); } catch {}
+    }
+    pushLog({ ok: true, mode: "sys", who: imei, detail: "scenario reset — engine counters cleared; Disturbance raises on the 4th packet", packets: [] });
+  }
+
   const dev = devices.find((x) => x.imei === imei);
   const pbDate = simDate || todayUTC();
+  const nextStep = steps[stepIdx] || null;
   const playbackHref = dev?.device_id ? `/mainapp/playbackmap?device=${encodeURIComponent(dev.device_id)}&date=${pbDate}` : null;
 
   return (
@@ -246,11 +332,95 @@ export default function Simulator() {
           <div className={styles.sub}>Craft GL-28 packets for any device and send them like a real tracker — click the map to place them, stream a path, then replay it in Playback.</div>
         </div>
         <div className={styles.headRight}>
+          <select className={styles.critDev} value={imei} disabled={simBusy}
+            onChange={(e) => { const d = devices.find((x) => x.imei === e.target.value); if (d) selectDevice(d); }}
+            title="Device to simulate">
+            {devices.length === 0 && <option value="">No devices</option>}
+            {devices.map((x) => (<option key={x.id || x.imei} value={x.imei}>{x.device_id || x.imei}</option>))}
+          </select>
           <button className={styles.critBtn} onClick={runCriticalSim} disabled={simBusy || !imei}>
             <i className={`ti ${simBusy ? "ti-loader-2" : "ti-alert-triangle"}`} aria-hidden="true" /> {simBusy ? "Simulating…" : "Run critical-alarms simulation"}
           </button>
           {playbackHref && <a className={styles.pbLink} href={playbackHref}><i className="ti ti-player-play" aria-hidden="true" /> Open in Playback</a>}
           <span className={`${styles.modePill} ${mode === "tcp" ? styles.modeTcp : styles.modeInject}`}>{mode === "tcp" ? "TCP → listener" : "Direct inject"}</span>
+        </div>
+      </div>
+
+      {/* Manual step-through — you fire each frame; the frame decides the alarm. */}
+      <div className={styles.stepCard}>
+        <div className={styles.stepHead}>
+          <div>
+            <div className={styles.stepTitle}>Step-through scenario — you trigger each event</div>
+            <div className={styles.stepSub}>Fire one GL-28 frame per click over the real TCP port. The frame’s data (position · speed · motion byte) is what raises each alarm — so you control exactly when Disturbance → Geofence → Critical happen, then build realistic data for Playback &amp; reports.</div>
+          </div>
+          <div className={styles.stepBtns}>
+            <span className={styles.stepProg}>{stepIdx}/{steps.length} sent</span>
+            <button className={styles.stepGo} onClick={sendNextStep} disabled={stepBusy || !imei || stepIdx >= steps.length}>
+              <i className={`ti ${stepBusy ? "ti-loader-2" : "ti-send"}`} /> {stepIdx >= steps.length ? "Scenario complete" : (stepBusy ? "Sending…" : `Send next data (#${stepIdx + 1})`)}
+            </button>
+            <button className={styles.stepReset} onClick={restartScenario} disabled={stepBusy}><i className="ti ti-refresh" /> Restart</button>
+          </div>
+        </div>
+
+        {nextStep && (
+          <>
+            <div className={styles.stepNext}>
+              <span className={styles.stepNextTag}>NEXT</span>
+              <span className={styles.stepNextPhase}>{nextStep.phase}</span>
+              <span className={styles.stepNextLabel}>{nextStep.label}</span>
+              <span className={styles.stepNextMeta}>{nextStep.meters} m from site · {nextStep.speed} km/h · byte {nextStep.motionByte} · {nextStep.lat}, {nextStep.lng}</span>
+              {nextStep.expects && <span className={styles.stepExpect}>⇒ {nextStep.expects}</span>}
+            </div>
+            <div className={styles.stepFrameWrap}>
+              <div className={styles.stepFrameTop}>
+                <div className={styles.stepFrameLbl}>Frame to send <span className={styles.stepFrameHint}>(editable — change battery, speed, coords… then Send)</span></div>
+                <button type="button" className={styles.stepRegen} onClick={() => setFrameEdit(previewFrame(nextStep, imei))} title="Regenerate from the scenario (fresh timestamp)"><i className="ti ti-refresh" /> Reset frame</button>
+              </div>
+              <textarea className={styles.stepFrame} value={frameEdit} spellCheck={false} onChange={(e) => setFrameEdit(e.target.value)} />
+            </div>
+          </>
+        )}
+
+        <div className={styles.stepBottom}>
+          <div className={styles.stepPane}>
+            <div className={styles.stepPaneH}>Scenario frames ({stepIdx}/{steps.length})</div>
+            <div className={styles.stepList}>
+              {steps.map((s, i) => {
+                const state = i < stepIdx ? "sent" : i === stepIdx ? "next" : "todo";
+                return (
+                  <div key={i} className={`${styles.stepRow} ${state === "next" ? styles.stepRowNext : ""} ${state === "sent" ? styles.stepRowSent : ""}`}>
+                    <span className={styles.stepNum}>{i + 1}</span>
+                    <div className={styles.stepMain}>
+                      <div className={styles.stepMainTop}>{s.phase} — {s.label}</div>
+                      <div className={styles.stepMainSub}>{s.meters} m · {s.speed} km/h · byte {s.motionByte}</div>
+                    </div>
+                    {s.expects ? <span className={styles.stepBadge}>{s.expects.replace("_", " ")}</span> : null}
+                    <span className={styles.stepState}>{state === "sent" ? "✓" : state === "next" ? "→" : ""}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className={styles.stepPane}>
+            <div className={styles.stepPaneH}>Transcript</div>
+            <div className={styles.logWrap} ref={logRef}>
+              {log.length === 0 && <div className={styles.logEmpty}>Nothing sent yet.</div>}
+              {log.map((l) => (
+                <div key={l.id} className={`${styles.logRow} ${l.err ? styles.logErr : ""}`}>
+                  <span className={styles.logAt}>{l.at}</span>
+                  {l.err ? <span className={styles.logMsg}>⚠ {l.err}</span> : (
+                    <span className={styles.logMsg}>
+                      <b>{l.mode}</b> · {l.who} · {l.detail} · {l.count} pkt
+                      {l.alarms && l.alarms.length ? <span className={styles.logAlarm}> · alarms: {l.alarms.join(", ")}</span> : ""}
+                      {l.ack ? <span className={styles.logAck}> · ack {l.ack.slice(0, 40)}</span> : ""}
+                      {l.packets && l.packets[0] ? <div className={styles.logPkt} title={l.packets.join("\n")}>{l.packets[0]}</div> : null}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -378,26 +548,7 @@ export default function Simulator() {
               <button className={`${styles.stream} ${streaming ? styles.streamOn : ""}`} onClick={toggleStream}><i className={`ti ${streaming ? "ti-player-stop" : "ti-player-play"}`} aria-hidden="true" /> {streaming ? "Stop" : "Stream"}</button>
               <div className={styles.field}><label>every (ms)</label><input className={styles.inputSm} type="number" value={interval} onChange={(e) => setIntervalMs(e.target.value)} /></div>
             </div>
-          </div>
-
-          <div className={styles.card}>
-            <div className={styles.cardH}>Transcript</div>
-            <div className={styles.logWrap} ref={logRef}>
-              {log.length === 0 && <div className={styles.logEmpty}>Nothing sent yet.</div>}
-              {log.map((l) => (
-                <div key={l.id} className={`${styles.logRow} ${l.err ? styles.logErr : ""}`}>
-                  <span className={styles.logAt}>{l.at}</span>
-                  {l.err ? <span className={styles.logMsg}>⚠ {l.err}</span> : (
-                    <span className={styles.logMsg}>
-                      <b>{l.mode}</b> · {l.who} · {l.detail} · {l.count} pkt
-                      {l.alarms && l.alarms.length ? <span className={styles.logAlarm}> · alarms: {l.alarms.join(", ")}</span> : ""}
-                      {l.ack ? <span className={styles.logAck}> · ack {l.ack.slice(0, 40)}</span> : ""}
-                      {l.packets && l.packets[0] ? <div className={styles.logPkt} title={l.packets.join("\n")}>{l.packets[0]}</div> : null}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
+            <div className={styles.hint} style={{ marginTop: 10 }}>The live transcript is in the step-through panel above (next to the scenario frames).</div>
           </div>
         </div>
       </div>

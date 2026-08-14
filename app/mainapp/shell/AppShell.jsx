@@ -292,6 +292,22 @@ export default function AppShell({ children, active, openAlarms = 0, criticalAla
                     </div>
                   );
                 }
+                // "My profile" gets the richer avatar + name treatment.
+                if (m.key === "profile") {
+                  return (
+                    <button
+                      key={m.key}
+                      className={`${styles.profileItem} ${active === m.key ? styles.profileItemActive : ""}`}
+                      onClick={() => go(m.href)}
+                    >
+                      <span className={styles.profileAvatar}>{initials(user?.name) || "AG"}</span>
+                      <span className={styles.profileText}>
+                        <span className={styles.profileLabel}>{m.label}</span>
+                        <span className={styles.profileName}>{user?.name || "Account"}</span>
+                      </span>
+                    </button>
+                  );
+                }
                 return (
                   <button
                     key={m.key}

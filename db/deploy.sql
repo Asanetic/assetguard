@@ -39,10 +39,15 @@ CREATE SCHEMA public;
 \ir alarms_live.sql
 \ir alarms_severity.sql
 \ir alarm_lifecycle.sql
+\ir response_and_teams.sql
+\ir response_geo.sql
+\ir responder_positions.sql
+\ir response_teams.sql
 \ir device_telemetry.sql
 \ir telemetry_extras.sql
 \ir telemetry_geo.sql
 \ir listener_ports.sql
+\ir notifications.sql
 \echo '== 6. seed devices =='
 \ir devices_seed.sql
 
