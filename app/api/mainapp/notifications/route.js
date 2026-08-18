@@ -13,15 +13,17 @@ import { getEmailConfig, getSmsConfig } from "../../apiUtils/dataControl/appConf
 export async function GET(request) {
   if (!getAuth(request)) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   const { searchParams } = new URL(request.url);
+  const range = searchParams.get("range") || "today";
   try {
     const [rows, stats, channels, email, sms] = await Promise.all([
       listNotifications({
         status: searchParams.get("status") || undefined,
         channel: searchParams.get("channel") || undefined,
         q: searchParams.get("q") || undefined,
+        range,
       }),
-      notificationStats(),
-      channelBreakdown(),
+      notificationStats(range),
+      channelBreakdown(range),
       getEmailConfig().catch(() => ({})),
       getSmsConfig().catch(() => ({})),
     ]);

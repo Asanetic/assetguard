@@ -15,6 +15,9 @@ import { getUserOrg } from "../../apiUtils/dataControl/companies.js";
 import { alarmCounts } from "../../apiUtils/dataControl/alarms.js";
 import { getOrgConfig } from "../../apiUtils/dataControl/appConfig.js";
 import { query } from "../../apiUtils/s_env/db.js";
+import { ensureAppHeartbeat } from "../../apiUtils/monitor/appHeartbeat.js";
+
+ensureAppHeartbeat(); // start proof-of-life pings for platform uptime
 
 async function one(sql, params = []) { try { const { rows } = await query(sql, params); return rows[0] || {}; } catch (e) { console.error("[dashboard]", e?.message || e); return {}; } }
 async function many(sql, params = []) { try { const { rows } = await query(sql, params); return rows; } catch (e) { console.error("[dashboard]", e?.message || e); return []; } }
@@ -32,7 +35,8 @@ export async function GET(request) {
     let company = "";
     try { company = (await getOrgConfig())?.name || ""; } catch {}
 
-    const [sites, devAgg, alarms, users, byCategory, today, byMonth, bySite, byRegion] = await Promise.all([
+    const [sites, devAgg, alarms, users, byCategory, today, byMonth, bySite, byRegion,
+           telemetryToday, commandsToday, activityToday, usersByStatus, health] = await Promise.all([
       one(`SELECT count(*)::int AS total,
                   count(*) FILTER (WHERE created_at >= date_trunc('month', now()))::int AS added_month
              FROM sites`),
@@ -76,6 +80,46 @@ export async function GET(request) {
               LEFT JOIN devices d ON d.device_id = a.device_id
               LEFT JOIN sites s ON s.id = d.site_id
              WHERE ${aw} GROUP BY 1 ORDER BY n DESC LIMIT 10`),
+      // --- Today's telemetry (8 cards). Each subquery is independent so a missing
+      //     table (e.g. brand-new install) just yields 0, never a hard failure.
+      one(`SELECT
+              (SELECT count(*)::int FROM device_logs WHERE received_at >= date_trunc('day', now())) AS device_events,
+              (SELECT count(*)::int FROM raw_logs WHERE received_at >= date_trunc('day', now()) AND direction = 'in' AND data LIKE '%LK]') AS heartbeats,
+              (SELECT count(*)::int FROM device_telemetry WHERE received_at >= date_trunc('day', now()) AND lat IS NOT NULL AND lng IS NOT NULL) AS gps_fixes,
+              -- Active incidents = currently open (non-closed) incidents across the fleet.
+              (SELECT count(DISTINCT incident_id)::int FROM alarms WHERE status <> 'Closed' AND incident_id IS NOT NULL AND ${aw}) AS active_incidents,
+              (SELECT count(*)::int FROM devices WHERE created_at >= date_trunc('day', now())) AS enrolments,
+              (SELECT COALESCE(SUM(bytes),0)::bigint FROM raw_logs WHERE received_at >= date_trunc('day', now())) AS bytes`),
+      // Commands + firmware today (command_log may not exist yet → {} → zeros).
+      one(`SELECT count(*)::int AS sent,
+                  count(*) FILTER (WHERE lower(coalesce(status,'')) = 'failed')::int AS failed,
+                  count(*) FILTER (WHERE upper(coalesce(cmd,'')) LIKE 'UPGRADE%')::int AS firmware
+             FROM command_log WHERE created_at >= date_trunc('day', now())`),
+      // Activity — notification sends by channel, for today / this week / month / year.
+      one(`SELECT
+              count(*) FILTER (WHERE channel='sms'   AND status='sent' AND created_at >= date_trunc('day',now()))::int   AS sms_today,
+              count(*) FILTER (WHERE channel='email' AND status='sent' AND created_at >= date_trunc('day',now()))::int   AS email_today,
+              count(*) FILTER (WHERE channel='push'  AND status='sent' AND created_at >= date_trunc('day',now()))::int   AS push_today,
+              count(*) FILTER (WHERE channel='sms'   AND status='sent' AND created_at >= date_trunc('week',now()))::int  AS sms_week,
+              count(*) FILTER (WHERE channel='email' AND status='sent' AND created_at >= date_trunc('week',now()))::int  AS email_week,
+              count(*) FILTER (WHERE channel='push'  AND status='sent' AND created_at >= date_trunc('week',now()))::int  AS push_week,
+              count(*) FILTER (WHERE channel='sms'   AND status='sent' AND created_at >= date_trunc('month',now()))::int AS sms_month,
+              count(*) FILTER (WHERE channel='email' AND status='sent' AND created_at >= date_trunc('month',now()))::int AS email_month,
+              count(*) FILTER (WHERE channel='push'  AND status='sent' AND created_at >= date_trunc('month',now()))::int AS push_month,
+              count(*) FILTER (WHERE channel='sms'   AND status='sent' AND created_at >= date_trunc('year',now()))::int  AS sms_year,
+              count(*) FILTER (WHERE channel='email' AND status='sent' AND created_at >= date_trunc('year',now()))::int  AS email_year,
+              count(*) FILTER (WHERE channel='push'  AND status='sent' AND created_at >= date_trunc('year',now()))::int  AS push_year
+             FROM notifications`),
+      // User administration counts.
+      one(`SELECT
+              count(*) FILTER (WHERE status = 'Active')::int    AS active,
+              count(*) FILTER (WHERE status = 'Pending')::int   AS pending,
+              count(*) FILTER (WHERE status = 'Suspended')::int AS suspended
+             FROM users`),
+      // System health — data-ingestion uptime proxy over the last 30 days
+      // (share of hours that received at least one inbound frame).
+      one(`SELECT ROUND(100.0 * count(DISTINCT date_trunc('hour', received_at)) / (30*24.0), 1) AS uptime30d
+             FROM raw_logs WHERE received_at >= now() - interval '30 days' AND direction = 'in'`),
     ]);
 
     const dev = { total: 0, live: 0, offline: 0, testing: 0, maintenance: 0, pending: 0 };
@@ -91,6 +135,26 @@ export async function GET(request) {
       users: { total: users.total || 0, pending: users.pending || 0 },
       byCategory,
       today: { packets: today.packets || 0, gpsFixes: today.gps_fixes || 0, dataMb: data_mb, alarms: today.alarms || 0 },
+      // New: 8-card Today's telemetry
+      telemetryToday: {
+        deviceEvents: telemetryToday.device_events || 0,
+        heartbeats: telemetryToday.heartbeats || 0,
+        gpsFixes: telemetryToday.gps_fixes || 0,
+        activeIncidents: telemetryToday.active_incidents || 0,
+        commandsSent: commandsToday.sent || 0,
+        commandsFailed: commandsToday.failed || 0,
+        firmware: commandsToday.firmware || 0,
+        enrolments: telemetryToday.enrolments || 0,
+        dataMb: Number(((Number(telemetryToday.bytes) || 0) / 1e6).toFixed(1)),
+      },
+      activity: {
+        today: { sms: activityToday.sms_today || 0, email: activityToday.email_today || 0, push: activityToday.push_today || 0 },
+        week:  { sms: activityToday.sms_week || 0,  email: activityToday.email_week || 0,  push: activityToday.push_week || 0 },
+        month: { sms: activityToday.sms_month || 0, email: activityToday.email_month || 0, push: activityToday.push_month || 0 },
+        year:  { sms: activityToday.sms_year || 0,  email: activityToday.email_year || 0,  push: activityToday.push_year || 0 },
+      },
+      admin: { active: usersByStatus.active || 0, pending: usersByStatus.pending || 0, suspended: usersByStatus.suspended || 0 },
+      health: { uptime30d: health.uptime30d != null ? Number(health.uptime30d) : null },
       byMonth, bySite, byRegion,
       viewer: { criticalOnly: restrict },
     });

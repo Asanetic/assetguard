@@ -31,7 +31,7 @@ const MENU = [
       { key: "all_devices", label: "All devices", href: "/mainapp/devices" },
       { key: "group_devices", label: "Group devices", href: "/mainapp/devices/group" },
       { key: "add_device", label: "Add device", href: "/mainapp/devices/add" },
-      { key: "ports", label: "Listener ports", href: "/mainapp/ports" },
+      { key: "ports", label: "Device logs and ports", href: "/mainapp/ports" },
       { key: "tcplogs", label: "Parsed & aligned", href: "/mainapp/tcplogs" },
       { key: "simulator", label: "Simulator", href: "/mainapp/simulator" },
     ] },
@@ -45,7 +45,7 @@ const MENU = [
       { key: "playback_exports", label: "Exports", href: "/mainapp/playback/exports" },
     ] },
   { key: "notifications", label: "Notifications", icon: "ti-bell", color: "#0EA5E9", href: "/mainapp/notifications" },
-  { key: "logs", label: "Device logs", icon: "ti-file-text", color: "#64748B", href: "/mainapp/logs" },
+  { key: "logs", label: "Heartbeats", icon: "ti-heartbeat", color: "#64748B", href: "/mainapp/logs" },
   { key: "reports", label: "Reports", icon: "ti-report-analytics", color: "#059669", href: "/mainapp/reports" },
   { key: "profile", label: "My profile", icon: "ti-user", color: "#14315D", href: "/mainapp/profile" },
   { key: "admin", label: "Admin", icon: "ti-shield-cog", color: "#14315D", children: [

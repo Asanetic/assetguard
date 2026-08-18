@@ -13,6 +13,7 @@ import { insertRawLog } from "../dataControl/rawLogs.js";
 import { listPorts, setPortEnabled } from "../dataControl/listenerPorts.js";
 import { extractFrames, parseFrame } from "./parse.js";
 import { resolveAndStore } from "./store.js";
+import { insertParseError } from "../dataControl/parseErrors.js";
 
 function S() {
   if (!globalThis.__agPortMgr) globalThis.__agPortMgr = { ports: new Map() };
@@ -37,9 +38,26 @@ async function ingest(conn, p, port) {
   conn.buf = rest.length > 8192 ? "" : rest;
   for (const f of frames) {
     p.packets += 1; p.lastFrameAt = new Date().toISOString();
+
+    // HQ text frames (e.g. command replies "*HQ,IMEI,V4,UPGRADE#") are NOT the
+    // bracketed telemetry format. Raw-log them so they show in Raw port data as
+    // the device's reply, and move on — don't run them through the GL parser.
+    if (f[0] === "*") {
+      const m = f.match(/^\*[^,]*,(\d{6,})/);        // *HQ,<imei>,...
+      const dev = (m && m[1]) || conn.imei || null;
+      insertRawLog({ dir: "in", ip: conn.ip, srcPort: conn.port, port, device: dev, data: f, bytes: f.length }).catch(() => {});
+      continue;
+    }
+
     let rec;
-    try { rec = parseFrame(f); } catch { p.errors += 1; continue; }
+    try { rec = parseFrame(f); }
+    catch (e) {
+      p.errors += 1;
+      insertParseError({ port, ip: conn.ip, srcPort: conn.port, device: conn.imei || null, data: f, error: e?.message || String(e) }).catch(() => {});
+      continue;
+    }
     if (rec.imei) conn.imei = rec.imei;
+    if (rec.prefix) conn.prefix = rec.prefix;
     // raw log — one row per frame, tagged with port + device
     insertRawLog({ dir: "in", ip: conn.ip, srcPort: conn.port, port, device: rec.imei || conn.imei || null, data: f, bytes: f.length }).catch(() => {});
     if (rec.cmd === "LK") {
@@ -125,3 +143,41 @@ export async function syncFromDb() {
 // Open + mark enabled / Close + mark disabled (persist desired state).
 export async function open(port) { const r = await openPort(port); if (r.ok) { try { await setPortEnabled(port, true); } catch {} } return r; }
 export async function close(port) { const r = await closePort(port); try { await setPortEnabled(port, false); } catch {} return r; }
+
+// ---- downlink control -----------------------------------------------------
+// Every device that is currently connected (across all managed ports), so the UI
+// / API can pick one to command.
+export function listConnectedDevices() {
+  const s = S(); const out = [];
+  for (const [port, p] of s.ports.entries())
+    for (const conn of p.conns.values())
+      if (conn.imei) out.push({ imei: conn.imei, port, ip: conn.ip, since: conn.connectedAt });
+  return out;
+}
+
+// Push a downlink to a connected device by IMEI (or "ALL") over its OPEN socket —
+// the device keeps streaming; this writes back whenever you call it.
+//   wrap=false (default) -> the bare command bytes, e.g. "upgrade#"
+//   wrap=true            -> the GL-28 frame [3G*IMEI*LEN*upgrade#]
+export function sendToDevice(imei, cmd, { wrap = false } = {}) {
+  const s = S();
+  const all = String(imei).toUpperCase() === "ALL";
+  const results = [];
+  for (const [port, p] of s.ports.entries()) {
+    for (const conn of p.conns.values()) {
+      if (!conn.imei || (!all && conn.imei !== imei)) continue;
+      const payload = wrap
+        ? `[${conn.prefix || "3G"}*${conn.imei}*${Buffer.byteLength(cmd, "latin1").toString(16).toUpperCase().padStart(4, "0")}*${cmd}]`
+        : cmd;
+      try {
+        conn.socket.write(Buffer.from(payload, "latin1"));
+        p.bytesOut = (p.bytesOut || 0) + payload.length;
+        console.log(`[ports] -> ${conn.imei} @:${port}  ${payload}`);
+        results.push({ imei: conn.imei, port, ok: true, sent: payload });
+      } catch (e) {
+        results.push({ imei: conn.imei, port, ok: false, error: e.message });
+      }
+    }
+  }
+  return { targets: results.length, sent: results.filter((r) => r.ok).length, results };
+}

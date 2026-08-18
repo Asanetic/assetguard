@@ -26,6 +26,21 @@ export async function setConfig(key, value, updatedBy = null) {
   return rows[0].value;
 }
 
+// ---- Branding (company logo → watermark on generated documents) -----------
+
+export const BRANDING_DEFAULTS = { companyName: "", logoDataUrl: "", watermark: true };
+
+/** Company branding: name + logo (data URL) used as the watermark on reports. */
+export async function getBranding() {
+  const v = (await getConfig("branding").catch(() => null)) || {};
+  return { ...BRANDING_DEFAULTS, ...v };
+}
+/** Save branding (admin). logoDataUrl is a data: URL (PNG/JPG/SVG). */
+export async function setBranding(value, updatedBy = null) {
+  const merged = { ...BRANDING_DEFAULTS, ...(value || {}) };
+  return setConfig("branding", merged, updatedBy);
+}
+
 // ---- Google Maps ----------------------------------------------------------
 
 export const MAPS_LIBRARIES = ["places", "geometry", "drawing", "marker", "visualization"];

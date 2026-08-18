@@ -1,13 +1,13 @@
 // app/mainapp/logs/page.jsx
 import AppShell from "../shell/AppShell.jsx";
-import DeviceLogs from "./components/DeviceLogs.jsx";
+import Heartbeats from "./components/Heartbeats.jsx";
 
-export const metadata = { title: "Device logs · AssetGuard" };
+export const metadata = { title: "Heartbeats · AssetGuard" };
 
-export default function DeviceLogsPage() {
+export default function HeartbeatsPage() {
   return (
     <AppShell active="logs">
-      <DeviceLogs />
+      <Heartbeats />
     </AppShell>
   );
 }

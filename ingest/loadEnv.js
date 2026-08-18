@@ -27,9 +27,14 @@ function loadFile(file) {
   } catch { return false; }
 }
 
-// Same precedence Next.js uses in dev (first file to set a var wins).
+// Read the same env files Next.js does, PRODUCTION included (on a VPS the real
+// DATABASE_URL usually lives in .env.production). First file to set a var wins,
+// so the more specific / local files come first.
 const root = process.cwd();
-const files = [".env.development.local", ".env.local", ".env.development", ".env"];
+const files = [
+  ".env.production.local", ".env.development.local", ".env.local",
+  ".env.production", ".env.development", ".env",
+];
 const loaded = files.filter((f) => loadFile(path.join(root, f)));
 
 if (loaded.length) console.log(`[ingest] loaded env from: ${loaded.join(", ")}`);

@@ -27,10 +27,21 @@ export async function insertNotification(r) {
 }
 
 // Recent notifications for the Notifications page, with optional filters.
-export async function listNotifications({ status, channel, q, limit = 300 } = {}) {
+// EAT-day/week/month/year start expression (whitelisted — safe to inline).
+const RANGE_START = {
+  today: "date_trunc('day', now())",
+  week:  "date_trunc('week', now())",
+  month: "date_trunc('month', now())",
+  year:  "date_trunc('year', now())",
+};
+function rangeStart(range) { return RANGE_START[range] || null; }
+
+export async function listNotifications({ status, channel, q, range, limit = 300 } = {}) {
   const where = [], params = [];
   if (status)  { params.push(status);  where.push(`status = $${params.length}`); }
   if (channel) { params.push(channel); where.push(`channel = $${params.length}`); }
+  const rs = rangeStart(range);
+  if (rs) where.push(`created_at >= ${rs}`);
   if (q && q.trim()) {
     params.push(`%${q.trim().toLowerCase()}%`);
     const i = params.length;
@@ -51,17 +62,20 @@ export async function listNotifications({ status, channel, q, limit = 300 } = {}
   }
 }
 
-// Headline counts for the page (today + failures).
-export async function notificationStats() {
+// Headline counts scoped to the selected range (today / week / month / year).
+// Field names keep the *_today suffix for backward-compatibility with the UI;
+// they now reflect whatever range was requested.
+export async function notificationStats(range = "today") {
+  const rs = rangeStart(range) || RANGE_START.today;
   try {
     const { rows } = await query(
       `SELECT
-         count(*) FILTER (WHERE created_at >= date_trunc('day', now()))::int AS today,
-         count(*) FILTER (WHERE status = 'sent'  AND created_at >= date_trunc('day', now()))::int AS sent_today,
-         count(*) FILTER (WHERE status = 'failed' AND created_at >= date_trunc('day', now()))::int AS failed_today,
-         count(*) FILTER (WHERE status = 'no_contact' AND created_at >= date_trunc('day', now()))::int AS nocontact_today,
-         count(*) FILTER (WHERE channel = 'email' AND status = 'sent' AND created_at >= date_trunc('day', now()))::int AS email_today,
-         count(*) FILTER (WHERE channel = 'sms'   AND status = 'sent' AND created_at >= date_trunc('day', now()))::int AS sms_today
+         count(*) FILTER (WHERE created_at >= ${rs})::int AS today,
+         count(*) FILTER (WHERE status = 'sent'  AND created_at >= ${rs})::int AS sent_today,
+         count(*) FILTER (WHERE status = 'failed' AND created_at >= ${rs})::int AS failed_today,
+         count(*) FILTER (WHERE status = 'no_contact' AND created_at >= ${rs})::int AS nocontact_today,
+         count(*) FILTER (WHERE channel = 'email' AND status = 'sent' AND created_at >= ${rs})::int AS email_today,
+         count(*) FILTER (WHERE channel = 'sms'   AND status = 'sent' AND created_at >= ${rs})::int AS sms_today
        FROM notifications`);
     return rows[0] || {};
   } catch { return {}; }
@@ -70,15 +84,17 @@ export async function notificationStats() {
 // Per-channel delivery breakdown. `sent` = total attempts, `delivered` = accepted
 // by the provider (status 'sent'), `failed` = rejected. We don't yet have async
 // delivery receipts, so `pending` is always 0 (the column is ready for later).
-export async function channelBreakdown() {
+export async function channelBreakdown(range) {
+  const rs = rangeStart(range);
+  const scope = rs ? `WHERE created_at >= ${rs}` : "";
   try {
     const { rows } = await query(
       `SELECT channel,
               count(*)::int AS sent,
               count(*) FILTER (WHERE status = 'sent')::int   AS delivered,
               count(*) FILTER (WHERE status = 'failed')::int AS failed,
-              count(*) FILTER (WHERE created_at >= date_trunc('day', now()))::int AS today
-         FROM notifications
+              count(*)::int AS today
+         FROM notifications ${scope}
         GROUP BY channel`);
     const map = {};
     for (const r of rows) map[r.channel] = { sent: r.sent, delivered: r.delivered, failed: r.failed, pending: 0, today: r.today };

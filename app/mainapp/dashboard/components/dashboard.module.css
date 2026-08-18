@@ -40,12 +40,42 @@
 .catBarOpen { font-style: normal; font-weight: 700; font-size: 10.5px; color: #B91C1C; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 999px; padding: 1px 7px; }
 .empty { color: #94A3B8; text-align: center; padding: 18px; font-size: 13px; }
 
-/* today's telemetry mini stats */
+/* today's telemetry mini stats (legacy 4-up, still used elsewhere) */
 .miniStats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 @media (max-width: 640px) { .miniStats { grid-template-columns: repeat(2, 1fr); } }
 .mini { background: #F8FAFC; border: 1px solid #EEF2F7; border-radius: 12px; padding: 14px; text-align: center; }
 .miniN { font-size: 22px; font-weight: 800; color: #0F274A; }
 .miniK { font-size: 11.5px; color: #64748B; margin-top: 3px; }
+
+/* today's telemetry — 8 stat tiles */
+.tGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 1000px) { .tGrid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .tGrid { grid-template-columns: 1fr; } }
+.tCard { background: #F8FAFC; border: 1px solid #EEF2F7; border-radius: 12px; padding: 14px 16px; text-decoration: none; display: block; transition: box-shadow .15s, transform .05s; }
+.tCard:hover { box-shadow: 0 6px 18px rgba(15,23,42,.07); transform: translateY(-1px); }
+.tN { font-size: 24px; font-weight: 800; color: #0F274A; line-height: 1.1; }
+.tK { font-size: 12px; font-weight: 700; color: #334155; margin-top: 4px; }
+.tSub { font-size: 11px; color: #94A3B8; margin-top: 2px; }
+
+/* activity / user admin — grouped list cards */
+.groups { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1000px) { .groups { grid-template-columns: 1fr; } }
+
+/* system health — range toggle + area charts */
+.rangeSel { display: inline-flex; gap: 4px; background: #F1F5F9; padding: 3px; border-radius: 999px; }
+.rangeBtn, .rangeOn { border: 0; background: transparent; color: #475569; font-size: 11.5px; font-weight: 700; padding: 5px 12px; border-radius: 999px; cursor: pointer; }
+.rangeOn { background: #fff; color: #0F274A; box-shadow: 0 1px 2px rgba(15,23,42,.12); }
+.hcHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.hcTitle { font-size: 13px; font-weight: 800; color: #0F274A; }
+.hcSub { font-size: 11px; color: #94A3B8; margin-top: 2px; max-width: 320px; }
+.hcPct { font-size: 26px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.areaSvg { width: 100%; height: auto; display: block; }
+.axLbl { font-size: 9px; fill: #94A3B8; }
+.rows { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; justify-content: space-between; padding: 11px 2px; border-bottom: 1px solid #F4F7FB; }
+.row:last-child { border-bottom: none; }
+.rowL { font-size: 13px; color: #475569; }
+.rowV { font-size: 16px; font-weight: 800; color: #0F274A; font-variant-numeric: tabular-nums; }
 
 /* donut */
 .donutWrap { display: grid; place-items: center; padding: 4px 0 8px; }

@@ -42,6 +42,14 @@ function statusPill(status) {
 }
 const NONE_CH = { label: "—", icon: "ti-user-off", color: "#94A3B8" };
 
+// Period filter — mirrors the reports period pills.
+const RANGES = [
+  { k: "today", label: "Today" },
+  { k: "week", label: "This week" },
+  { k: "month", label: "This month" },
+  { k: "year", label: "This year" },
+];
+
 export default function Notifications() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +57,7 @@ export default function Notifications() {
   const [status, setStatus] = useState("");
   const [channel, setChannel] = useState("");
   const [q, setQ] = useState("");
+  const [range, setRange] = useState("today");
 
   async function load() {
     try {
@@ -56,26 +65,29 @@ export default function Notifications() {
       if (status) p.set("status", status);
       if (channel) p.set("channel", channel);
       if (q.trim()) p.set("q", q.trim());
+      p.set("range", range);
       const r = await fetch(`/api/mainapp/notifications?${p}`, { cache: "no-store" });
       const j = await r.json();
       if (!r.ok) { setErr(j.error || "Failed to load"); return; }
       setData(j); setErr("");
     } catch { setErr("Network error"); } finally { setLoading(false); }
   }
-  useEffect(() => { load(); const id = setInterval(load, 20000); return () => clearInterval(id); /* eslint-disable-next-line */ }, [status, channel]);
+  useEffect(() => { load(); const id = setInterval(load, 20000); return () => clearInterval(id); /* eslint-disable-next-line */ }, [status, channel, range]);
 
   const rows = data?.notifications || [];
   const st = data?.stats || {};
   const chData = data?.channels || {};
   const providers = data?.providers || [];
 
-  // Stat cards (today), summed from the log.
+  // Stat cards scoped to the selected range.
   const delivered = st.sent_today ?? 0;      // provider accepted
   const failed = st.failed_today ?? 0;       // provider rejected
   const noContact = st.nocontact_today ?? 0; // site had no recipients
   const totalToday = st.today ?? 0;
   const attempts = delivered + failed;
   const rate = attempts ? ((delivered / attempts) * 100).toFixed(1) : "0.0";
+  const rangeLabel = (RANGES.find((r) => r.k === range) || RANGES[0]).label;
+  const rangeUp = rangeLabel.toUpperCase();
 
   return (
     <div className={styles.page}>
@@ -86,12 +98,26 @@ export default function Notifications() {
         </div>
       </div>
 
-      {/* delivery stats (today) */}
+      {/* period pills — Today / This week / This month / This year */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {RANGES.map((r) => {
+          const on = range === r.k;
+          return (
+            <button key={r.k} type="button" onClick={() => setRange(r.k)}
+              style={{ border: `1px solid ${on ? "#2E6CF5" : "#E2E8F0"}`, background: on ? "#2E6CF5" : "#fff", color: on ? "#fff" : "#334155",
+                borderRadius: 999, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+              {r.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* delivery stats (selected range) */}
       <div className={styles.stats}>
-        <Stat k="SENT TODAY" v={delivered.toLocaleString()} sub={`${rate}% of attempts`} icon="ti-circle-check" color="#059669" bg="#D1FAE5" />
+        <Stat k={`SENT ${rangeUp}`} v={delivered.toLocaleString()} sub={`${rate}% of attempts`} icon="ti-circle-check" color="#059669" bg="#D1FAE5" />
         <Stat k="NOT SENT" v={failed} sub={failed ? "provider rejected" : "all clear"} icon="ti-alert-triangle" color="#DC2626" bg="#FEE2E2" warn={failed > 0} />
         <Stat k="NO CONTACTS" v={noContact} sub={noContact ? "site had no recipients" : "every alarm reached someone"} icon="ti-user-off" color="#B45309" bg="#FEF3C7" warn={noContact > 0} />
-        <Stat k="TOTAL TODAY" v={totalToday.toLocaleString()} sub="all notification events" icon="ti-send" color="#2E6CF5" bg="#DBE7FE" />
+        <Stat k={`TOTAL ${rangeUp}`} v={totalToday.toLocaleString()} sub="all notification events" icon="ti-send" color="#2E6CF5" bg="#DBE7FE" />
       </div>
 
       {/* by channel */}

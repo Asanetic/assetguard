@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { getAuth } from "../../apiUtils/authUtils/session.js";
-import { heartbeatDevice, dailyHeartbeats, dayHeartbeats } from "../../apiUtils/dataControl/deviceHeartbeats.js";
+import { heartbeatDevice, dailyHeartbeats, dayHeartbeats, fleetAvailability } from "../../apiUtils/dataControl/deviceHeartbeats.js";
 
 // EAT day boundaries: a YYYY-MM-DD in EAT starts at 00:00 +03:00.
 const eatStart = (d) => `${d}T00:00:00+03:00`;
@@ -24,7 +24,18 @@ export async function GET(request) {
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  if (!device) return NextResponse.json({ error: "device is required" }, { status: 400 });
+  // No device → FLEET availability (system-wide SLA: how many devices are
+  // sending data, and availability % over 7/14/30/365-day windows).
+  if (!device) {
+    try {
+      const windowDays = Number(searchParams.get("window")) || 30;
+      const fleet = await fleetAvailability(windowDays);
+      return NextResponse.json({ fleet });
+    } catch (err) {
+      console.error("[logs fleet] error", err);
+      return NextResponse.json({ error: "Failed to load fleet availability" }, { status: 500 });
+    }
+  }
 
   try {
     const dev = await heartbeatDevice(device);

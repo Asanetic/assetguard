@@ -40,9 +40,9 @@ function dayHealth(d) {
   return { key, label, low };
 }
 
-export default function DeviceLogs() {
+export default function DeviceLogs({ initialDevice = "" }) {
   const [devices, setDevices] = useState([]);
-  const [device, setDevice] = useState("");        // device_id
+  const [device, setDevice] = useState(initialDevice); // device_id
   const today = useMemo(() => new Date(), []);
   const [from, setFrom] = useState(isoDate(new Date(today.getTime() - 13 * 86400000)));
   const [to, setTo] = useState(isoDate(today));

@@ -10,6 +10,7 @@ import { getAuth } from "../../apiUtils/authUtils/session.js";
 import { alarmPerms } from "../../apiUtils/authUtils/alarmPerms.js";
 import { getUserOrg } from "../../apiUtils/dataControl/companies.js";
 import { buildReport } from "../../apiUtils/dataControl/reports.js";
+import { getBranding } from "../../apiUtils/dataControl/appConfig.js";
 
 const PERIODS = new Set(["weekly", "monthly", "quarterly", "yearly"]);
 
@@ -26,6 +27,7 @@ export async function GET(request) {
       restrict = alarmPerms({ role: me.role, purposes: org.purposes }).criticalOnly;
     } catch {}
     const report = await buildReport(period, { restrictCritical: restrict });
+    report.branding = await getBranding().catch(() => ({ companyName: "", logoDataUrl: "", watermark: true }));
     return NextResponse.json({ report, viewer: { criticalOnly: restrict } });
   } catch (err) {
     console.error("[reports GET] error", err);

@@ -118,3 +118,75 @@ export async function dayHeartbeats(deviceIdText, dateStr, limit = 5000) {
     gap_s: r.gap_s,
   }));
 }
+
+/**
+ * FLEET availability (SLA). A device counts as "up" on an EAT day if it sent
+ * data at least once that day. System availability over a window of N days is
+ *   Σ(device-days that reported) / (devices × N).
+ * Returns current 24h status, availability % for 7/14/30/365-day windows, and a
+ * per-device breakdown for the requested window (worst first — SLA triage).
+ */
+export async function fleetAvailability(windowDays = 30) {
+  const W = [7, 14, 30, 365].includes(Number(windowDays)) ? Number(windowDays) : 30;
+
+  // 1) fleet size + how many reported in the last 24h ("up now")
+  const totalsSql = `
+    SELECT
+      (SELECT count(*)::int FROM devices) AS total,
+      (SELECT count(DISTINCT dt.device_id)::int FROM device_telemetry dt
+         WHERE COALESCE(dt.device_time, dt.received_at) >= now() - interval '24 hours') AS up_now`;
+
+  // 2) distinct (device, EAT-day) that reported, per window → device-days up
+  const ddSql = `
+    SELECT
+      count(DISTINCT (id, day)) FILTER (WHERE ts >= now() - interval '7 days')::int   AS d7,
+      count(DISTINCT (id, day)) FILTER (WHERE ts >= now() - interval '14 days')::int  AS d14,
+      count(DISTINCT (id, day)) FILTER (WHERE ts >= now() - interval '30 days')::int  AS d30,
+      count(DISTINCT (id, day)) FILTER (WHERE ts >= now() - interval '365 days')::int AS d365
+    FROM (
+      SELECT dt.device_id AS id,
+             (COALESCE(dt.device_time, dt.received_at) AT TIME ZONE $1)::date AS day,
+             COALESCE(dt.device_time, dt.received_at) AS ts
+        FROM device_telemetry dt
+       WHERE COALESCE(dt.device_time, dt.received_at) >= now() - interval '365 days'
+    ) x`;
+
+  // 3) per-device availability for the chosen window
+  const perDevSql = `
+    SELECT d.device_id, d.imei, COALESCE(s.name, d.site) AS site, d.last_seen,
+           count(DISTINCT (COALESCE(dt.device_time, dt.received_at) AT TIME ZONE $1)::date)::int AS days_up
+      FROM devices d
+      LEFT JOIN sites s ON s.id = d.site_id
+      LEFT JOIN device_telemetry dt ON dt.device_id = d.id
+             AND COALESCE(dt.device_time, dt.received_at) >= now() - ($2 || ' days')::interval
+     GROUP BY d.id, d.device_id, d.imei, s.name, d.site, d.last_seen
+     ORDER BY days_up ASC, d.last_seen ASC NULLS FIRST`;
+
+  const [tot, dd, per] = await Promise.all([
+    query(totalsSql).then((r) => r.rows[0] || {}).catch(() => ({})),
+    query(ddSql, [TZ]).then((r) => r.rows[0] || {}).catch(() => ({})),
+    query(perDevSql, [TZ, W]).then((r) => r.rows).catch(() => []),
+  ]);
+
+  const total = Number(tot.total) || 0;
+  const pct = (deviceDays, n) => (total > 0 && n > 0 ? Math.round((Number(deviceDays) / (total * n)) * 1000) / 10 : 0);
+  const now24 = Date.now() - 24 * 3600 * 1000;
+
+  return {
+    now: { up: Number(tot.up_now) || 0, total, pct: total > 0 ? Math.round((Number(tot.up_now) / total) * 1000) / 10 : 0 },
+    windows: {
+      d7: pct(dd.d7, 7), d14: pct(dd.d14, 14), d30: pct(dd.d30, 30), d365: pct(dd.d365, 365),
+    },
+    window: W,
+    devices: per.map((r) => ({
+      device_id: r.device_id,
+      imei: r.imei,
+      site: r.site || "—",
+      last_seen: r.last_seen,
+      days_up: Number(r.days_up) || 0,
+      days: W,
+      pct: W > 0 ? Math.round((Number(r.days_up) / W) * 1000) / 10 : 0,
+      up: r.last_seen ? new Date(r.last_seen).getTime() >= now24 : false,
+    })),
+  };
+}

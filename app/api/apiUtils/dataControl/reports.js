@@ -79,6 +79,12 @@ export async function buildReport(period, { restrictCritical = false } = {}) {
               count(*) FILTER (WHERE close_outcome='false')::int AS false_positive,
               round(avg(EXTRACT(EPOCH FROM (LEAST(ack_monitoring_at, ack_security_at) - created_at))/60)
                     FILTER (WHERE ack_monitoring_at IS NOT NULL OR ack_security_at IS NOT NULL))::int AS mtta_min,
+              -- ack times are measured separately per company: the monitoring
+              -- company (NOC) and the security company acknowledge independently.
+              round(avg(EXTRACT(EPOCH FROM (ack_monitoring_at - created_at))/60)
+                    FILTER (WHERE ack_monitoring_at IS NOT NULL))::int AS mtta_monitoring_min,
+              round(avg(EXTRACT(EPOCH FROM (ack_security_at - created_at))/60)
+                    FILTER (WHERE ack_security_at IS NOT NULL))::int AS mtta_security_min,
               round(avg(EXTRACT(EPOCH FROM (closed_at - created_at))/60)
                     FILTER (WHERE closed_at IS NOT NULL))::int AS mttr_min
          FROM alarms WHERE ${aw} AND created_at >= $1 AND created_at < $2`,
@@ -123,10 +129,14 @@ export async function buildReport(period, { restrictCritical = false } = {}) {
     // SLA inputs
     one(`SELECT count(*)::int AS n FROM missed_alarms WHERE created_at >= $1 AND created_at < $2`, [fromIso, toIso]).catch(() => ({ n: 0 })),
     one(`SELECT count(*) FILTER (WHERE battery IS NOT NULL AND battery < 10)::int AS below10, COALESCE(MIN(battery),100)::int AS min_batt, count(*)::int AS total FROM devices`),
-    // alarm lifecycle log for the period
+    // FULL alarm lifecycle log for the period — raised → ack (monitoring +
+    // security, independently) → close, with who / notes / timestamps / photos.
     many(
-      `SELECT id, name, priority, alarm_type, status, site, device_id, created_at,
-              LEAST(ack_monitoring_at, ack_security_at) AS ack_at, closed_at, close_outcome, close_note
+      `SELECT id, name, priority, alarm_type, status, site, device_id, incident_id, created_at,
+              LEAST(ack_monitoring_at, ack_security_at) AS ack_at,
+              ack_monitoring_at, ack_monitoring_by, ack_monitoring_finding, ack_monitoring_note,
+              ack_security_at,   ack_security_by,   ack_security_finding,   ack_security_note,
+              closed_at, closed_by, close_outcome, close_note, close_photos
          FROM alarms WHERE ${aw} AND created_at >= $1 AND created_at < $2
         ORDER BY created_at DESC LIMIT 500`, [fromIso, toIso]),
   ]);
@@ -141,13 +151,17 @@ export async function buildReport(period, { restrictCritical = false } = {}) {
   const availability = devTotal ? +(((devAgg.live || 0) / devTotal) * 100).toFixed(1) : 0;
 
   const mtta = alarmAgg.mtta_min ?? null;
+  const mttaMon = alarmAgg.mtta_monitoring_min ?? null;
+  const mttaSec = alarmAgg.mtta_security_min ?? null;
   const mttr = alarmAgg.mttr_min ?? null;
   const openUnack = (alarmAgg.total || 0) - (alarmAgg.acknowledged || 0);
 
-  // Contracted SLAs — each measured, not asserted.
+  // Contracted SLAs — each measured, not asserted. Ack time is reported per
+  // company (monitoring NOC and security acknowledge independently).
   const slaRows = [
     { name: "Platform uptime", target: "≥ 99.5%", value: `${uptime}%`, met: uptime >= 99.5 },
-    { name: "Incident response (MTTA)", target: "≤ 5 min", value: mtta == null ? "—" : `${mtta} min`, met: mtta == null ? true : mtta <= 5 },
+    { name: "MTTA — Monitoring (NOC)", target: "≤ 5 min", value: mttaMon == null ? "—" : `${mttaMon} min`, met: mttaMon == null ? true : mttaMon <= 5 },
+    { name: "MTTA — Security company", target: "≤ 15 min", value: mttaSec == null ? "—" : `${mttaSec} min`, met: mttaSec == null ? true : mttaSec <= 15 },
     { name: "Incident resolution (MTTR)", target: "≤ 60 min", value: mttr == null ? "—" : `${mttr} min`, met: mttr == null ? true : mttr <= 60 },
     { name: "Missed alarms", target: "0 missed", value: `${missed.n || 0}`, met: (missed.n || 0) === 0 },
     { name: "Device battery ≥ 10%", target: "≥ 10%", value: `${battery.below10 || 0} below`, met: (battery.below10 || 0) === 0 },
@@ -166,7 +180,7 @@ export async function buildReport(period, { restrictCritical = false } = {}) {
     incidents: {
       total: alarmAgg.total || 0, critical: alarmAgg.critical || 0, high: alarmAgg.high || 0,
       medium: alarmAgg.medium || 0, low: alarmAgg.low || 0, resolved: alarmAgg.closed || 0,
-      mttaMin: mtta, mttrMin: mttr,
+      mttaMin: mtta, mttaMonitoringMin: mttaMon, mttaSecurityMin: mttaSec, mttrMin: mttr,
     },
     devices: {
       total: devTotal, available: devAgg.live || 0, availability,
@@ -188,10 +202,16 @@ export async function buildReport(period, { restrictCritical = false } = {}) {
       reporting: seriesRows.map((r) => r.reporting),
     },
     topSites: topSites.map((r) => ({ site: r.site, n: r.n })),
+    // Full lifecycle per alarm: raised → ack (monitoring + security) → closed,
+    // with who, findings, notes, timestamps and any photos captured at close.
     alarmLog: alarmLog.map((a) => ({
       id: a.id, name: a.name, priority: a.priority, alarm_type: a.alarm_type, status: a.status,
-      site: a.site, device_id: a.device_id, created_at: a.created_at, ack_at: a.ack_at,
-      closed_at: a.closed_at, outcome: a.close_outcome, note: a.close_note,
+      site: a.site, device_id: a.device_id, incident_id: a.incident_id,
+      created_at: a.created_at, ack_at: a.ack_at,
+      ackMonitoring: a.ack_monitoring_at ? { at: a.ack_monitoring_at, by: a.ack_monitoring_by, finding: a.ack_monitoring_finding, note: a.ack_monitoring_note } : null,
+      ackSecurity: a.ack_security_at ? { at: a.ack_security_at, by: a.ack_security_by, finding: a.ack_security_finding, note: a.ack_security_note } : null,
+      closed_at: a.closed_at, closed_by: a.closed_by, outcome: a.close_outcome, note: a.close_note,
+      photos: Array.isArray(a.close_photos) ? a.close_photos : (a.close_photos || []),
     })),
   };
 }

@@ -26,14 +26,23 @@
 
 const GRAVITY_MG = 1000;
 
+// Split a buffer into complete frames. Handles BOTH wire formats the trackers
+// use: bracketed frames  [3G*IMEI*...]  (location/heartbeat data) and HQ text
+// frames  *HQ,IMEI,...#  (used by command replies). Whichever token starts first
+// is taken next, so a stream that mixes the two still frames correctly.
 export function extractFrames(buf) {
   const frames = [];
   let rest = buf || "";
-  while (true) {
-    const start = rest.indexOf("[");
-    if (start < 0) { rest = ""; break; }
-    const end = rest.indexOf("]", start);
-    if (end < 0) { rest = rest.slice(start); break; }
+  while (rest.length) {
+    const lb = rest.indexOf("[");
+    const st = rest.indexOf("*");
+    const cands = [lb, st].filter((i) => i >= 0);
+    if (!cands.length) { rest = ""; break; }        // nothing framable left
+    const start = Math.min(...cands);
+    const openCh = rest[start];
+    const closeCh = openCh === "[" ? "]" : "#";      // bracket → ], HQ → #
+    const end = rest.indexOf(closeCh, start + 1);
+    if (end < 0) { rest = rest.slice(start); break; } // incomplete — keep for next chunk
     frames.push(rest.slice(start, end + 1));
     rest = rest.slice(end + 1);
   }

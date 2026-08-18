@@ -35,21 +35,64 @@ export default function PortsManager() {
   const [newModel, setNewModel] = useState("");
   const timer = useRef(null);
 
+  // ---- send-command state ----
+  const [connected, setConnected] = useState([]);
+  const [cmdImei, setCmdImei] = useState("");
+  const [cmdText, setCmdText] = useState("UPGRADE");
+  const [cmdMode, setCmdMode] = useState("tc");   // "tc" = wrapped, "raw" = verbatim
+  const [cmdPrefix, setCmdPrefix] = useState("SG");
+  const [sending, setSending] = useState(false);
+  const [sendMsg, setSendMsg] = useState(null);
+
   async function poll() {
     try {
-      const [p, r, t, s] = await Promise.all([
+      const [p, r, t, s, c] = await Promise.all([
         fetch("/api/mainapp/ports", { cache: "no-store" }),
         fetch("/api/mainapp/ports/raw?limit=4", { cache: "no-store" }),
         fetch("/api/mainapp/ingest/telemetry?newest=1&limit=4", { cache: "no-store" }),
         fetch("/api/mainapp/ports/stats", { cache: "no-store" }),
+        fetch("/api/mainapp/ingest/send-command", { cache: "no-store" }),
       ]);
       if (p.ok) setPorts((await p.json()).ports || []);
       if (r.ok) setRaw((await r.json()).raw || []);
       if (t.ok) setParsed((await t.json()).telemetry || []);
       if (s.ok) setStats(await s.json());
+      if (c.ok) setConnected((await c.json()).connected || []);
     } catch {}
   }
   useEffect(() => { poll(); timer.current = setInterval(poll, 3000); return () => clearInterval(timer.current); }, []);
+  // Prefill the IMEI with the first connected device once one appears.
+  useEffect(() => { if (!cmdImei && connected[0]?.imei) setCmdImei(connected[0].imei); }, [connected]);
+
+  // Build the exact bytes to send: wrapped [PREFIX*IMEI*LEN*cmd], or raw verbatim.
+  // LEN = hex byte-length of the command payload (verified against real uplink frames).
+  function buildFrame() {
+    if (cmdMode === "raw") return cmdText;
+    const imei = (cmdImei || "IMEI").trim();
+    let payload = cmdText.trim();
+    if (!payload.endsWith("#")) payload += "#";   // every command ends with '#'
+    const len = byteLen(payload).toString(16).toUpperCase().padStart(4, "0");
+    return `[${(cmdPrefix || "SG").trim()}*${imei}*${len}*${payload}]`;
+  }
+  const cmdTok = cmdText.trim().toUpperCase().split(",")[0];
+  const cmdHelp = COMMANDS.find((c) => c.code === cmdTok)?.desc || "";
+  async function sendCommand() {
+    const imei = (cmdImei || "").trim();
+    if (!imei) { setSendMsg({ ok: false, text: "Enter or pick a device IMEI first" }); return; }
+    const frame = buildFrame();
+    setSending(true); setSendMsg(null);
+    try {
+      // wrap:false → portManager writes the exact bytes we built
+      const r = await fetch("/api/mainapp/ingest/send-command", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imei, cmd: frame, wrap: false }),
+      });
+      const d = await r.json();
+      if (r.ok && d.ok) setSendMsg({ ok: true, text: `Sent to ${imei} (${d.sent}/${d.targets}) · ${frame}` });
+      else setSendMsg({ ok: false, text: d.error || "Send failed — device may not be connected" });
+    } catch { setSendMsg({ ok: false, text: "Network error" }); }
+    finally { setSending(false); }
+  }
 
   async function toggle(port, action) {
     setBusy(`${port}:${action}`); setErr("");
@@ -92,7 +135,7 @@ export default function PortsManager() {
         <div className={styles.stat}><div className={`${styles.statN} ${styles.nGreen}`}>{(S.activeConnections ?? 0).toLocaleString()}</div><div className={styles.statK}>Active connections</div><div className={styles.statSub}>live sockets</div></div>
         <div className={styles.stat}><div className={styles.statN}>{(S.messagesToday ?? 0).toLocaleString()}</div><div className={styles.statK}>Messages today</div><div className={styles.statSub}>frames in</div></div>
         <div className={styles.stat}><div className={styles.statN}>{bytesMB(S.bytesInToday)}</div><div className={styles.statK}>Bytes in</div><div className={styles.statSub}>today</div></div>
-        <div className={styles.stat}><div className={`${styles.statN} ${styles.nRed}`}>{(S.parseErrors ?? 0).toLocaleString()}</div><div className={styles.statK}>Parse errors</div><div className={styles.statSub}>malformed</div></div>
+        <div className={styles.stat}><div className={`${styles.statN} ${styles.nRed}`}>{(S.parseErrors ?? 0).toLocaleString()}</div><div className={styles.statK}>Parse errors</div><a className={styles.statSub} href="/mainapp/ports/parse-errors" style={{ color: "#2E6CF5", textDecoration: "none" }}>view →</a></div>
         <div className={styles.stat}><div className={`${styles.statN} ${styles.nAmber}`}>{(S.unknownDevices ?? 0).toLocaleString()}</div><div className={styles.statK}>Unknown devices</div><div className={styles.statSub}>not enrolled</div></div>
       </div>
 
@@ -171,6 +214,94 @@ export default function PortsManager() {
           </div>
         </div>
       </div>
+
+      {/* send command to a connected device */}
+      <div className={styles.card}>
+        <div className={styles.panelHead}>
+          <span className={styles.panelTitle}>Send command</span>
+          <span style={{ fontSize: 12, color: "#94a3b8" }}>{connected.length} connected</span>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
+          <div>
+            <label style={SC.lbl}>Target device (IMEI)</label>
+            <input list="conn-imeis" style={SC.in} value={cmdImei} onChange={(e) => setCmdImei(e.target.value)} placeholder="861045082572846" />
+            <datalist id="conn-imeis">
+              {connected.map((c) => <option key={`${c.imei}:${c.port}`} value={c.imei}>{`:${c.port} ${c.ip || ""}`}</option>)}
+            </datalist>
+          </div>
+          <div>
+            <label style={SC.lbl}>Command</label>
+            <select value="" onChange={(e) => { const c = COMMANDS.find((x) => x.code === e.target.value); if (c) setCmdText(c.tmpl); }} style={{ ...SC.in, marginBottom: 6, cursor: "pointer" }}>
+              <option value="">— pick a command —</option>
+              {COMMANDS.map((c) => <option key={c.code} value={c.code}>{c.code} · {c.desc}</option>)}
+            </select>
+            <input style={SC.in} value={cmdText} onChange={(e) => setCmdText(e.target.value)} placeholder="UPGRADE" />
+            {cmdHelp && <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{cmdHelp}</div>}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+              {["UPGRADE", "RESET", "RFS"].map((q) => (
+                <button key={q} type="button" onClick={() => setCmdText(q)} style={SC.chip}>{q}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 16, alignItems: "center", marginTop: 10, flexWrap: "wrap", fontSize: 13 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+            <input type="radio" checked={cmdMode === "tc"} onChange={() => setCmdMode("tc")} /> Wrapped&nbsp;<code style={SC.code}>[PREFIX*IMEI*LEN*cmd]</code>
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+            <input type="radio" checked={cmdMode === "raw"} onChange={() => setCmdMode("raw")} /> Raw exact (type the full frame)
+          </label>
+          {cmdMode === "tc" && (
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              prefix <input style={{ ...SC.in, width: 70, padding: "5px 8px" }} value={cmdPrefix} onChange={(e) => setCmdPrefix(e.target.value)} />
+            </span>
+          )}
+        </div>
+
+        <label style={SC.lbl}>Bytes that will be sent</label>
+        <div style={SC.preview}>{buildFrame() || "—"}</div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
+          <button onClick={sendCommand} disabled={sending} style={{ ...SC.send, opacity: sending ? 0.7 : 1 }}>
+            {sending ? "Sending…" : "Send raw →"}
+          </button>
+          {sendMsg && <span style={{ fontSize: 13, color: sendMsg.ok ? "#16a34a" : "#dc2626", wordBreak: "break-all" }}>{sendMsg.text}</span>}
+        </div>
+      </div>
     </div>
   );
 }
+
+// Official GL-28 "SG" downlink commands (from the manufacturer protocol sheet).
+// tmpl = a ready-to-edit payload; params after the comma are examples.
+const COMMANDS = [
+  { code: "UPGRADE", tmpl: "UPGRADE", desc: "Firmware upgrade" },
+  { code: "RESET", tmpl: "RESET", desc: "Restart device" },
+  { code: "RFS", tmpl: "RFS", desc: "Restore factory settings (keeps IMEI, APN)" },
+  { code: "UPT", tmpl: "UPT,24", desc: "Upload interval after sleep — hours, 0–48" },
+  { code: "GS", tmpl: "GS,30", desc: "Sensor sensitivity threshold" },
+  { code: "CENTER", tmpl: "CENTER,13800138000", desc: "SMS alarm receiving phone number" },
+  { code: "APN", tmpl: "APN,cmnet,,", desc: "Cellular APN / account / password (restart after)" },
+  { code: "IP", tmpl: "IP,123.45.67.89,10219", desc: "Server IP and port (restart after)" },
+  { code: "IMEI", tmpl: "IMEI,861234567890123", desc: "Modify device IMEI" },
+];
+
+// Byte length of the payload (LEN field). ASCII commands = 1 byte/char; this
+// stays correct for any UTF-8 too.
+function byteLen(s) {
+  try { return new TextEncoder().encode(String(s)).length; }
+  catch { return String(s).length; }
+}
+
+// Inline styles for the Send-command card (kept out of the CSS module to avoid
+// selector-purity issues and keep this drop-in self-contained).
+const SC = {
+  lbl: { display: "block", fontSize: 12, color: "#64748b", margin: "10px 0 4px" },
+  in: { width: "100%", padding: "9px 10px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", fontSize: 14, fontFamily: "ui-monospace, monospace", boxSizing: "border-box" },
+  chip: { fontSize: 12, padding: "4px 10px", border: "1px solid #e2e8f0", borderRadius: 999, background: "#fff", color: "#475569", cursor: "pointer" },
+  code: { fontFamily: "ui-monospace, monospace", fontSize: 12, background: "#f1f5f9", padding: "1px 5px", borderRadius: 4, color: "#334155" },
+  preview: { fontFamily: "ui-monospace, monospace", fontSize: 13, color: "#0369a1", background: "#f1f5f9", border: "1px dashed #cbd5e1", borderRadius: 8, padding: "8px 10px", wordBreak: "break-all" },
+  send: { background: "#2E6CF5", color: "#fff", border: 0, borderRadius: 999, padding: "9px 20px", fontSize: 14, cursor: "pointer" },
+};
