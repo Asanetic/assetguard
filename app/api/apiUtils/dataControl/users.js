@@ -148,6 +148,67 @@ export async function updateSelfProfile(id, { name, phone } = {}) {
   return rows[0] || null;
 }
 
+/**
+ * Self-service identity update: name, and OPTIONALLY email / phone.
+ *
+ * Separate from `updateSelfProfile` (name + phone only) because email and phone
+ * are LOGIN IDENTITIES — `findUserByIdentity` matches on both — so changing
+ * either is an account-takeover surface. The caller must have CONSUMED a
+ * one-time code against the new value and re-checked the current password
+ * before calling this. `mainapp/profile` PUT does both; nothing else should
+ * call this function without doing the same.
+ *
+ * Supplying an email or phone also sets the corresponding `*_verified` flag,
+ * because a value that just passed an OTP is verified by definition.
+ */
+export async function updateSelfIdentity(id, { name, email, phone } = {}) {
+  const { rows } = await query(
+    `UPDATE users
+        SET name           = COALESCE($2, name),
+            email          = COALESCE($3, email),
+            phone          = COALESCE($4, phone),
+            email_verified = CASE WHEN $3 IS NULL THEN email_verified ELSE true END,
+            phone_verified = CASE WHEN $4 IS NULL THEN phone_verified ELSE true END
+      WHERE id = $1
+      RETURNING id, name, email, phone, email_verified, phone_verified`,
+    [id, name ?? null, email ?? null, phone ?? null]
+  );
+  return rows[0] || null;
+}
+
+/**
+ * Whether an email or phone already belongs to a DIFFERENT user.
+ *
+ * Same matching rule as `findUserByIdentity`, so "already taken" here means
+ * exactly "someone could already sign in with it".
+ */
+export async function identityTakenByOther(id, { email, phone } = {}) {
+  if (!email && !phone) return false;
+  const { rows } = await query(
+    `SELECT 1 FROM users
+      WHERE id <> $1
+        AND ( ($2::text IS NOT NULL AND lower(email) = lower($2))
+           OR ($3::text IS NOT NULL AND regexp_replace(phone, '\\s+', '', 'g')
+                                      = regexp_replace($3, '\\s+', '', 'g')) )
+      LIMIT 1`,
+    [id, email ?? null, phone ?? null]
+  );
+  return rows.length > 0;
+}
+
+/**
+ * Flags one channel as verified, without touching its value.
+ *
+ * For an address the user already has but has never proved — an account an
+ * administrator created, say. The caller must have consumed a code against the
+ * STORED value first.
+ */
+export async function markVerified(id, channel) {
+  const column = channel === "email" ? "email_verified" : "phone_verified";
+  await query(`UPDATE users SET ${column} = true WHERE id = $1`, [id]);
+  return true;
+}
+
 /** Password hash for one user (id) — for verifying the current password on change. */
 export async function getPasswordHash(id) {
   const { rows } = await query(`SELECT password FROM users WHERE id = $1 LIMIT 1`, [id]);

@@ -1,0 +1,21 @@
+TRACK PAGE LAYOUT — round 4
+===========================
+- Bottom-right control stack raised further (120px -> 160px) so the lowest button
+  (the circle that was peeking under the bar) is fully clear even when the bottom
+  bar wraps to two rows.
+- Added a MAP TYPE toggle to the stack: normal <-> satellite (hybrid, with labels).
+  Icon flips (satellite / map) and it lives in the same stack, so it never overlaps
+  anything.
+- Buzzer stays raised bottom-left (156px).
+
+Stack (top->bottom): Full screen · Satellite/Map · Zoom + · Zoom - · My location · Guidance.
+
+FILES (unzip from app root):
+  app/mainapp/track/components/TrackDevice.jsx
+  app/mainapp/shell/shell.module.css
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-track-layout4.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration.)

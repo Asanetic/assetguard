@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./rawdata.module.css";
 
-function fmt(iso) { try { return new Date(iso).toLocaleString(); } catch { return "—"; } }
+function fmt(iso) { try { return new Date(iso).toLocaleString("en-GB", { timeZone: "Africa/Nairobi", hour12: false }); } catch { return "—"; } }
 
 export default function RawPortData() {
   const [rows, setRows] = useState([]);

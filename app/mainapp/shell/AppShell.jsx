@@ -56,6 +56,7 @@ const MENU = [
       { key: "noc", label: "NOC teams", href: "/mainapp/noc" },
       { key: "settings", label: "Settings", href: "/mainapp/admin/settings" },
       { key: "maps", label: "Google Maps", href: "/mainapp/admin/maps" },
+      { key: "firmware", label: "Firmware", href: "/mainapp/admin/firmware" },
       { key: "messaging", label: "Email & SMS", href: "/mainapp/admin/messaging" },
       { key: "audit", label: "Audit logs", href: "/mainapp/admin/audit" },
     ] },
@@ -197,29 +198,32 @@ export default function AppShell({ children, active, openAlarms = 0, criticalAla
       <div className={styles.body}>
         {/* Rail */}
         <nav className={styles.rail}>
-          <button
-            className={styles.burger}
-            aria-label="Open menu"
-            onClick={() => setDrawer(true)}
-          >
-            <i className="ti ti-menu-2" style={{ fontSize: 21 }} aria-hidden="true" />
-          </button>
-          {RAIL.map((r) => (
+          {/* scrollable icon list — scrolls if the viewport is short, so the bottom
+              cluster (avatar + Log out) below always stays pinned and fully visible */}
+          <div className={styles.railTop}>
             <button
-              key={r.key}
-              className={`${styles.railBtn} ${active === r.key ? styles.railBtnActive : ""}`}
-              onClick={() => go(r.href)}
+              className={styles.burger}
+              aria-label="Open menu"
+              onClick={() => setDrawer(true)}
             >
-              <i className={`ti ${r.icon}`} style={{ fontSize: 19 }} aria-hidden="true" />
-              {r.label}
-              {r.badge && alarms.open > 0 && (
-                <span className={styles.railBadge}>{alarms.open}</span>
-              )}
+              <i className="ti ti-menu-2" style={{ fontSize: 21 }} aria-hidden="true" />
             </button>
-          ))}
+            {RAIL.map((r) => (
+              <button
+                key={r.key}
+                className={`${styles.railBtn} ${active === r.key ? styles.railBtnActive : ""}`}
+                onClick={() => go(r.href)}
+              >
+                <i className={`ti ${r.icon}`} style={{ fontSize: 19 }} aria-hidden="true" />
+                {r.label}
+                {r.badge && alarms.open > 0 && (
+                  <span className={styles.railBadge}>{alarms.open}</span>
+                )}
+              </button>
+            ))}
+          </div>
 
-          {/* bottom cluster — fills the rail base */}
-          <div className={styles.railSpacer} />
+          {/* bottom cluster — pinned to the rail base, never clipped */}
           <button
             className={styles.railAvatar}
             aria-label="Open menu"

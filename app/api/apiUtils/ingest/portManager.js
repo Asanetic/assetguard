@@ -14,6 +14,17 @@ import { listPorts, setPortEnabled } from "../dataControl/listenerPorts.js";
 import { extractFrames, parseFrame } from "./parse.js";
 import { resolveAndStore } from "./store.js";
 import { insertParseError } from "../dataControl/parseErrors.js";
+import { onWake as cmdOnWake, onReply as cmdOnReply } from "./commandRunner.js";
+
+// Commands the platform must acknowledge back to the terminal. The ACK echoes
+// only the command word: [PREFIX*IMEI*LEN*CMD], LEN = hex byte-length of CMD.
+//   position UD → [3G*IMEI*0002*UD]   ICCID CCID → [3G*IMEI*0004*CCID]
+//   heartbeat LK → [3G*IMEI*0002*LK]  alarm AL → [3G*IMEI*0002*AL]
+const ACK_CMDS = new Set(["UD", "UD2", "AL", "LK", "CCID"]);
+function ackFrame(prefix, imei, cmd) {
+  const len = Buffer.byteLength(cmd, "latin1").toString(16).toUpperCase().padStart(4, "0");
+  return `[${prefix || "3G"}*${imei}*${len}*${cmd}]`;
+}
 
 function S() {
   if (!globalThis.__agPortMgr) globalThis.__agPortMgr = { ports: new Map() };
@@ -46,6 +57,8 @@ async function ingest(conn, p, port) {
       const m = f.match(/^\*[^,]*,(\d{6,})/);        // *HQ,<imei>,...
       const dev = (m && m[1]) || conn.imei || null;
       insertRawLog({ dir: "in", ip: conn.ip, srcPort: conn.port, port, device: dev, data: f, bytes: f.length }).catch(() => {});
+      // A command reply (e.g. "*HQ,IMEI,V4,UPGRADE#") ACKs a queued downlink job.
+      if (dev) { try { await cmdOnReply({ imei: dev, replyText: f }); } catch {} }
       continue;
     }
 
@@ -60,10 +73,36 @@ async function ingest(conn, p, port) {
     if (rec.prefix) conn.prefix = rec.prefix;
     // raw log — one row per frame, tagged with port + device
     insertRawLog({ dir: "in", ip: conn.ip, srcPort: conn.port, port, device: rec.imei || conn.imei || null, data: f, bytes: f.length }).catch(() => {});
-    if (rec.cmd === "LK") {
-      try { const ack = `[${rec.prefix}*${rec.imei}*0002*LK]`; conn.socket.write(Buffer.from(ack, "latin1")); } catch {}
-      continue;
+
+    // Platform ACK — the terminal expects an acknowledgement for these frames
+    // (position UD most of all). Echo the command word; also raw-log it (dir out)
+    // so the reply is visible in Raw port data.
+    if (rec.imei && ACK_CMDS.has(rec.cmd)) {
+      try {
+        const ack = ackFrame(rec.prefix, rec.imei, rec.cmd);
+        conn.socket.write(Buffer.from(ack, "latin1"));
+        p.bytesOut = (p.bytesOut || 0) + ack.length;
+        insertRawLog({ dir: "out", ip: conn.ip, srcPort: conn.port, port, device: rec.imei, data: ack, bytes: ack.length }).catch(() => {});
+      } catch {}
     }
+
+    // Device just woke — drain any queued downlink (firmware/command) for it.
+    // send() writes to this device's live socket and raw-logs the frame (dir out).
+    if (rec.imei && rec.cmd !== "CCID") {
+      const send = (frame) => {
+        try {
+          conn.socket.write(Buffer.from(frame, "latin1"));
+          p.bytesOut = (p.bytesOut || 0) + frame.length;
+          insertRawLog({ dir: "out", ip: conn.ip, srcPort: conn.port, port, device: rec.imei, data: frame, bytes: frame.length }).catch(() => {});
+          console.log(`[cmd] -> ${rec.imei} @:${port}  ${frame}`);
+          return true;
+        } catch { return false; }
+      };
+      try { await cmdOnWake({ imei: rec.imei, cmd: rec.cmd, send }); } catch {}
+    }
+
+    // LK (heartbeat) and CCID (ICCID) carry nothing to store — the ACK is enough.
+    if (rec.cmd === "LK" || rec.cmd === "CCID") continue;
     try { await resolveAndStore(rec, conn.ip, conn.port); } catch { p.errors += 1; }
   }
 }
@@ -75,6 +114,17 @@ export function openPort(port) {
     if (p.server && p.status !== "closed" && p.status !== "error") return resolve({ ok: true, already: true, port });
     const server = net.createServer((socket) => {
       socket.setEncoding("latin1");
+      // Detect dead peers: TCP keepalive probes after 60s idle, and an
+      // application idle timeout that reaps a socket with no data for IDLE_MS so
+      // "live sockets" reflects reality instead of counting ghost connections.
+      try { socket.setKeepAlive(true, 60_000); } catch {}
+      const IDLE_MS = Number(process.env.INGEST_IDLE_MS) || 11 * 60_000; // trackers report far more often than this
+      try {
+        socket.setTimeout(IDLE_MS, () => {
+          console.log(`[ports] idle timeout :${port} ${socket.remoteAddress} — closing stale socket`);
+          try { socket.destroy(); } catch {}
+        });
+      } catch {}
       p.connSeq += 1;
       const conn = { id: p.connSeq, socket, ip: socket.remoteAddress, port: socket.remotePort, imei: null, buf: "", connectedAt: new Date().toISOString(), bytesIn: 0 };
       p.conns.set(conn.id, conn);

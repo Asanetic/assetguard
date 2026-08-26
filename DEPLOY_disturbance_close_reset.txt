@@ -1,0 +1,38 @@
+DISTURBANCE — CONSECUTIVE-STREAK COUNT (gap + clean + close reset)
+=================================================================
+Count = the CURRENT consecutive disturbance streak. It resets at the LATEST of:
+  • a QUIET GAP: disturbance packets more than DISTURB_STREAK_GAP_MIN apart
+    (default 10 min) are separate episodes — so an OLD unfinished disturbance
+    (device powered off while disturbed, then woke already disturbed) does NOT
+    bridge into a new one and jump straight to 4. THIS is the fix for "raised on
+    the 1st instance / no early SMS/emails".
+  • a CLEAN packet (bit 0) — device settled.
+  • the last disturbance alarm CLOSE (close-driven reset — not calendar day).
+  • an optional simulator floor.
+
+Graduated within a streak: #1 ignore · #2,#3 SMS+email only · #4 raise the alarm
+(the raise also notifies) · while open -> event until closed.
+So you get messages on #2, #3, and #4 (3 sets), and the ALARM on #4.
+
+Escalation (close-driven): Geofence after Disturbance is raised, OR a fallback
+after off-site >= GEOFENCE_FALLBACK_MIN (default 5 min) with no disturbance;
+Critical Motion after Geofence.
+
+Verified: yesterday x3 + 1 today -> counts 1 (not 4); +2 -> 3; +1 -> 4 (raise);
+clean packet -> 0.
+
+TUNABLES (.env, optional):
+  DISTURB_STREAK_GAP_MIN=10     # minutes; gap that starts a new disturbance episode
+  GEOFENCE_FALLBACK_MIN=5       # minutes off-site before geofence fires without disturbance
+
+FILES (unzip from app root) — supersedes earlier disturbance zips:
+  app/api/apiUtils/ingest/alarmEngine.js
+  app/api/apiUtils/dataControl/alarms.js
+  app/api/apiUtils/ingest/store.js
+  app/api/apiUtils/notify/alarmNotify.js
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-disturbance-streak.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration.)

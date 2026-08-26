@@ -2,6 +2,7 @@
 // Device registry access. The IMEI lookup runs on every ingested packet.
 import { query } from "../s_env/db.js";
 import { THRESHOLD_FIELDS, resolveConfig } from "../ingest/alarmEngine.js";
+import { planToMb } from "./dataUsage.js";
 
 // Coerce an incoming thresholds patch to the allowed numeric keys, clamped to
 // each field's range. Anything else is dropped — the client can't write arbitrary
@@ -69,17 +70,61 @@ export async function touchDeviceLastSeen(id) {
  * excluded so a freshly-registered tracker isn't flagged before its first packet.
  * Drives the Device Offline sweep.
  */
+// Devices that have missed their expected heartbeat window. The wake interval
+// (config.wake_interval_sec, legacy offline_hours*3600, else 24 h) drives it, plus
+// the ±tolerance (config.hb_tolerance_sec, default 300 s). A device is stale only
+// when now - last_seen > interval + tolerance — and ANY packet (heartbeat, critical,
+// tracking) refreshes last_seen, so an early critical never makes it stale.
+// Devices already Inactive / Testing / Maintenance are excluded: they are not
+// expected to heartbeat, so they never become "Offline".
 export async function listStaleDevices(defaultHours = 24) {
   const { rows } = await query(
-    `SELECT d.id, d.device_id, d.imei, d.last_seen, s.name AS site,
-            EXTRACT(EPOCH FROM (now() - d.last_seen)) / 3600.0 AS hours_silent
+    `SELECT d.id, d.device_id, d.imei, d.last_seen, d.status, s.name AS site,
+            EXTRACT(EPOCH FROM (now() - d.last_seen)) / 3600.0 AS hours_silent,
+            COALESCE(NULLIF(d.config->>'wake_interval_sec','')::numeric,
+                     NULLIF(d.config->>'offline_hours','')::numeric * 3600,
+                     $1 * 3600) AS interval_sec,
+            COALESCE(NULLIF(d.config->>'hb_tolerance_sec','')::numeric, 300) AS tol_sec
        FROM devices d
        LEFT JOIN sites s ON s.id = d.site_id
       WHERE d.last_seen IS NOT NULL
-        AND d.last_seen < now() - (COALESCE(NULLIF(d.config->>'offline_hours','')::numeric, $1) * interval '1 hour')`,
+        AND lower(COALESCE(d.status,'')) NOT IN ('inactive','testing','maintenance')
+        AND now() - d.last_seen >
+            ((COALESCE(NULLIF(d.config->>'wake_interval_sec','')::numeric,
+                       NULLIF(d.config->>'offline_hours','')::numeric * 3600,
+                       $1 * 3600)
+              + COALESCE(NULLIF(d.config->>'hb_tolerance_sec','')::numeric, 300))
+             * interval '1 second')`,
     [defaultHours]
   );
   return rows;
+}
+
+// Record a heartbeat: stamp last-heartbeat = now() and predict the next one at
+// now() + wake interval. Prediction stays simple; the ±tolerance window absorbs
+// the device clock's small wobble.
+export async function recordHeartbeat(deviceId) {
+  if (!deviceId) return;
+  await query(
+    `UPDATE devices SET
+        hb_last_at = now(),
+        hb_next_at = now() + (COALESCE(NULLIF(config->>'wake_interval_sec','')::numeric,
+                                       NULLIF(config->>'offline_hours','')::numeric * 3600,
+                                       86400) * interval '1 second')
+      WHERE id = $1`,
+    [deviceId]
+  );
+}
+
+// Set a device's operational status (Live | Offline | Testing | Maintenance | Inactive).
+export async function setDeviceStatus(deviceId, status) {
+  if (!deviceId || !status) return;
+  await query(`UPDATE devices SET status = $2 WHERE id = $1`, [deviceId, String(status)]);
+  // Roll the change up to the device's site (all-same → that state; mixed → Live).
+  try {
+    const { recomputeSitesForDevices } = await import("./sites.js");
+    await recomputeSitesForDevices([deviceId]);
+  } catch {}
 }
 
 export async function listDevices({ q, site_id, status, orientation } = {}) {
@@ -96,12 +141,40 @@ export async function listDevices({ q, site_id, status, orientation } = {}) {
   const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
   const { rows } = await query(
     `SELECT d.*, s.name AS site, s.code AS site_code, s.region AS region,
-            s.lat AS site_lat, s.lng AS site_lng
+            s.lat AS site_lat, s.lng AS site_lng,
+            u.up_bytes, u.up_n
        FROM devices d
-       LEFT JOIN sites s ON s.id = d.site_id ${clause}
+       LEFT JOIN sites s ON s.id = d.site_id
+       LEFT JOIN LATERAL (
+         SELECT COALESCE(SUM(COALESCE(octet_length(dt.raw), 90)), 0)::bigint AS up_bytes,
+                COUNT(*)::int AS up_n
+           FROM device_telemetry dt
+          WHERE dt.device_id = d.id
+            AND (NULLIF(d.config->>'data_reset_at','') IS NULL
+                 OR dt.received_at >= (d.config->>'data_reset_at')::timestamptz)
+       ) u ON true
+       ${clause}
       ORDER BY d.id ASC`,
     params
   );
+  // Attach an estimated data-bundle summary (uplink-only for the list — downlink is
+  // tiny; the device page computes the full figure).
+  const MB = 1024 * 1024;
+  for (const d of rows) {
+    const cfg = d.config || {};
+    const assignedMb = planToMb(cfg.data_plan, cfg.data_bundle_mb);
+    const usedMb = (Number(d.up_bytes || 0) + Number(d.up_n || 0) * 40) / MB;
+    const remainingMb = assignedMb > 0 ? Math.max(0, assignedMb - usedMb) : null;
+    d.data_usage = {
+      assigned_mb: assignedMb > 0 ? assignedMb : null,
+      used_mb: Math.round(usedMb * 100) / 100,
+      remaining_mb: remainingMb != null ? Math.round(remainingMb * 100) / 100 : null,
+      pct: assignedMb > 0 ? Math.min(100, Math.round((usedMb / assignedMb) * 1000) / 10) : null,
+      estimate: true,
+    };
+    d.data_left = remainingMb != null ? (remainingMb >= 1024 ? `${Math.round((remainingMb / 1024) * 100) / 100} GB` : `${Math.round(remainingMb)} MB`) : (d.data_left || null);
+    delete d.up_bytes; delete d.up_n;
+  }
   return rows;
 }
 
@@ -162,6 +235,19 @@ async function uniqueDeviceId(site, orientation) {
 }
 
 /** Register one device. Returns the created row (joined to its site). */
+// Factory defaults applied to every new device (manual add + import), so alarms /
+// heartbeat behave sensibly from day one. Any provided config overrides these.
+export const DEVICE_DEFAULT_CONFIG = {
+  geofence_enabled: true,
+  geofence_radius_m: 30,
+  motion_sensitivity: 30,
+  upload_interval_s: 3,     // moving/report cadence
+  wake_interval_sec: 86400, // 24 h sleep/wake interval
+  data_bundle_mb: 50,       // default data bundle: 50 MB, annually (manual reset only)
+  data_bundle_period: "annually",
+  data_plan: "50 MB annually",
+};
+
 export async function createDevice({ site_code, imei, orientation, sim = null, status = "Testing", config = null }) {
   const code = String(site_code || "").trim();
   const imeiV = String(imei || "").trim();
@@ -177,11 +263,17 @@ export async function createDevice({ site_code, imei, orientation, sim = null, s
      RETURNING id`,
     [device_id, imeiV, sim, site.id, o, status || "Testing"]
   );
-  // Persist the extra install settings (geofence / sensor / notes) when the
-  // optional `config` JSONB column exists. Safe no-op if the migration hasn't run.
-  if (config && rows[0]) {
-    try { await query(`UPDATE devices SET config = $2::jsonb WHERE id = $1`, [rows[0].id, JSON.stringify(config)]); }
-    catch { /* config column not present yet — device still saved */ }
+  // Persist install settings over the factory defaults. Only fill missing keys on an
+  // EXISTING device so we don't clobber a re-imported device's saved config.
+  if (rows[0]) {
+    const merged = { ...DEVICE_DEFAULT_CONFIG, ...(config || {}) };
+    if (!merged.data_reset_at) merged.data_reset_at = new Date().toISOString(); // start the bundle counter now
+    try {
+      await query(
+        `UPDATE devices SET config = $2::jsonb || COALESCE(config, '{}'::jsonb) WHERE id = $1`,
+        [rows[0].id, JSON.stringify(merged)]
+      );
+    } catch { /* config column not present yet — device still saved */ }
   }
   const { rows: full } = await query(
     `SELECT d.*, s.name AS site, s.code AS site_code, s.lat AS site_lat, s.lng AS site_lng
@@ -211,14 +303,17 @@ export async function importDevices(rows = []) {
     // eslint-disable-next-line no-await-in-loop
     const device_id = await uniqueDeviceId(site, o);
     // eslint-disable-next-line no-await-in-loop
+    // Imported devices get status Testing + the factory default config (geofence 30 m,
+    // sensitivity 30, moving 3 s, wake 24 h). Existing devices keep their own config.
     const { rows: out } = await query(
-      `INSERT INTO devices (device_id, imei, sim, site_id, orientation, status)
-         VALUES ($1,$2,$3,$4,$5,'Testing')
+      `INSERT INTO devices (device_id, imei, sim, site_id, orientation, status, config)
+         VALUES ($1,$2,$3,$4,$5,'Testing',$6::jsonb)
        ON CONFLICT (imei) DO UPDATE SET
          site_id = EXCLUDED.site_id, orientation = EXCLUDED.orientation,
-         sim = COALESCE(EXCLUDED.sim, devices.sim)
+         sim = COALESCE(EXCLUDED.sim, devices.sim),
+         config = COALESCE(devices.config, EXCLUDED.config)
        RETURNING (xmax = 0) AS inserted`,
-      [device_id, imei, sim, site.id, o]
+      [device_id, imei, sim, site.id, o, JSON.stringify({ ...DEVICE_DEFAULT_CONFIG, data_reset_at: new Date().toISOString() })]
     );
     if (out[0]?.inserted) imported++; else updated++;
   }
@@ -227,6 +322,40 @@ export async function importDevices(rows = []) {
 
 // ---- batch operations (Group devices) -------------------------------------
 const DEVICE_BATCH_COLS = { status: "status", firmware: "firmware" };
+
+// ---- per-device monitoring controls (Group devices) -----------------------
+/** Arm (true) / disarm (false) a set of devices. */
+export async function setDevicesArmed(ids = [], armed = true) {
+  if (!ids.length) return 0;
+  const { rowCount } = await query(
+    `UPDATE devices SET armed = $1 WHERE id = ANY($2::bigint[])`, [!!armed, ids]);
+  return rowCount;
+}
+
+/** Mute a set of devices for `amount unit` (minutes|hours|days); amount<=0 clears. */
+export async function setDevicesMute(ids = [], amount = 0, unit = "hours") {
+  if (!ids.length) return 0;
+  const n = Number(amount) || 0;
+  if (n <= 0) {
+    const { rowCount } = await query(
+      `UPDATE devices SET mute_until = NULL WHERE id = ANY($1::bigint[])`, [ids]);
+    return rowCount;
+  }
+  const u = ["minutes", "hours", "days"].includes(String(unit)) ? String(unit) : "hours";
+  const { rowCount } = await query(
+    `UPDATE devices SET mute_until = now() + ($1 || ' ' || $2)::interval
+      WHERE id = ANY($3::bigint[])`, [String(n), u, ids]);
+  return rowCount;
+}
+
+/** Merge a config JSONB patch into a set of devices (data plan / SIM / flags). */
+export async function setDevicesConfig(ids = [], patch = {}) {
+  if (!ids.length || !patch || !Object.keys(patch).length) return 0;
+  const { rowCount } = await query(
+    `UPDATE devices SET config = COALESCE(config, '{}'::jsonb) || $2::jsonb
+      WHERE id = ANY($1::bigint[])`, [ids, JSON.stringify(patch)]);
+  return rowCount;
+}
 
 /** Apply the same column patch to many devices. Returns rows affected. */
 export async function batchUpdateDevices(ids = [], patch = {}) {

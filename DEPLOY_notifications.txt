@@ -1,0 +1,46 @@
+NOTIFICATIONS — all-alarm fan-out + security-company rule
+==========================================================
+
+WHAT CHANGED
+- EVERY raised alarm now notifies ALL contacts registered on its site, by email
+  AND SMS (previously only Critical alarms notified).
+- EXCEPTION: High / Medium / Low alarms do NOT go to the security company or any
+  of its users. Only CRITICAL alarms reach the security company. Client-company
+  and monitoring (NOC) contacts, plus manually-typed alert recipients, still get
+  every alarm.
+  (A contact counts as "security company" when its site-contact role is one of the
+   Security — … roles: country/region ops managers + assistants, security NOC and
+   response teams.)
+- Alert emails/SMS are now severity-aware (CRITICAL/HIGH/MEDIUM/LOW colour + label),
+  not always "CRITICAL".
+- If a non-critical alarm's ONLY contacts are the security company, it's logged as
+  "No contacts (security-only, excluded)" so the reason is visible on the
+  Notifications page rather than looking like a silent drop.
+- The Medium "Notification Failed To Send" escalation now fires only for CRITICAL
+  alarms that reached no one (so High/Medium/Low delivery failures don't add noise).
+- Notifications page copy updated to describe the real rule. The page's email/SMS
+  data (stats, by-channel, providers, recent log) already reads the live
+  `notifications` table — no mock data.
+
+FILES (unzip from the app root, keeping paths)
+  app/api/apiUtils/notify/alarmNotify.js                 (all-alarm + security filter + severity messages)
+  app/api/apiUtils/ingest/store.js                       (fire notify for every raised alarm)
+  app/mainapp/notifications/components/Notifications.jsx  (copy reflects the rule)
+
+DEPLOY  (from /var/www/html/baseapps/assetguard)
+  1) python3 -c "import zipfile; zipfile.ZipFile('assetguard-notifications.zip').extractall('.')"
+  2) npm run build
+  3) pm2 restart assetguard-3010 gps-3000      # listener (gps-3000) sends; UI in 3010
+  (No DB migration — uses the existing notifications table.)
+
+VERIFY
+  - grep -c "excludedSecurity" app/api/apiUtils/notify/alarmNotify.js   # 2
+  - Raise a non-critical alarm on a site that has security + client contacts:
+    the ingest log shows [NOTIFY] firing … and the Notifications page log shows the
+    client/monitoring recipients but NOT the security-company ones.
+  - A Critical alarm shows ALL contacts (including security).
+
+NOTE
+  All alarms notifying means more messages. Disturbance is already debounced (the
+  day-rule raises on the 4th report, etc.) and other alarms de-dupe per incident,
+  so volume tracks actual alarm raises, not every packet.

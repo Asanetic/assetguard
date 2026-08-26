@@ -10,19 +10,55 @@ import { query } from "../s_env/db.js";
 
 const TZ = "Africa/Nairobi"; // EAT (UTC+3) — all day buckets + clocks are EAT.
 
-/** Device header info for the logs page (name, imei, site, status, last seen). */
+// A device's wake interval (sec) + tolerance from config, as a SQL fragment. The
+// wake interval drives the "up" window everywhere (matches offlineSweep / dashboard).
+const INTERVAL_SEC_SQL = `COALESCE(NULLIF(d.config->>'wake_interval_sec','')::numeric,
+                                   NULLIF(d.config->>'offline_hours','')::numeric * 3600, 86400)`;
+const TOL_SEC_SQL = `COALESCE(NULLIF(d.config->>'hb_tolerance_sec','')::numeric, 300)`;
+
+// Given last_seen + interval/tolerance + status, classify a device's live state.
+function liveState(lastSeen, intervalSec, tolSec, status) {
+  if (String(status || "").toLowerCase() === "inactive") return "inactive";
+  if (!lastSeen) return "down";
+  const ageSec = (Date.now() - new Date(lastSeen).getTime()) / 1000;
+  return ageSec <= Number(intervalSec) + Number(tolSec) ? "up" : "down";
+}
+
+// Expected next heartbeat = last report + wake interval. Computed here (not read from
+// the stored hb_next_at column) so the page works whether or not the migration ran.
+function expectedNext(lastSeen, intervalSec) {
+  if (!lastSeen) return null;
+  return new Date(new Date(lastSeen).getTime() + (Number(intervalSec) || 86400) * 1000).toISOString();
+}
+
+/** Device header info for the logs page: name, imei, site, status, last seen, and
+ *  the heartbeat schedule (wake interval, ±tolerance, predicted next, live state). */
 export async function heartbeatDevice(deviceIdText) {
   try {
     const { rows } = await query(
       `SELECT d.id, d.device_id, d.imei, d.status, d.last_seen,
-              COALESCE(s.name, d.site) AS site, s.region
+              ${INTERVAL_SEC_SQL} AS interval_sec, ${TOL_SEC_SQL} AS tol_sec,
+              NULLIF(d.config->>'pending_wake_interval_sec','')::numeric AS pending_sec,
+              s.name AS site, s.region
          FROM devices d
          LEFT JOIN sites s ON s.id = d.site_id
         WHERE d.device_id = $1 OR d.imei = $1
         LIMIT 1`,
       [String(deviceIdText || "")]
     );
-    return rows[0] || null;
+    const r = rows[0];
+    if (!r) return null;
+    const interval = Number(r.interval_sec) || 86400;
+    return {
+      ...r,
+      interval_sec: interval,
+      tol_sec: Number(r.tol_sec) || 300,
+      pending_sec: r.pending_sec != null ? Number(r.pending_sec) : null,
+      next_at: expectedNext(r.last_seen, r.interval_sec),
+      state: liveState(r.last_seen, r.interval_sec, r.tol_sec, r.status),
+      // Expected beats in a full EAT day at the active interval (for the detail table).
+      expected_per_day: Math.max(1, Math.round(86400 / interval)),
+    };
   } catch (e) { console.error("[heartbeatDevice]", e?.message || e); return null; }
 }
 
@@ -119,74 +155,122 @@ export async function dayHeartbeats(deviceIdText, dateStr, limit = 5000) {
   }));
 }
 
+// Gap-minus-grace uptime: a report at ts keeps the device "up" until ts + grace
+// (grace = wake interval + tolerance). Downtime in a window = the parts of the
+// window NOT covered by any report's [ts, ts+grace] segment. This is the SAME
+// interval-based definition the dashboard uses — a device on a long wake interval
+// is NOT penalised for the days it isn't due, and a short interval catches partial
+// outages. `d` is the outer devices row; `$N` is the window length in days.
+function uptimeLateral(nExpr) {
+  return `LEFT JOIN LATERAL (
+    WITH b AS (
+      SELECT (${INTERVAL_SEC_SQL} + ${TOL_SEC_SQL})::numeric AS grace,
+             now() - (${nExpr} || ' days')::interval          AS w0,
+             EXTRACT(EPOCH FROM (${nExpr} || ' days')::interval)::numeric AS win_sec
+    ),
+    rr AS (   -- reports inside the window + the last report just before it
+      SELECT ts FROM (
+        SELECT COALESCE(dt.device_time, dt.received_at) AS ts
+          FROM device_telemetry dt
+         WHERE dt.device_id = d.id
+           AND COALESCE(dt.device_time, dt.received_at) >= (SELECT w0 FROM b)
+        UNION ALL
+        SELECT max(COALESCE(dt.device_time, dt.received_at))
+          FROM device_telemetry dt
+         WHERE dt.device_id = d.id
+           AND COALESCE(dt.device_time, dt.received_at) <  (SELECT w0 FROM b)
+      ) z WHERE ts IS NOT NULL
+    ),
+    ord AS ( SELECT ts, LAG(ts) OVER (ORDER BY ts) AS prev FROM rr ),
+    calc AS (   -- uncovered time between a report's coverage-end and the next report
+      SELECT GREATEST(0, EXTRACT(EPOCH FROM (
+               LEAST(ts, now())
+               - GREATEST(COALESCE(prev + make_interval(secs => (SELECT grace FROM b)), (SELECT w0 FROM b)), (SELECT w0 FROM b))
+             )))::numeric AS down
+        FROM ord
+    )
+    SELECT CASE
+      WHEN (SELECT count(*) FROM rr) = 0 THEN 0.0
+      ELSE GREATEST(0, ROUND(100.0 * (1 - LEAST((SELECT win_sec FROM b),
+              (SELECT COALESCE(sum(down),0) FROM calc)
+              + GREATEST(0, EXTRACT(EPOCH FROM (now() - GREATEST((SELECT max(ts) FROM rr) + make_interval(secs => (SELECT grace FROM b)), (SELECT w0 FROM b)))))
+           ) / NULLIF((SELECT win_sec FROM b),0)), 1))
+    END AS uptime_pct
+  ) up ON true`;
+}
+
 /**
- * FLEET availability (SLA). A device counts as "up" on an EAT day if it sent
- * data at least once that day. System availability over a window of N days is
- *   Σ(device-days that reported) / (devices × N).
- * Returns current 24h status, availability % for 7/14/30/365-day windows, and a
- * per-device breakdown for the requested window (worst first — SLA triage).
+ * FLEET availability. Liveness is the primary view: a device is ALIVE right now
+ * when now - last_seen <= its ACTIVE wake interval + tolerance (each device by its
+ * own interval; Inactive excluded). Availability over 7/14/30/365-day windows is
+ * interval-based (gap-minus-grace uptime), consistent with the dashboard. Per-device
+ * rows carry the active interval, any pending (unconfirmed) interval, expected next
+ * heartbeat, and live state. Sorted worst-first for SLA triage.
  */
 export async function fleetAvailability(windowDays = 30) {
   const W = [7, 14, 30, 365].includes(Number(windowDays)) ? Number(windowDays) : 30;
 
-  // 1) fleet size + how many reported in the last 24h ("up now")
-  const totalsSql = `
-    SELECT
-      (SELECT count(*)::int FROM devices) AS total,
-      (SELECT count(DISTINCT dt.device_id)::int FROM device_telemetry dt
-         WHERE COALESCE(dt.device_time, dt.received_at) >= now() - interval '24 hours') AS up_now`;
-
-  // 2) distinct (device, EAT-day) that reported, per window → device-days up
-  const ddSql = `
-    SELECT
-      count(DISTINCT (id, day)) FILTER (WHERE ts >= now() - interval '7 days')::int   AS d7,
-      count(DISTINCT (id, day)) FILTER (WHERE ts >= now() - interval '14 days')::int  AS d14,
-      count(DISTINCT (id, day)) FILTER (WHERE ts >= now() - interval '30 days')::int  AS d30,
-      count(DISTINCT (id, day)) FILTER (WHERE ts >= now() - interval '365 days')::int AS d365
-    FROM (
-      SELECT dt.device_id AS id,
-             (COALESCE(dt.device_time, dt.received_at) AT TIME ZONE $1)::date AS day,
-             COALESCE(dt.device_time, dt.received_at) AS ts
-        FROM device_telemetry dt
-       WHERE COALESCE(dt.device_time, dt.received_at) >= now() - interval '365 days'
-    ) x`;
-
-  // 3) per-device availability for the chosen window
+  // Per-device: liveness + interval-based uptime for the selected window.
   const perDevSql = `
-    SELECT d.device_id, d.imei, COALESCE(s.name, d.site) AS site, d.last_seen,
-           count(DISTINCT (COALESCE(dt.device_time, dt.received_at) AT TIME ZONE $1)::date)::int AS days_up
+    SELECT d.device_id, d.imei, s.name AS site, d.last_seen, d.status,
+           ${INTERVAL_SEC_SQL} AS interval_sec, ${TOL_SEC_SQL} AS tol_sec,
+           NULLIF(d.config->>'pending_wake_interval_sec','')::numeric AS pending_sec,
+           up.uptime_pct
       FROM devices d
       LEFT JOIN sites s ON s.id = d.site_id
-      LEFT JOIN device_telemetry dt ON dt.device_id = d.id
-             AND COALESCE(dt.device_time, dt.received_at) >= now() - ($2 || ' days')::interval
-     GROUP BY d.id, d.device_id, d.imei, s.name, d.site, d.last_seen
-     ORDER BY days_up ASC, d.last_seen ASC NULLS FIRST`;
+      ${uptimeLateral("$1")}
+     ORDER BY up.uptime_pct ASC NULLS FIRST, d.last_seen ASC NULLS FIRST`;
 
-  const [tot, dd, per] = await Promise.all([
-    query(totalsSql).then((r) => r.rows[0] || {}).catch(() => ({})),
-    query(ddSql, [TZ]).then((r) => r.rows[0] || {}).catch(() => ({})),
-    query(perDevSql, [TZ, W]).then((r) => r.rows).catch(() => []),
+  // Four fleet cards: average interval-based uptime per window (Inactive excluded).
+  const cardsSql = `
+    SELECT w.n::int AS n, ROUND(AVG(up.uptime_pct)::numeric, 1) AS pct
+      FROM devices d
+      CROSS JOIN (VALUES (7),(14),(30),(365)) AS w(n)
+      ${uptimeLateral("w.n")}
+     WHERE lower(coalesce(d.status,'')) <> 'inactive'
+     GROUP BY w.n`;
+
+  const [per, cards] = await Promise.all([
+    query(perDevSql, [W]).then((r) => r.rows).catch((e) => { console.error("[fleet perDev]", e?.message || e); return []; }),
+    query(cardsSql).then((r) => r.rows).catch((e) => { console.error("[fleet cards]", e?.message || e); return []; }),
   ]);
 
-  const total = Number(tot.total) || 0;
-  const pct = (deviceDays, n) => (total > 0 && n > 0 ? Math.round((Number(deviceDays) / (total * n)) * 1000) / 10 : 0);
-  const now24 = Date.now() - 24 * 3600 * 1000;
+  const cardMap = {};
+  for (const c of cards) cardMap[Number(c.n)] = Number(c.pct) || 0;
 
-  return {
-    now: { up: Number(tot.up_now) || 0, total, pct: total > 0 ? Math.round((Number(tot.up_now) / total) * 1000) / 10 : 0 },
-    windows: {
-      d7: pct(dd.d7, 7), d14: pct(dd.d14, 14), d30: pct(dd.d30, 30), d365: pct(dd.d365, 365),
-    },
-    window: W,
-    devices: per.map((r) => ({
+  const devices = per.map((r) => {
+    const state = liveState(r.last_seen, r.interval_sec, r.tol_sec, r.status);
+    return {
       device_id: r.device_id,
       imei: r.imei,
       site: r.site || "—",
       last_seen: r.last_seen,
-      days_up: Number(r.days_up) || 0,
       days: W,
-      pct: W > 0 ? Math.round((Number(r.days_up) / W) * 1000) / 10 : 0,
-      up: r.last_seen ? new Date(r.last_seen).getTime() >= now24 : false,
-    })),
+      pct: r.uptime_pct != null ? Number(r.uptime_pct) : 0,   // interval-based uptime %
+      up: state === "up",
+      state,                                                  // "up" | "down" | "inactive"
+      interval_sec: Number(r.interval_sec) || 86400,
+      pending_sec: r.pending_sec != null ? Number(r.pending_sec) : null,
+      next_at: expectedNext(r.last_seen, r.interval_sec),     // expected next heartbeat (active interval)
+    };
+  });
+
+  const total = devices.length;
+  const inactive = devices.filter((d) => d.state === "inactive").length;
+  const upNow = devices.filter((d) => d.state === "up").length;
+  const monitored = total - inactive; // devices that can be up/down
+
+  return {
+    now: {
+      up: upNow,
+      inactive,
+      total,
+      pct: monitored > 0 ? Math.round((upNow / monitored) * 1000) / 10 : 0,
+    },
+    windows: {
+      d7: cardMap[7] || 0, d14: cardMap[14] || 0, d30: cardMap[30] || 0, d365: cardMap[365] || 0,
+    },
+    window: W,
+    devices,
   };
 }

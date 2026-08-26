@@ -5,13 +5,16 @@
 //         -> insert device_telemetry -> alarm engine -> (registered) update state + alarms
 // Unregistered IMEIs are still stored (device_id NULL) and also quarantined in
 // unknown_logs, so you can see exactly what's arriving before you register them.
-import { findDeviceByImei, touchDeviceLastSeen } from "../dataControl/devices.js";
+import { findDeviceByImei, touchDeviceLastSeen, recordHeartbeat } from "../dataControl/devices.js";
+import { hasOpenCriticalAlarm } from "../dataControl/deviceCommands.js";
+import { isHeartbeatStatus } from "./heartbeat.js";
 import { insertDeviceLog, insertUnknownLog } from "../dataControl/deviceLogs.js";
-import { insertTelemetry, updateDeviceState, getSiteLatLng } from "../dataControl/telemetry.js";
+import { insertTelemetry, updateDeviceState, getSiteLatLng, recentVoltages } from "../dataControl/telemetry.js";
+import { fuelGauge } from "./batteryModel.js";
 import { insertLiveAlarm, clearOpenAlarm, disturbanceDecision } from "../dataControl/alarms.js";
 import { toTelemetry } from "./parse.js";
 import { evaluate, resolveConfig, ALARM_TYPES } from "./alarmEngine.js";
-import { notifyAlarmRaised } from "../notify/alarmNotify.js";
+import { notifyAlarmRaised, notifyDisturbanceEarly } from "../notify/alarmNotify.js";
 import { geolocate, reverseGeocodeRoad } from "./geolocate.js";
 import { isTechOnSite } from "./techOnSite.js";
 import { ensureOfflineSweep } from "./offlineSweep.js";
@@ -90,6 +93,26 @@ export async function resolveAndStore(rec, ip, port) {
 
   const t = toTelemetry(rec);
 
+  // --- battery: firmware reports raw VOLTAGE; convert to % here ---
+  // Use the SETTLED voltage = max over the last ~2 min (rejects post-transmit
+  // dips; for a device with only 1–2 recent reports it's just the max available,
+  // a safe lower bound). Legacy firmware that still sends a % keeps t.battery.
+  if (t.voltage != null) {
+    let recent = [];
+    // Average a window of recent readings (kills report-to-report jitter) and run the
+    // software fuel gauge: it holds or eases DOWN and never bounces back up (a primary
+    // LiMnO2 cell never recharges), so we never get "15% then 20% then 15%".
+    // Tune the averaging window with INGEST_BATTERY_WINDOW_MIN.
+    const winMin = Number(process.env.INGEST_BATTERY_WINDOW_MIN) || 15;
+    if (device?.id) { try { recent = await recentVoltages(device.id, winMin); } catch {} }
+    // device.battery = the last displayed % for this device (the gauge's memory).
+    const prevPct = device && Number.isFinite(Number(device.battery)) ? Number(device.battery) : null;
+    const { percent } = fuelGauge(t.voltage, recent, prevPct);
+    if (percent != null) t.battery = percent;
+  }
+  view.battery = t.battery ?? null;
+  view.voltage = t.voltage ?? null;
+
   // --- resolve position BEFORE writing the row ---
   if (t.fixValid) {
     t.accuracy = 10; t.locSource = "gps"; t.geoError = null;
@@ -99,12 +122,20 @@ export async function resolveAndStore(rec, ip, port) {
     t.locSource = "network";
     try {
       const g = await geolocate({ cells: t.cells, wifi: t.wifi, mcc: t.mcc, mnc: t.mnc });
-      t.geoRaw = g.raw ?? null;
+      // Stamp which provider located it (Google/Unwired) and the Unwired trial
+      // snapshot into geo_raw under _ag, so the packet card can show both without
+      // a schema change. _ag = AssetGuard meta (not part of the provider payload).
+      const agMeta = {};
+      if (g.provider) agMeta.provider = g.provider;
+      if (g.trials) agMeta.trials = g.trials;
+      t.geoRaw = g.raw
+        ? { ...g.raw, ...(Object.keys(agMeta).length ? { _ag: agMeta } : {}) }
+        : (Object.keys(agMeta).length ? { _ag: agMeta } : null);
       if (g.location && g.location.lat != null) {
         t.lat = g.location.lat; t.lng = g.location.lng; t.accuracy = g.location.accuracy;
         t.networkLocated = true; t.geoError = null; t.locSource = g.source || "network";
-        view.geo = { source: t.locSource, lat: t.lat, lng: t.lng, accuracy: t.accuracy, raw: g.raw };
-        console.log(`[ingest] ${rec.imei} geolocation OK (${t.locSource}) ${t.lat},${t.lng} ±${t.accuracy}m (from ${t.cells.length} cells, ${t.wifi.length} wifi)`);
+        view.geo = { source: t.locSource, provider: g.provider || "google", lat: t.lat, lng: t.lng, accuracy: t.accuracy, raw: g.raw };
+        console.log(`[ingest] ${rec.imei} geolocation OK (${t.locSource} via ${g.provider || "google"}) ${t.lat},${t.lng} ±${t.accuracy}m (from ${t.cells.length} cells, ${t.wifi.length} wifi)`);
       } else {
         t.geoError = g.error || "geolocation failed to compute a position";
         view.geo = { source: "network", error: t.geoError, raw: g.raw };
@@ -176,6 +207,7 @@ export async function resolveAndStore(rec, ip, port) {
     const deviceIdText = device.device_id || device.imei;
     const at = t.deviceTime || rec.deviceTime || null;
     const disturbThreshold = resolveConfig(device).disturb_streak; // default 4
+    const disturbMemsMg = resolveConfig(device).disturb_mems_mg;   // net-vector disturbance floor
 
     // Two DIFFERENT day-scoped anchors — they must not be conflated:
     //   • dayStartIso — start of the report's EAT day. Used as the INCIDENT-TYING
@@ -189,67 +221,115 @@ export async function resolveAndStore(rec, ip, port) {
     const atMs = Date.parse(at || "") || Date.now();
     const eat = new Date(atMs + 3 * 3600 * 1000);                  // shift to EAT wall clock
     const eatMidnightMs = Date.UTC(eat.getUTCFullYear(), eat.getUTCMonth(), eat.getUTCDate()) - 3 * 3600 * 1000;
+    const dayStartIso = new Date(eatMidnightMs).toISOString();     // incident-tying window only
+    // Disturbance count is CLOSE-driven, NOT day-scoped: it resets when the last
+    // disturbance alarm is closed. The only extra floor is a simulator-reset cutoff.
     const simCut = getIncidentCutoff(device.id) || 0;
-    const dayStartIso = new Date(eatMidnightMs).toISOString();
-    const countSince = new Date(Math.max(eatMidnightMs, simCut)).toISOString();
+    const simCutIso = simCut ? new Date(simCut).toISOString() : null;
 
-    for (const a of alarms) {
-      const isDisturb = a.type === ALARM_TYPES.DISTURBANCE || a.type === ALARM_TYPES.DISTURBANCE_TECH;
-
-      // Disturbance day-rule: skip the day's 1st-3rd, log the alarm on the 4th, and
-      // for the 5th+ (or if one is already open today) log the event only. A new EAT
-      // day raises a fresh alarm regardless of an un-closed one from a previous day.
-      if (isDisturb) {
-        try {
-          const dec = await disturbanceDecision(deviceIdText, a.type, at, disturbThreshold, countSince);
-          if (dec.action === "raise") {
-            const row = await insertLiveAlarm({
-              alarmType: a.type, value: a.value, deviceIdText,
-              site: device.site || null, serial: device.imei || rec.imei,
-              lat: site?.lat ?? a.lat, lng: site?.lng ?? a.lng,
-              at, incidentSince: dayStartIso,
-            });
-            // Every CRITICAL alarm that is actually raised notifies the site's contacts.
-            if (row?.priority === "Critical") {
-              console.log(`[NOTIFY] firing for ${row.id} (${row.name}) site_id=${device.site_id}`);
-              try { await notifyAlarmRaised(row, { siteId: device.site_id }); }
-              catch (e) { console.error("[NOTIFY] hook error:", e?.message || e); }
-            } else if (!row) {
-              console.log(`[disturbance] raise decided but alarm was de-duped (already open) — no notification`);
-            }
-            console.log(`[disturbance] ${deviceIdText} count=${dec.count}/${dec.threshold} → RAISED ${row?.id || "(none)"}`);
-          } else {
-            // skip (1-3) or event (5+/already open today) — the telemetry row is the log.
-            console.log(`[disturbance] ${deviceIdText} count=${dec.count}/${dec.threshold} → ${dec.action}`);
-          }
-        } catch (e) { console.error("[disturbance] gate error:", e?.message || e); }
-        continue;
-      }
-
+    // Raise a (non-disturbance) alarm + notify its site contacts. Returns the row
+    // (null when de-duped within today's incident).
+    async function raiseAndNotify(a) {
       try {
         const row = await insertLiveAlarm({
           alarmType: a.type, value: a.value, deviceIdText,
           site: device.site || null, serial: device.imei || rec.imei,
-          // Alarm location is the SITE location (where the alarm belongs), not the
-          // device's current position. Fall back to device position only if the
-          // site has no coordinates.
+          // Alarm location is the SITE location (where the alarm belongs), falling
+          // back to the device position only if the site has no coordinates.
           lat: site?.lat ?? a.lat, lng: site?.lng ?? a.lng,
           road: a.type === ALARM_TYPES.CRITICAL_MOTION ? road : undefined,
-          // Alarm time = the packet's own timestamp, so "x min ago" is real.
-          // Tie by EAT day (not the reset cutoff) so escalations attach to the
-          // day's disturbance even when simulated as a separate step.
           at, incidentSince: dayStartIso,
         });
-        // Every CRITICAL alarm that is actually raised notifies the site's contacts.
-        if (row?.priority === "Critical") {
-          console.log(`[NOTIFY] firing for ${row.id} (${row.name}) site_id=${device.site_id}`);
-          try { await notifyAlarmRaised(row, { siteId: device.site_id }); }
+        if (row) {
+          console.log(`[NOTIFY] firing for ${row.id} (${row.name}, ${row.priority}) site_id=${device.site_id}`);
+          try { await notifyAlarmRaised(row, { siteId: device.site_id, deviceStatus: device.status, deviceArmed: device.armed, deviceMuteUntil: device.mute_until }); }
           catch (e) { console.error("[NOTIFY] hook error:", e?.message || e); }
-        } else if (!row) {
+        } else {
           console.log(`[alarm] ${a.type} not raised (already open in today's incident) — no notification`);
         }
-      } catch (e) { console.error("[alarm] insert error:", e?.message || e); }
+        return row;
+      } catch (e) { console.error("[alarm] insert error:", e?.message || e); return null; }
     }
+
+    // ESCALATION ORDER (per device, per EAT day): Disturbance MUST be raised before
+    // a Geofence alarm, and Geofence before Critical Motion — even when one packet
+    // carries several. So we process disturbance first, then gate the rest on what
+    // is already raised in the system. Other alarms (battery, temperature, offline,
+    // low-data) are not part of the chain and fire normally.
+    const isDisturbType = (ty) => ty === ALARM_TYPES.DISTURBANCE || ty === ALARM_TYPES.DISTURBANCE_TECH;
+
+    // HEARTBEAT GATE. A clean idle report (status 00000008/09) with NO open/acked
+    // Critical alarm is a heartbeat. It never raises DISTURBANCE (an idle check-in is
+    // not a knock), but it CAN raise Geofence / Critical Motion if the device woke up
+    // in an outside location — subject to the normal de-dupe (insertLiveAlarm won't
+    // re-raise while one is open/acked), plus battery. Because a heartbeat requires NO
+    // open/acked Critical to begin with, this is exactly "raise only if not already
+    // open/acked". While a Critical is live the device isn't a heartbeat at all.
+    let isHeartbeat = false;
+    if (isHeartbeatStatus(rec.statusHex)) {
+      try { isHeartbeat = !(await hasOpenCriticalAlarm(deviceIdText, device.imei || rec.imei)); }
+      catch { isHeartbeat = false; }
+    }
+    if (isHeartbeat) {
+      try { await recordHeartbeat(device.id); } catch {}
+      const dropped = alarms.filter((a) => isDisturbType(a.type)).map((a) => a.type);
+      if (dropped.length) console.log(`[heartbeat] ${deviceIdText} idle check-in — dropped disturbance ${dropped.join(",")} (geofence/critical still allowed)`);
+      alarms = alarms.filter((a) => !isDisturbType(a.type));
+    }
+
+    const disturbAlarms = alarms.filter((a) => isDisturbType(a.type));
+    const geoAlarms = alarms.filter((a) => a.type === ALARM_TYPES.GEOFENCE_EXIT);
+    const critAlarms = alarms.filter((a) => a.type === ALARM_TYPES.CRITICAL_MOTION);
+    const otherAlarms = alarms.filter((a) =>
+      !isDisturbType(a.type) && a.type !== ALARM_TYPES.GEOFENCE_EXIT && a.type !== ALARM_TYPES.CRITICAL_MOTION);
+
+    // --- 1) DISTURBANCE first (graduated: #1 ignore, #2/#3 SMS+email only, #4 raise) ---
+    for (const a of disturbAlarms) {
+      try {
+        const dec = await disturbanceDecision(deviceIdText, a.type, at, disturbThreshold, simCutIso, disturbMemsMg);
+        if (dec.action === "notify") {
+          try {
+            await notifyDisturbanceEarly({
+              deviceIdText, serial: device.imei || rec.imei,
+              site: device.site || null, siteId: device.site_id, at,
+              count: dec.count, threshold: dec.threshold, deviceStatus: device.status, deviceArmed: device.armed, deviceMuteUntil: device.mute_until,
+            });
+          } catch (e) { console.error("[disturbance] early-notify error:", e?.message || e); }
+          console.log(`[disturbance] ${deviceIdText} count=${dec.count}/${dec.threshold} → EARLY WARNING (sms/email, no alarm)`);
+        } else if (dec.action === "raise") {
+          const row = await insertLiveAlarm({
+            alarmType: a.type, value: a.value, deviceIdText,
+            site: device.site || null, serial: device.imei || rec.imei,
+            lat: site?.lat ?? a.lat, lng: site?.lng ?? a.lng, at, incidentSince: dayStartIso,
+          });
+          if (row) {
+            console.log(`[NOTIFY] firing for ${row.id} (${row.name}, ${row.priority}) site_id=${device.site_id}`);
+            try { await notifyAlarmRaised(row, { siteId: device.site_id, deviceStatus: device.status, deviceArmed: device.armed, deviceMuteUntil: device.mute_until }); }
+            catch (e) { console.error("[NOTIFY] hook error:", e?.message || e); }
+          }
+          console.log(`[disturbance] ${deviceIdText} count=${dec.count}/${dec.threshold} → RAISED ${row?.id || "(none)"}`);
+        } else {
+          console.log(`[disturbance] ${deviceIdText} count=${dec.count}/${dec.threshold} → ${dec.action}`);
+        }
+      } catch (e) { console.error("[disturbance] gate error:", e?.message || e); }
+    }
+
+    // ORDER, DON'T SUPPRESS. Each alarm fires on its OWN genuine condition (from the
+    // engine) — a missing or closed earlier stage never blocks a later one. We just
+    // process them in escalation order — Disturbance (above) → Geofence → Critical
+    // Motion → others — so when several land in the SAME packet they're recorded in
+    // that sequence. De-dupe (one open Geofence / one open Critical per device) and
+    // incident grouping live in insertLiveAlarm, so the lifecycle still reads
+    // Disturbance → Geofence → Critical under one incident, in true time order.
+
+    // --- 2) GEOFENCE — fires whenever the device is genuinely off-site ---
+    for (const a of geoAlarms) await raiseAndNotify(a);
+
+    // --- 3) CRITICAL MOTION — fires whenever motion is genuinely critical ---
+    for (const a of critAlarms) await raiseAndNotify(a);
+
+    // --- 4) everything else (battery, temperature, offline, low-data) ---
+    for (const a of otherAlarms) await raiseAndNotify(a);
   }
 
   return { unknown: !known, view };

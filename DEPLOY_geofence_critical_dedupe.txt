@@ -1,0 +1,19 @@
+FIX: ONE OPEN GEOFENCE / CRITICAL MOTION PER DEVICE AT A TIME
+============================================================
+Geofence Violation and Critical Motion now de-dupe per DEVICE: a new one is NOT
+raised while a previous one of the same type is still open — it must be CLOSED
+first. (Previously the check was per-incident, so each new disturbance incident —
+or a fallback geofence with no incident — could stack another open geofence/critical
+on the same device, giving numerous alarms.)
+
+FILE (unzip from app root):
+  app/api/apiUtils/dataControl/alarms.js
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-geofence-critical-dedupe.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration.)
+
+Verified: with an open geofence on a device a 2nd is blocked; after closing it, a
+new one is allowed. Same for critical motion.

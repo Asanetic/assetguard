@@ -36,16 +36,22 @@ export async function GET(request) {
     try { company = (await getOrgConfig())?.name || ""; } catch {}
 
     const [sites, devAgg, alarms, users, byCategory, today, byMonth, bySite, byRegion,
-           telemetryToday, commandsToday, activityToday, usersByStatus, health] = await Promise.all([
+           telemetryToday, commandsToday, activityToday, usersByStatus, health,
+           byHour, byDay] = await Promise.all([
       one(`SELECT count(*)::int AS total,
                   count(*) FILTER (WHERE created_at >= date_trunc('month', now()))::int AS added_month
              FROM sites`),
       many(`SELECT bucket, count(*)::int AS n FROM (
               SELECT CASE
-                WHEN lower(coalesce(status,'')) = 'pending'     THEN 'pending'
+                WHEN lower(coalesce(status,'')) = 'inactive'    THEN 'inactive'
                 WHEN lower(coalesce(status,'')) = 'testing'     THEN 'testing'
                 WHEN lower(coalesce(status,'')) = 'maintenance' THEN 'maintenance'
-                WHEN last_seen IS NULL OR last_seen <= now() - interval '24 hours' THEN 'offline'
+                WHEN last_seen IS NULL OR now() - last_seen >
+                     ((COALESCE(NULLIF(config->>'wake_interval_sec','')::numeric,
+                                NULLIF(config->>'offline_hours','')::numeric * 3600,
+                                86400)
+                       + COALESCE(NULLIF(config->>'hb_tolerance_sec','')::numeric, 300))
+                      * interval '1 second') THEN 'offline'
                 ELSE 'live' END AS bucket
               FROM devices) x GROUP BY bucket`),
       alarmCounts(me.role, restrict),
@@ -120,9 +126,26 @@ export async function GET(request) {
       // (share of hours that received at least one inbound frame).
       one(`SELECT ROUND(100.0 * count(DISTINCT date_trunc('hour', received_at)) / (30*24.0), 1) AS uptime30d
              FROM raw_logs WHERE received_at >= now() - interval '30 days' AND direction = 'in'`),
+      // Alarms by HOUR of the current EAT day (Daily tab — 24 bars).
+      many(`SELECT lpad(gs::text,2,'0') || 'h' AS label, COALESCE(c.n,0)::int AS n
+              FROM generate_series(0,23) gs
+              LEFT JOIN (SELECT extract(hour from (created_at AT TIME ZONE 'Africa/Nairobi'))::int h, count(*) n
+                           FROM alarms
+                          WHERE ${aw} AND (created_at AT TIME ZONE 'Africa/Nairobi')::date = (now() AT TIME ZONE 'Africa/Nairobi')::date
+                          GROUP BY h) c ON c.h = gs
+             ORDER BY gs`),
+      // Alarms by DAY over the last 7 EAT days (Weekly tab — 7 bars).
+      many(`SELECT to_char(gs, 'Dy') AS label, COALESCE(c.n,0)::int AS n
+              FROM generate_series((now() AT TIME ZONE 'Africa/Nairobi')::date - 6,
+                                   (now() AT TIME ZONE 'Africa/Nairobi')::date, interval '1 day') gs
+              LEFT JOIN (SELECT (created_at AT TIME ZONE 'Africa/Nairobi')::date d, count(*) n
+                           FROM alarms
+                          WHERE ${aw} AND created_at >= now() - interval '7 days'
+                          GROUP BY d) c ON c.d = gs::date
+             ORDER BY gs`),
     ]);
 
-    const dev = { total: 0, live: 0, offline: 0, testing: 0, maintenance: 0, pending: 0 };
+    const dev = { total: 0, live: 0, offline: 0, testing: 0, maintenance: 0, inactive: 0 };
     for (const r of devAgg) { dev[r.bucket] = r.n; dev.total += r.n; }
 
     const data_mb = Number(((Number(today.bytes) || 0) / 1e6).toFixed(2));
@@ -155,7 +178,7 @@ export async function GET(request) {
       },
       admin: { active: usersByStatus.active || 0, pending: usersByStatus.pending || 0, suspended: usersByStatus.suspended || 0 },
       health: { uptime30d: health.uptime30d != null ? Number(health.uptime30d) : null },
-      byMonth, bySite, byRegion,
+      byMonth, byHour, byDay, bySite, byRegion,
       viewer: { criticalOnly: restrict },
     });
   } catch (err) {

@@ -46,12 +46,17 @@ export const DEFAULTS = {
   low_data_mb: 1,             // SIM bundle ≤ this (MB) => Low Data (Medium)
   speed_alert_kph: 5,
   geofence_radius_m: 30,
-  disturb_mems_mg: 300,   // transient spike => disturbance
-  motion_mems_mg: 600,    // elevated reading; ≥2 in the window => sustained (critical)
+  // NET accelerometer motion = |sqrt(x²+y²+z²) − 1000mg| (gravity removed;
+  // orientation-independent since a resting cell reads ~1 g in any pose).
+  disturb_mems_mg: 1800,  // net vector floor for a disturbance (rest idles ~1450 mg; below 1800 = still)
+  motion_mems_mg: 3000,   // net vector ≥ this, sustained (≥2 in window) => Critical Motion
   window: 3,              // how many recent MEMS readings define "sustained"
-  disturb_streak: 4,      // the 00100008 bit is present continuously while moving;
-                          // require this many packets carrying it before raising a
-                          // Disturbance (raise it as the Nth arrives).
+  disturb_streak: 4,      // graduated disturbance rule (per EAT day, per device):
+                          //   #1        -> ignore
+                          //   #2, #3    -> early warning: SMS + email only (no system alarm)
+                          //   #4        -> raise the system alarm (+ SMS + email)
+                          //   #5+ / already open today -> event only
+                          // This is the count at which the ALARM is raised.
   disturb_window_sec: 300, // the streak must accumulate within this window (5 min);
                            // if the run takes longer, the counter resets.
 };
@@ -69,6 +74,8 @@ export const THRESHOLD_FIELDS = [
   { key: "low_data_mb",          label: "Low Data",         unit: "MB",   min: 0,   max: 100000,tier: "Medium",   help: "Alarm when SIM bundle is at or below this." },
   { key: "geofence_radius_m",    label: "Geofence Radius",  unit: "m",    min: 5,   max: 100000,tier: "Critical", help: "Distance from site that counts as a violation." },
   { key: "speed_alert_kph",      label: "Critical Speed",   unit: "km/h", min: 1,   max: 300,   tier: "Critical", help: "Off-site speed that raises Critical Motion." },
+  { key: "disturb_mems_mg",      label: "Disturbance",      unit: "mg",   min: 200, max: 8000,  tier: "Critical", help: "Net accelerometer motion (gravity removed) that counts as a disturbance. Rest idles ~1450 mg; below this = still." },
+  { key: "motion_mems_mg",       label: "Critical Motion",  unit: "mg",   min: 200, max: 8000,  tier: "Critical", help: "Net accelerometer motion (gravity removed), sustained, that raises Critical Motion." },
 ];
 
 export function resolveConfig(device) {
@@ -118,27 +125,35 @@ export function evaluate(t, device, site, state = {}, ctx = {}) {
   // ---- geofence ----
   if (hasPos) {
     dist = haversineMeters(Number(site.lat), Number(site.lng), at.lat, at.lng);
+    // GPS uses the set geofence radius (fix is ≈ ±10 m). A NETWORK fix (Wi-Fi / LBS /
+    // Wi-Fi+LBS) is far coarser, so we require the device to be beyond the zone by MORE
+    // than the fix's ± blur: breach only when dist > geofence_radius + accuracy. That
+    // respects the set radius AND the accuracy, so a coarse fix near a small site (or a
+    // mid-range fix inside a large site) never false-fires. Unknown accuracy ⇒ radius.
+    const netThreshold = c.geofence_radius_m + (t.accuracy && t.accuracy > 0 ? t.accuracy : 0);
     if (t.fixValid) {
-      state.breached = dist > c.geofence_radius_m;                    // GPS ≈ ±10 m
+      state.breached = dist > c.geofence_radius_m;
     } else {
-      // network-derived: only "outside" when clearly beyond the accuracy blur
-      state.breached = dist > c.geofence_radius_m && dist > (t.accuracy || 0);
+      state.breached = dist > netThreshold;
     }
     if (c.geofence_enabled && state.breached) {
       alarms.push({ type: ALARM_TYPES.GEOFENCE_EXIT, severity: "warning",
-        message: `Geofence exit — ${name} is ${Math.round(dist)} m from site (radius ${c.geofence_radius_m} m${t.locSource === "network" ? ", network-located" : ""})`,
+        message: t.fixValid
+          ? `Geofence exit — ${name} is ${Math.round(dist)} m from site (radius ${c.geofence_radius_m} m)`
+          : `Geofence exit — ${name} is ${Math.round(dist)} m from site (network-located; beyond ${c.geofence_radius_m} m radius + ±${Math.round(t.accuracy || 0)} m accuracy)`,
         ...at, value: Math.round(dist) });
     }
   }
   // if there's no position at all, keep the previous breached state.
 
-  // ---- MEMS window + steps ----
-  const dyn = t.mems && t.mems.valid ? t.mems.dynamic : null;
+  // ---- MEMS window ----
+  const dyn = t.mems && t.mems.valid ? t.mems.dynamic : null;   // NET vector = |√(x²+y²+z²) − 1000| mg
   if (dyn != null) { state.dyn.push(dyn); while (state.dyn.length > c.window) state.dyn.shift(); }
   const elevated = state.dyn.filter((v) => v >= c.motion_mems_mg).length;
   const sustained = elevated >= 2;                                     // ≥2 of the window
-  let stepMoving = false;
-  if (t.steps != null) { if (state.lastSteps != null && t.steps > state.lastSteps) stepMoving = true; state.lastSteps = t.steps; }
+  // Step count is stored as data but is NOT a movement trigger — it ticks even on a
+  // stationary unit, so it must never raise Critical Motion (per the device's behaviour).
+  if (t.steps != null) state.lastSteps = t.steps;
 
   // ---- critical motion (escalation after geofence) ----
   let critical = false, critVal = null;
@@ -146,9 +161,9 @@ export function evaluate(t, device, site, state = {}, ctx = {}) {
     // GPS is the authority: must be off-site AND moving.
     if (state.breached && t.speed != null && t.speed >= c.speed_alert_kph) { critical = true; critVal = `${t.speed} km/h`; }
   } else {
-    // No fix: sustained MEMS movement or a climbing step count => critical.
+    // No fix: ONLY a sustained net accelerometer vector counts (≥ motion_mems_mg,
+    // ≥2 in the window). No step-count or single-spike shortcut.
     if (sustained) { critical = true; critVal = `impact ${Math.max(...state.dyn)} mg (sustained)`; }
-    else if (stepMoving) { critical = true; critVal = `steps ${t.steps}`; }
   }
   if (critical) {
     alarms.push({ type: ALARM_TYPES.CRITICAL_MOTION, severity: "critical",
@@ -166,16 +181,22 @@ export function evaluate(t, device, site, state = {}, ctx = {}) {
   // Counting from the DB (not an in-memory streak) survives restarts and never
   // double-fires. If a technician is on site the disturbance is expected work, so
   // it downgrades to the Low "tech on site" type (this alarm only).
+  // Disturbance = the status byte's 3rd digit is 1, OR the NET vector is in the
+  // disturbance band (≥ disturb_mems_mg). Either source makes this a candidate; the
+  // graduated raise (2nd/3rd warn, 4th raise) is decided downstream in
+  // disturbanceDecision, which counts BOTH sources from stored telemetry.
   const disturbBit = !!(t.status && t.status.disturbance);
-  if (disturbBit) {
+  const disturbMems = dyn != null && dyn >= c.disturb_mems_mg;
+  if (disturbBit || disturbMems) {
     const techOnSite = !!ctx.techOnSite;
+    const why = disturbBit ? `status ${t.status?.word}` : `${dyn} mg net`;
     alarms.push({
       type: techOnSite ? ALARM_TYPES.DISTURBANCE_TECH : ALARM_TYPES.DISTURBANCE,
       severity: techOnSite ? "info" : "critical",
       message: techOnSite
         ? `Disturbance on ${name} — technician on site`
-        : `Disturbance on ${name} (status ${t.status.word})`,
-      ...at, value: t.status.word });
+        : `Disturbance on ${name} (${why})`,
+      ...at, value: t.status?.word || `${dyn}mg` });
   }
 
   // ---- battery: Critical Low (≤ critical %) is HIGH; Low Battery (≤ %) is MEDIUM

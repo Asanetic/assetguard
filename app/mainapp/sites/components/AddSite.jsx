@@ -17,6 +17,7 @@ import {
   COUNTIES, DIST_REGIONS, SEC_REGIONS, CLUSTERS, VENDORS, COMPANY,
   resolveSiteContacts, responseTeamsFor,
 } from "./addSiteData.js";
+import { useFacets } from "../../lib/useFacets.js";
 
 // --- small helpers -----------------------------------------------------------
 const joinC = (a) => (a || []).join(", ");
@@ -145,6 +146,14 @@ export default function AddSite() {
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
   const [editing] = useState(!!editId);
+  const facets = useFacets();
+  // Merge live facet values with the static seed list (and the current value), so
+  // every option in the system is offered and nothing already-in-use is missing.
+  const merge = (facetList, constList, v) => {
+    const base = [...new Set([...(facetList || []), ...(constList || [])])]
+      .sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
+    return withVal(base, v);
+  };
 
   const [f, setF] = useState({
     id: "", name: "", smpms: "", county: "", distRegion: "",
@@ -294,7 +303,10 @@ export default function AddSite() {
           center, zoom: has ? 15 : (Number(cfg.defaultZoom) || 7),
           mapTypeId: cfg.mapType || "roadmap", streetViewControl: false, fullscreenControl: false,
           mapTypeControl: true,
-          mapTypeControlOptions: { style: maps.MapTypeControlStyle.HORIZONTAL_BAR, position: maps.ControlPosition.BOTTOM_LEFT },
+          mapTypeControlOptions: { style: maps.MapTypeControlStyle.HORIZONTAL_BAR, position: maps.ControlPosition.TOP_RIGHT },
+          // +/- zoom buttons (bottom-right).
+          zoomControl: true,
+          zoomControlOptions: { position: maps.ControlPosition.RIGHT_BOTTOM },
         });
         gmap.current = map;
         if (has) marker.current = new maps.Marker({ map, position: center, icon: sitePinIcon(maps, siteStatus) });
@@ -461,9 +473,6 @@ export default function AddSite() {
           </>
         )}
         {toast && <div className={styles.toast}>Location updated</div>}
-        <button type="button" className={styles.liveBtn} onClick={openLiveMaps}>
-          <i className="ti ti-map-2" aria-hidden="true" />Live maps
-        </button>
         <div className={styles.mapNote}>
           {mapReady ? "Click the map or type coordinates to set the exact location" : "Exact site location — updates when coordinates change"}
         </div>
@@ -493,7 +502,7 @@ export default function AddSite() {
             <label className={styles.lab}>SMPMS vendor</label>
             <select className={styles.in} value={f.smpms} onChange={(e) => set("smpms", e.target.value)}>
               <option value="">Select vendor</option>
-              {withVal(VENDORS, f.smpms).map((v) => <option key={v}>{v}</option>)}
+              {merge(facets.vendors, VENDORS, f.smpms).map((v) => <option key={v}>{v}</option>)}
             </select>
           </div>
         </div>
@@ -515,14 +524,14 @@ export default function AddSite() {
             <label className={styles.lab}>County <span className={styles.rq}>*</span></label>
             <select {...reg("county")} value={f.county} onChange={(e) => set("county", e.target.value)}>
               <option value="">Select county</option>
-              {withVal(COUNTIES, f.county).map((c) => <option key={c}>{c}</option>)}
+              {merge(facets.counties, COUNTIES, f.county).map((c) => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div>
             <label className={styles.lab}>Distribution region <span className={styles.rq}>*</span> <span className={styles.op}>(client split)</span></label>
             <select {...reg("distRegion")} value={f.distRegion} onChange={(e) => set("distRegion", e.target.value)}>
               <option value="">Select distribution region</option>
-              {withVal(DIST_REGIONS, f.distRegion).map((r) => <option key={r}>{r}</option>)}
+              {merge(facets.regions, DIST_REGIONS, f.distRegion).map((r) => <option key={r}>{r}</option>)}
             </select>
           </div>
         </div>
@@ -531,14 +540,14 @@ export default function AddSite() {
             <label className={styles.lab}>Security region <span className={styles.rq}>*</span> <span className={styles.op}>(regional managers &amp; heads)</span></label>
             <select {...reg("securityRegion")} value={f.securityRegion} onChange={(e) => onSecurityRegion(e.target.value)}>
               <option value="">Select security region</option>
-              {withVal(SEC_REGIONS, f.securityRegion).map((r) => <option key={r}>{r}</option>)}
+              {merge(facets.securityRegions, SEC_REGIONS, f.securityRegion).map((r) => <option key={r}>{r}</option>)}
             </select>
           </div>
           <div>
             <label className={styles.lab}>Response cluster <span className={styles.rq}>*</span> <span className={styles.op}>(team that responds here)</span></label>
             <select {...reg("responseCluster")} value={f.responseCluster} onChange={(e) => onResponseCluster(e.target.value)}>
               <option value="">Select response cluster</option>
-              {withVal(CLUSTERS, f.responseCluster).map((c) => <option key={c}>{c}</option>)}
+              {merge(facets.clusters, CLUSTERS, f.responseCluster).map((c) => <option key={c}>{c}</option>)}
             </select>
           </div>
         </div>

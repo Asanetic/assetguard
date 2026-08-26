@@ -97,6 +97,11 @@ function parseLocation(allFields) {
 
   // 2) fixed head
   const [date, time, fix, lat, latH, lng, lngH, speed, angle, altitude, sats, gsm, battery] = fields;
+  // Field 12 now carries the raw terminal VOLTAGE (e.g. 2.87), not a %. A value
+  // under 5 is volts; a larger integer is a legacy firmware battery-% reading.
+  const battRaw = num(battery);
+  const voltage = (battRaw != null && battRaw > 0 && battRaw < 5) ? battRaw : null;
+  const legacyPct = (battRaw != null && battRaw >= 5) ? Math.round(battRaw) : null;
   const steps1 = intOf(fields[13]), steps2 = intOf(fields[14]);
   let latN = signedLat(lat, latH), lngN = signedLng(lng, lngH);
   if (isNullIsland(latN, lngN)) { latN = null; lngN = null; }
@@ -113,7 +118,9 @@ function parseLocation(allFields) {
     altitude: num(altitude),
     satellites: intOf(sats),
     signal: intOf(gsm),
-    battery: intOf(battery),
+    voltage,                 // raw terminal volts (null if firmware sent a legacy %)
+    battery: legacyPct,      // % ONLY if firmware still sends one; else computed from voltage in store
+
     steps1, steps2,
     steps: Math.max(steps1 || 0, steps2 || 0) || null,   // pedometer proxy (movement without GPS)
     deviceTime: buildTime(date, time),
@@ -186,7 +193,7 @@ export function toTelemetry(rec) {
     lat: rec.lat ?? null, lng: rec.lng ?? null,
     speed: rec.speed ?? null, course: rec.course ?? null,
     altitude: rec.altitude ?? null, satellites: rec.satellites ?? null,
-    signal: rec.signal ?? null, battery: rec.battery ?? null,
+    signal: rec.signal ?? null, battery: rec.battery ?? null, voltage: rec.voltage ?? null,
     steps: rec.steps ?? null, steps1: rec.steps1 ?? null, steps2: rec.steps2 ?? null,
     accuracy: rec.accuracy ?? null, locSource: rec.locSource ?? null, geoError: rec.geoError ?? null, geoRaw: rec.geoRaw ?? null,
     motionByte: rec.motionByte ?? null,

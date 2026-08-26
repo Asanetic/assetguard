@@ -1,0 +1,17 @@
+TRACK DEVICE — fix source + blue accuracy radius
+================================================
+- Track device now shows HOW the current position was resolved: GPS, Wi-Fi, LBS
+  (cell), or Wi-Fi+LBS — as a chip (with the ± metres) and in the device popup.
+- A blue accuracy circle is drawn around the device, sized to the fix's accuracy
+  (tight for GPS ~10 m, wider for LBS/Wi-Fi). Hidden when accuracy is unknown.
+- Data comes from device_telemetry.loc_source + accuracy (already stored by the
+  ingest pipeline) via /api/mainapp/track/live — NO DB migration.
+
+FILES (unzip from app root)
+  app/api/mainapp/track/live/route.js               (returns source + accuracy)
+  app/mainapp/track/components/TrackDevice.jsx       (chip, popup rows, blue radius)
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-track-source.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000

@@ -3,7 +3,11 @@
    live transmitting waves, the operator's own moving position, in-app Google
    Directions routing, and turn-by-turn guidance on a separate blue speaker. */
 
-.page { height: 100%; margin: -22px -28px -40px; position: relative; overflow: hidden; background: #eaf1e6; color: #0f274a; }
+/* Fill the FULL content area, top to bottom. height:100% alone resolves to the
+   content box minus the shell's 22px top + 40px bottom padding, which left the map
+   ~62px short and produced an empty white strip under the bottom bar. Add the
+   padding back so the map spans edge to edge and the bar anchors to the true bottom. */
+.page { height: calc(100% + 62px); margin: -22px -28px -40px; position: relative; overflow: hidden; background: #eaf1e6; color: #0f274a; }
 .mapReal { position: absolute; inset: 0; }
 .mapOverlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #64748b; font-size: 13px; text-align: center; padding: 24px; background: #eaf1e6; z-index: 2; }
 .mapOverlay i { font-size: 40px; color: #cbd5e1; }
@@ -18,6 +22,12 @@
 @keyframes tdLive { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
 .back { position: absolute; top: 16px; left: 16px; z-index: 9; width: 38px; height: 38px; border-radius: 10px; background: #fff; border: 1px solid #e2e8f0; color: #334155; box-shadow: 0 2px 6px rgba(15,23,42,.1); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+
+/* map controls: our own HTML overlay, fixed just ABOVE the bottom bar, bottom-right.
+   z-index below the bar (6) is fine because it's positioned above the bar, never under. */
+.mapCtrls { position: absolute; right: 14px; bottom: 120px; z-index: 7; display: flex; flex-direction: column; gap: 8px; }
+.mapCtrlBtn { width: 40px; height: 40px; border-radius: 10px; background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 2px 6px rgba(15,23,42,.15); color: #334155; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 19px; }
+.mapCtrlBtn:hover { color: #2e6cf5; border-color: #2e6cf5; }
 .back:hover { color: #2e6cf5; border-color: #2e6cf5; }
 
 /* transmitting / location waves (colour per-point via --wave-color) */
@@ -70,7 +80,6 @@
 
 .toast { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); background: #0f274a; color: #fff; border-radius: 10px; padding: 9px 16px; font-size: 12.5px; font-weight: 700; z-index: 11; white-space: nowrap; box-shadow: 0 10px 30px rgba(15,23,42,.25); }
 
-/* NB: the custom map controls (my-location + blue guidance speaker) are
-   imperatively-created DOM buttons pushed into map.controls, so they are styled
-   inline in the component — a CSS-module class can't target them (the names
-   would be hashed) and a global block isn't allowed in pure CSS Modules. */
+/* The map controls (zoom, full screen, satellite toggle, voice guidance, my-location)
+   are a plain HTML overlay (.mapCtrls above), positioned entirely by us so they never
+   fight the bottom bar. All Google-native controls are disabled (disableDefaultUI). */

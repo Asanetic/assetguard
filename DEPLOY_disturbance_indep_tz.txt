@@ -1,0 +1,38 @@
+DISTURBANCE INDEPENDENCE + "WARNING" LABEL + AFRICA/NAIROBI TIME
+===============================================================
+1) Early SMS/email now say "Disturbance warning 1/3" and "2/3" (not just "1/3").
+2) EACH DISTURBANCE IS INDEPENDENT: a disturbance always starts a NEW incident and
+   is never linked to previous alarms of the same device (open or closed). So a new
+   alarm's lifecycle no longer pulls in older/closed alarms — the disturbance is the
+   START of its own case file; its geofence/critical escalations attach under it.
+3) TIMEZONE: date/times in TCP logs, device logs, playback (exports), ports, raw
+   port data, parse errors and ingest now render in Africa/Nairobi (EAT) regardless
+   of the browser/VPS timezone (e.g. 17:43 UTC shows 20:43 EAT).
+
+FILES (unzip from app root):
+  app/api/apiUtils/dataControl/alarms.js
+  app/api/apiUtils/notify/alarmNotify.js
+  app/mainapp/tcplogs/components/TcpLogs.jsx
+  app/mainapp/playback/exports/components/Exports.jsx
+  app/mainapp/ports/components/PortsManager.jsx
+  app/mainapp/ports/raw/components/RawPortData.jsx
+  app/mainapp/ports/parse-errors/components/ParseErrors.jsx
+  app/mainapp/ingest/components/IngestPanel.jsx
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-disturbance-indep-tz.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+
+MAKE THE WHOLE SYSTEM CAPTURE/STORE IN EAT (do these once — fixes the 3-hour skew
+at the source, so now() and server-side dates are consistent):
+  # a) app processes run in EAT:
+  pm2 restart assetguard-3010 gps-3000 --update-env    # after setting TZ below
+  #    add to the app's .env (or pm2 ecosystem env):  TZ=Africa/Nairobi
+  # b) Postgres renders timestamps in EAT:
+  sudo -u postgres psql -d assetguard -c "ALTER DATABASE assetguard SET timezone='Africa/Nairobi';"
+  # c) confirm the VPS wall clock is actually correct (not 3h off):
+  timedatectl        # if wrong: sudo timedatectl set-ntp true ; sudo timedatectl set-timezone Africa/Nairobi
+
+NOTE: display fixes apply immediately after build. Stored timestamps are absolute
+instants; the EAT display is correct as long as the VPS clock keeps correct UTC/NTP.

@@ -4,8 +4,9 @@
 // DELETE /api/mainapp/sites/:id   (admin) -> remove
 import { NextResponse } from "next/server";
 import {
-  getSite, updateSite, deleteSite, getSiteByCode,
+  getSite, updateSite, deleteSite, getSiteByCode, recentSiteActivity,
 } from "../../../apiUtils/dataControl/sites.js";
+import { listDevices } from "../../../apiUtils/dataControl/devices.js";
 import { requireAdmin } from "../../../apiUtils/authUtils/session.js";
 import { logAudit } from "../../../apiUtils/dataControl/audit.js";
 
@@ -19,7 +20,11 @@ export async function GET(request, { params }) {
 
   const site = await getSite(id);
   if (!site) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ site });
+  const [devices, activity] = await Promise.all([
+    listDevices({ site_id: id }).catch(() => []),
+    recentSiteActivity(id).catch(() => []),
+  ]);
+  return NextResponse.json({ site, devices, activity });
 }
 
 export async function PATCH(request, { params }) {
@@ -38,7 +43,10 @@ export async function PATCH(request, { params }) {
     // If the code is changing, keep it unique.
     if (body.code) {
       const clash = await getSiteByCode(String(body.code).trim().toUpperCase());
-      if (clash && clash.id !== id)
+      // Only a clash with a DIFFERENT site is an error. Compare as numbers — the
+      // DB returns the bigint id as a string, so a raw !== always tripped on the
+      // site being edited itself.
+      if (clash && Number(clash.id) !== id)
         return NextResponse.json({ error: "A site with that code already exists" }, { status: 409 });
       body.code = String(body.code).trim().toUpperCase();
     }

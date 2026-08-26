@@ -1,0 +1,19 @@
+FIX: TRACK PAGE CONTROL OVERLAPS
+================================
+- The zoom (+/-) and the voice-guidance speaker / my-location buttons sat at the
+  bottom/mid RIGHT and overlapped the full-width bottom bar.
+- Now ALL map controls (zoom, fullscreen, guidance speaker, my-location) anchor at
+  the TOP-RIGHT, clear of the bottom bar. Removed the map/satellite toggle to
+  declutter.
+- The status chips (LIVE / device / km away) moved from top-right to top-CENTER so
+  they don't collide with the top-right control stack.
+
+FILES (unzip from app root):
+  app/mainapp/track/components/TrackDevice.jsx
+  app/mainapp/track/components/track.module.css
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-track-layout.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration.)

@@ -16,6 +16,26 @@ import { announce, setGuidanceMuted, cancelGuidance } from "../../lib/navGuidanc
 
 const TARGET = "#EF4444", BLUE = "#2E6CF5";  // target device red, my-location blue
 
+// How the latest fix was resolved → label + colour for the chip / popup.
+const SRC_META = {
+  gps:        { label: "GPS",        color: "#059669", icon: "ti-satellite" },
+  "wifi+lbs": { label: "Wi-Fi + LBS", color: "#2E6CF5", icon: "ti-wifi" },
+  wifi:       { label: "Wi-Fi",      color: "#2E6CF5", icon: "ti-wifi" },
+  lbs:        { label: "LBS (cell)", color: "#7C3AED", icon: "ti-antenna-bars-4" },
+  network:    { label: "Network",   color: "#7C3AED", icon: "ti-antenna" },
+};
+function srcMeta(s) { return SRC_META[String(s || "").toLowerCase()] || { label: s ? String(s) : "—", color: "#64748B", icon: "ti-map-pin" }; }
+// If the DB row has no loc_source, fall back to the accuracy radius so the chip is
+// never blank: a tight fix is GPS, a wide one is a network (Wi-Fi / cell) fix.
+function resolvedSource(fix) {
+  if (fix && fix.source) return fix.source;
+  const a = fix ? fix.accuracy : null;
+  if (a == null) return null;
+  if (a <= 50) return "gps";
+  if (a <= 1500) return "wifi";
+  return "lbs";
+}
+
 function haversine(a, b) {
   const R = 6371, dLat = (b.lat - a.lat) * Math.PI / 180, dLng = (b.lng - a.lng) * Math.PI / 180;
   const la1 = a.lat * Math.PI / 180, la2 = b.lat * Math.PI / 180;
@@ -30,6 +50,15 @@ function bearing(a, b) {
 }
 function compass(deg) { return ["North", "North-east", "East", "South-east", "South", "South-west", "West", "North-west"][Math.round(deg / 45) % 8]; }
 function stripHtml(s) { return String(s || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(); }
+function agoText(v) {
+  if (!v) return "—";
+  const t = new Date(v).getTime(); if (!Number.isFinite(t)) return "—";
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (s < 60) return `${s}s ago`;
+  const m = Math.round(s / 60); if (m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60); if (h < 24) return `${h} hr${h > 1 ? "s" : ""} ago`;
+  const d = Math.round(h / 24); return `${d} day${d > 1 ? "s" : ""} ago`;
+}
 
 export default function TrackDevice() {
   const router = useRouter();
@@ -64,15 +93,21 @@ export default function TrackDevice() {
   const [distText, setDistText] = useState("—");
   const [etaText, setEtaText] = useState("—");
   const [awayKm, setAwayKm] = useState(0);
-  const [breach, setBreach] = useState(340);
-  const [updatedSecs, setUpdatedSecs] = useState(1);
+  const [fixAt, setFixAt] = useState(null);   // when the platform received the last fix
+  const [, setNowTick] = useState(0);          // 1s re-render so "updated N ago" stays live
+  const [mapReady, setMapReady] = useState(false);
+  const [mapType, setMapType] = useState("roadmap");
+  const [guidMuted, setGuidMuted] = useState(false);
   const [toast, setToast] = useState("");
   const [notFound, setNotFound] = useState(false);
+  const [fix, setFix] = useState({ source: null, accuracy: null }); // latest fix source + ± metres
 
   const mapRef = useRef(null);
   const gmap = useRef(null);
   const mapsApi = useRef(null);
   const devMarker = useRef(null);
+  const accCircle = useRef(null);            // blue accuracy radius around the device
+  const fixRef = useRef({ source: null, accuracy: null });
   const myMarker = useRef(null);
   const trailLine = useRef(null);
   const waveRef = useRef(null);
@@ -95,6 +130,26 @@ export default function TrackDevice() {
   const speed = useRef(6);
 
   function flash(msg) { setToast(msg); setTimeout(() => setToast(""), 2200); }
+
+  // ---- map control overlay handlers (HTML overlay, not Google controls) ----
+  function ctrlZoom(d) { const m = gmap.current; if (m) m.setZoom((m.getZoom() || 13) + d); }
+  function ctrlFullscreen() {
+    const el = mapRef.current?.parentElement || mapRef.current;
+    try { if (document.fullscreenElement) document.exitFullscreen(); else el?.requestFullscreen?.(); } catch {}
+  }
+  function ctrlMapType() {
+    const next = mapType === "roadmap" ? "hybrid" : "roadmap";
+    gmap.current?.setMapTypeId(next); setMapType(next);
+  }
+  function ctrlMyLoc() {
+    if (gmap.current && myPos.current) { gmap.current.panTo(myPos.current); gmap.current.setZoom(Math.max(gmap.current.getZoom() || 15, 15)); }
+    else flash("Getting your location… allow location access");
+  }
+  function ctrlGuidance() {
+    const m = !guidanceMutedRef.current;
+    guidanceMutedRef.current = m; setGuidanceMuted(m); setGuidMuted(m);
+    flash(m ? "Voice guidance muted" : "Voice guidance on");
+  }
 
   // load the device (target) + its site coordinates
   useEffect(() => {
@@ -121,8 +176,8 @@ export default function TrackDevice() {
     return () => { alive = false; };
   }, [deviceId]);
 
-  // "updated Ns ago" ticker
-  useEffect(() => { const id = setInterval(() => setUpdatedSecs((s) => (s >= 9 ? 1 : s + 1)), 1000); return () => clearInterval(id); }, []);
+  // 1s re-render so the popup's "updated N ago" stays live (computed from fixAt).
+  useEffect(() => { const id = setInterval(() => setNowTick((n) => n + 1), 1000); return () => clearInterval(id); }, []);
 
   // init map
   useEffect(() => {
@@ -140,39 +195,24 @@ export default function TrackDevice() {
         if (cancelled || !mapRef.current) return;
         mapsApi.current = maps;
 
-        // Google's own controls stay in their default positions.
+        // No Google-drawn controls — we render our own as an HTML overlay (see JSX)
+        // so their position is fully under our control and never fights the bottom
+        // bar. Google's margin on RIGHT_BOTTOM controls is unreliable, which caused
+        // the stray control peeking under the bar.
         const map = new maps.Map(mapRef.current, {
           center: devPos.current, zoom: 13, mapTypeId: cfg.mapType || "roadmap",
-          gestureHandling: "greedy", streetViewControl: false,
-          zoomControl: true, fullscreenControl: true, mapTypeControl: true,
+          gestureHandling: "greedy",
+          // Kill EVERY Google-drawn control — we render our own HTML overlay. Flags
+          // alone weren't enough: satellite/hybrid adds a circular rotate/tilt control
+          // at the bottom-right that peeked behind the bar. disableDefaultUI removes
+          // that (and rotateControl:false belts-and-braces).
+          disableDefaultUI: true, rotateControl: false,
+          streetViewControl: false, mapTypeControl: false,
+          zoomControl: false, fullscreenControl: false,
         });
         gmap.current = map;
-
-        // custom controls alongside Google's (my-location + blue guidance speaker).
-        // Styled inline (Google-control look) because they're DOM nodes outside React.
-        const CTRL = "width:40px;height:40px;border-radius:2px;background:#fff;border:0;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer;display:flex;align-items:center;justify-content:center;margin:10px 10px 0 0;font-size:20px;";
-        if (showMineLocal) {
-          const myLocBtn = document.createElement("button");
-          myLocBtn.type = "button"; myLocBtn.title = "My location";
-          myLocBtn.style.cssText = CTRL + "color:#5f6368;";
-          myLocBtn.innerHTML = '<i class="ti ti-current-location"></i>';
-          myLocBtn.onclick = () => { if (myPos.current) map.panTo(myPos.current); };
-          map.controls[maps.ControlPosition.RIGHT_CENTER].push(myLocBtn);
-        }
-
-        const gBtn = document.createElement("button");
-        gBtn.type = "button"; gBtn.title = "Voice guidance";
-        gBtn.style.cssText = CTRL + "color:#2e6cf5;";
-        gBtn.innerHTML = '<i class="ti ti-volume"></i>';
-        gBtn.onclick = () => {
-          const m = !guidanceMutedRef.current;
-          guidanceMutedRef.current = m; setGuidanceMuted(m);
-          gBtn.style.color = m ? "#9aa0a6" : "#2e6cf5";
-          gBtn.innerHTML = `<i class="ti ti-${m ? "volume-off" : "volume"}"></i>`;
-          flash(m ? "Voice guidance muted" : "Voice guidance on");
-        };
-        guidanceBtn.current = gBtn;
-        map.controls[maps.ControlPosition.RIGHT_CENTER].push(gBtn);
+        setMapType(cfg.mapType === "satellite" || cfg.mapType === "hybrid" ? "hybrid" : "roadmap");
+        setMapReady(true);
 
         // overlay for the custom popup + the transmitting/location waves
         const ov = new maps.OverlayView();
@@ -188,6 +228,12 @@ export default function TrackDevice() {
           map, path: [devPos.current], strokeOpacity: 0, zIndex: 1,
           icons: [{ icon: { path: "M 0,-1 0,1", strokeColor: "#94a3b8", strokeOpacity: 1, scale: 2.5 }, offset: "0", repeat: "10px" }],
         });
+        // Blue accuracy radius around the device (how tightly the fix is known —
+        // small for GPS, wide for LBS/Wi-Fi). Hidden until a fix with accuracy arrives.
+        accCircle.current = new maps.Circle({
+          map, center: devPos.current, radius: 0, clickable: false, zIndex: 2,
+          strokeColor: BLUE, strokeOpacity: 0.45, strokeWeight: 1.5, fillColor: BLUE, fillOpacity: 0.12, visible: false,
+        });
         devMarker.current = new maps.Marker({ map, position: devPos.current, icon: targetDeviceIcon(maps, devHeading.current), zIndex: 6, optimized: false });
         devMarker.current.addListener("click", () => setPopOpen((v) => !v));
         if (showMineLocal) {
@@ -202,7 +248,10 @@ export default function TrackDevice() {
         fitBoth();
         refreshDistance();
         setTimeout(repositionPopup, 60);
-        if (showMineLocal) startGeolocation();
+        // Every viewer gets a working "My location" button — geolocation runs for all
+        // and the blue marker is created lazily on the first real GPS fix (see
+        // startGeolocation). Responders additionally broadcast + can route.
+        startGeolocation();
         // Every viewer (including plain-Track NOC) watches the responders.
         pollResponders();
         respPollTimer.current = setInterval(pollResponders, 5000);
@@ -234,7 +283,13 @@ export default function TrackDevice() {
         if (prev) devHeading.current = bearing(prev, next);
         trail.current.push(next); if (trail.current.length > 40) trail.current.shift();
         if (pos.speed != null) speed.current = pos.speed;
-        setUpdatedSecs(1);
+        // location source + accuracy for the chip, popup, and the blue radius
+        fixRef.current = { source: pos.source ?? null, accuracy: pos.accuracy != null ? Number(pos.accuracy) : null };
+        setFix(fixRef.current);
+        // Use the server-computed age (immune to VPS clock skew): rebuild the fix time
+        // on THIS browser's clock, so "Updated N ago" is accurate and keeps counting up
+        // when the device goes quiet — instead of being stuck at "0s ago".
+        setFixAt(pos.age_sec != null ? Date.now() - pos.age_sec * 1000 : (pos.received || pos.at || null));
         applyDevice();
         refreshDistance();
         maybeRoute();
@@ -321,11 +376,19 @@ export default function TrackDevice() {
         const np = { lat: p.coords.latitude, lng: p.coords.longitude };
         const prev = myPos.current;
         myPos.current = np;
-        if (myMarker.current) {
+        // Lazily create the blue "you" marker on the first real fix — this is how a
+        // plain watcher (non-responder) gets one without the fake fallback origin.
+        if (!myMarker.current && mapsApi.current && gmap.current) {
+          myMarker.current = new mapsApi.current.Marker({
+            map: gmap.current, position: np,
+            icon: myLocationIcon(mapsApi.current, p.coords.heading ?? 0), zIndex: 5, optimized: false,
+          });
+        } else if (myMarker.current) {
           myMarker.current.setPosition(np);
           if (prev) myMarker.current.setIcon(myLocationIcon(mapsApi.current, p.coords.heading ?? bearing(prev, np)));
         }
-        broadcastPosition(np);
+        // Only actual responders publish their position to the mission; a watcher stays private.
+        if (respondMode && canRespondRef.current) broadcastPosition(np);
         drawWaves(); refreshDistance(); maybeRoute();
       },
       () => { /* denied — keep the fallback origin */ },
@@ -339,6 +402,13 @@ export default function TrackDevice() {
     devMarker.current.setPosition(devPos.current);
     devMarker.current.setIcon(targetDeviceIcon(maps, devHeading.current));
     if (trailLine.current) trailLine.current.setPath(trail.current);
+    // blue accuracy radius follows the device; sized to the fix's ± metres
+    if (accCircle.current) {
+      const acc = fixRef.current.accuracy;
+      accCircle.current.setCenter(devPos.current);
+      if (acc && acc > 0) { accCircle.current.setRadius(acc); accCircle.current.setVisible(true); }
+      else accCircle.current.setVisible(false);
+    }
     drawWaves(); repositionPopup();
   }
   function drawWaves() {
@@ -440,6 +510,17 @@ export default function TrackDevice() {
   const siteName = device?.site || "—";
   const siteCode = device?.site_code || "—";
   const battery = device?.battery != null ? `${device.battery}%` : "—";
+  // Real geofence status: distance of the device's live position from the SITE
+  // centre vs the device's configured geofence radius.
+  const gfRadius = Number(device?.config?.geofence?.radius_m ?? 100);
+  const siteCenter = device && device.site_lat != null && device.site_lng != null
+    ? { lat: Number(device.site_lat), lng: Number(device.site_lng) } : null;
+  const distM = siteCenter && devPos.current ? Math.round(haversine(siteCenter, devPos.current) * 1000) : null;
+  const outsideM = distM != null ? distM - gfRadius : null;
+  const geoInside = outsideM != null && outsideM <= 0;
+  const geoText = outsideM == null ? null
+    : geoInside ? `Within its ${gfRadius}m geofence`
+    : `${outsideM}m outside its ${gfRadius}m geofence`;
 
   if (notFound) {
     return (
@@ -458,11 +539,27 @@ export default function TrackDevice() {
 
       <button className={styles.back} onClick={() => router.back()} aria-label="Back"><i className="ti ti-arrow-left" /></button>
 
+      {/* map controls — HTML overlay, fixed just above the bottom bar (bottom-right) */}
+      {!mapErr && mapReady ? (
+        <div className={styles.mapCtrls}>
+          <button className={styles.mapCtrlBtn} title="Full screen" onClick={ctrlFullscreen}><i className="ti ti-maximize" /></button>
+          <button className={styles.mapCtrlBtn} title={mapType === "roadmap" ? "Satellite view" : "Map view"} onClick={ctrlMapType}><i className={`ti ${mapType === "roadmap" ? "ti-satellite" : "ti-map-2"}`} /></button>
+          <button className={styles.mapCtrlBtn} title="Zoom in" onClick={() => ctrlZoom(1)}><i className="ti ti-plus" /></button>
+          <button className={styles.mapCtrlBtn} title="Zoom out" onClick={() => ctrlZoom(-1)}><i className="ti ti-minus" /></button>
+          <button className={styles.mapCtrlBtn} title="Voice guidance" onClick={ctrlGuidance} style={{ color: guidMuted ? "#9aa0a6" : "#2e6cf5" }}><i className={`ti ${guidMuted ? "ti-volume-off" : "ti-volume"}`} /></button>
+          <button className={styles.mapCtrlBtn} title="My location" onClick={ctrlMyLoc}><i className="ti ti-current-location" /></button>
+        </div>
+      ) : null}
+
       {!mapErr && device ? (
         <div className={styles.chips}>
           <span className={styles.chip}><span className={`${styles.dot} ${styles.live}`} />LIVE</span>
           <span className={styles.chip}><span className={styles.dot} style={{ background: TARGET }} />{device.device_id}</span>
           <span className={styles.chip}><i className="ti ti-map-pin" style={{ fontSize: 13, color: "#059669" }} />{awayKm} km away</span>
+          <span className={styles.chip} title={`Fix from ${srcMeta(resolvedSource(fix)).label}${fix.accuracy != null ? ` · ±${fix.accuracy} m accuracy` : ""}`}>
+            <i className={`ti ${srcMeta(resolvedSource(fix)).icon}`} style={{ fontSize: 13, color: srcMeta(resolvedSource(fix)).color }} />
+            {srcMeta(resolvedSource(fix)).label}{fix.accuracy != null ? ` · ±${fix.accuracy} m` : ""}
+          </span>
         </div>
       ) : null}
 
@@ -476,11 +573,17 @@ export default function TrackDevice() {
               <div className={styles.popSite}>{siteName} · {siteCode}</div>
             </div>
             <div className={styles.popBody}>
-              <div className={styles.breach}><i className="ti ti-alert-triangle" style={{ fontSize: 14 }} />{breach}m outside its 100m geofence</div>
+              {geoText ? (
+                <div className={styles.breach} style={geoInside ? { background: "#D1FAE5", color: "#065F46" } : undefined}>
+                  <i className={`ti ${geoInside ? "ti-shield-check" : "ti-alert-triangle"}`} style={{ fontSize: 14 }} />{geoText}
+                </div>
+              ) : null}
               <div className={styles.popRow}><span className={styles.popK}>Speed</span><span className={styles.popV}>{speed.current} km/h</span></div>
               <div className={styles.popRow}><span className={styles.popK}>Heading</span><span className={styles.popV}>{compass(devHeading.current)}</span></div>
               <div className={styles.popRow}><span className={styles.popK}>Battery</span><span className={styles.popV} style={{ color: "#059669" }}>{battery}</span></div>
-              <div className={styles.popRow}><span className={styles.popK}>Updated</span><span className={styles.popV}>{updatedSecs}s ago</span></div>
+              <div className={styles.popRow}><span className={styles.popK}>Fix source</span><span className={styles.popV} style={{ color: srcMeta(resolvedSource(fix)).color, fontWeight: 700 }}>{srcMeta(resolvedSource(fix)).label}</span></div>
+              <div className={styles.popRow}><span className={styles.popK}>Accuracy</span><span className={styles.popV}>{fix.accuracy != null ? `±${fix.accuracy} m` : "—"}</span></div>
+              <div className={styles.popRow}><span className={styles.popK}>Updated</span><span className={styles.popV}>{agoText(fixAt)}</span></div>
               <div className={styles.popBtns}>
                 {alarmId
                   ? <button className={`${styles.popBtn} ${styles.popBtnPrimary}`} onClick={() => router.push(`/mainapp/alarms/${encodeURIComponent(alarmId)}`)}><i className="ti ti-clipboard-list" style={{ fontSize: 15 }} /> View alarm details</button>

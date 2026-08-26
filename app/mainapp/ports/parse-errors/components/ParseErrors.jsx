@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-function fmt(iso) { try { return new Date(iso).toLocaleString(); } catch { return "—"; } }
+function fmt(iso) { try { return new Date(iso).toLocaleString("en-GB", { timeZone: "Africa/Nairobi", hour12: false }); } catch { return "—"; } }
 
 export default function ParseErrors() {
   const [rows, setRows] = useState([]);

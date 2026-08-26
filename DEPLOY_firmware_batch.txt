@@ -1,0 +1,60 @@
+FIRMWARE / COMMAND BATCH UPDATE — deploy notes
+================================================
+
+WHAT THIS ADDS
+- Batch "Update firmware (OTA)" on Group devices (one device or many). There are
+  NO versions (the image lives on the OEM servers) — it just sends UPGRADE.
+- A DB-backed command QUEUE. A tracker is usually asleep, so a queued job waits
+  and is sent by the TCP listener when the device WAKES:
+    pending  -> queued (device asleep / not yet sent)
+    sent     -> UPGRADE written on a wake (heartbeat/data), awaiting the reply
+    acked    -> device replied *HQ,IMEI,V4,UPGRADE#  (firmware: awaiting data)
+    confirmed-> device resumed transmitting data after the ack = SUCCESS
+    failed   -> no reply after max attempts, or no data within the deadline
+  Firmware is sent ONLY when the device has NO open critical alarm. No reply ->
+  it resends on the next heartbeat (capped by max_attempts).
+- "Set motion sensitivity (1-100)" now sends a real GS,<n> command through the
+  same queue; it is CONFIRMED as soon as the device replies (no data wait, no
+  critical-alarm gate) — applies almost immediately.
+- COMMAND QUEUE view (Group devices header -> "Command queue"): every queued job
+  across ALL devices — device, site, command, rollout code, status, age — with
+  filters (All / Firmware / Commands, and Active / All) and per-row Cancel plus
+  "Cancel all shown". Polls every 5s.
+- Firmware ROLLOUT modal (auto-opens when you start a rollout; reopen via the
+  "Rollout FWC-00N" button): rollout code, "X of N confirmed", progress bar, a
+  stage breakdown (pending wake-up / downloading / applying / confirmed / failed),
+  filter pills, per-device rows, and an amber "runs in the background" banner
+  while devices are asleep. Polls every 5s. Pause / Resume the rollout from the
+  footer. Stage mapping: pending=pending wake-up, sent=downloading, acked=
+  applying, confirmed=done, failed. Each rollout gets a code FWC-001, FWC-002…
+
+FILES (unzip from the app root, keeping paths)
+  db/device_commands.sql                                 (NEW - queue table)
+  app/api/apiUtils/dataControl/deviceCommands.js         (NEW - queue data layer)
+  app/api/apiUtils/ingest/commandRunner.js               (NEW - listener drainer)
+  app/api/apiUtils/ingest/portManager.js                 (modified - wake/reply hooks)
+  app/api/mainapp/devices/commands/route.js              (NEW - enqueue/status API)
+  app/mainapp/devices/group/components/GroupDevices.jsx      (modified - UI + rollout modal)
+  app/mainapp/devices/group/components/groupdevices.module.css (modified - rollout styles)
+
+DEPLOY  (from /var/www/html/baseapps/assetguard)
+  1) python3 -c "import zipfile; zipfile.ZipFile('assetguard-firmware-batch.zip').extractall('.')"
+  2) sudo -u postgres psql -d assetguard -f db/device_commands.sql
+  3) npm run build
+  4) pm2 restart assetguard-3010 gps-3000     # listener runs in gps-3000; UI in 3010
+
+USE
+  Group devices -> select devices -> "Update firmware" (or All operations ->
+  "Set motion sensitivity"). Confirm. Watch the Command status modal. A device
+  shows "Pending" until it next wakes; then Sent -> Acknowledged -> Confirmed.
+
+VERIFY
+  - grep -c "device_command_queue" app/api/apiUtils/dataControl/deviceCommands.js  # >0
+  - In the listener log after a queued device wakes:
+      [cmd] -> <imei> @:<port>  *HQ,<imei>,UPGRADE#
+  - The status modal moves the device to Confirmed once data resumes (<5 min).
+
+TUNING (top of the files)
+  - commandRunner.js: REFRESH_MS (active-imei cache, 20s), RESEND_COOLDOWN_MS (120s).
+  - deviceCommands.sweepStalled(): ackDataDeadlineMin (15), sentDeadlineMin (180).
+  - max_attempts per job defaults to 10.

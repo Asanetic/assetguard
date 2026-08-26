@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./sites.module.css";
 import ImportSites from "./ImportSites.jsx";
+import { useFacets } from "../../lib/useFacets.js";
 
 const REGIONS = ["Nairobi", "Coast", "Western", "Rift Valley", "Eastern", "North Eastern"];
 const STATUSES = ["Live", "Testing", "Maintenance", "SMPMS", "Pending", "Offline", "Inactive"];
@@ -40,6 +41,8 @@ export default function AllSites() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [region, setRegion] = useState("all");
+  const facets = useFacets();
+  const regionOpts = (facets.regions && facets.regions.length) ? facets.regions : REGIONS;
   const [status, setStatus] = useState("all");
   const [showImport, setShowImport] = useState(false);
   const debounce = useRef(null);
@@ -106,7 +109,7 @@ export default function AllSites() {
         </div>
         <select className={styles.select} value={region} onChange={(e) => setRegion(e.target.value)}>
           <option value="all">All Regions</option>
-          {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+          {regionOpts.map((r) => <option key={r} value={r}>{r}</option>)}
         </select>
         <select className={styles.select} value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="all">All Statuses</option>

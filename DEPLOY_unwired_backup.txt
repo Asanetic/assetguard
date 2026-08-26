@@ -1,0 +1,62 @@
+UNWIRED LABS GEOLOCATION BACKUP — deploy notes
+================================================
+
+WHAT THIS ADDS
+- Google Geolocation stays the PRIMARY resolver, now a SINGLE attempt per packet
+  (the old cells-only Google retry is removed — one Google trial only).
+- When Google returns "Not Found" / can't compute a position, AssetGuard now
+  falls back to Unwired Labs LocationAPI.
+- A persistent request counter (geo_usage table) stops calling Unwired once the
+  free-request cap is hit, so a trial token (e.g. 50 requests) is never overrun.
+  The count survives app restarts and redeploys. Cap can reset never / daily / monthly.
+- New admin card at Admin -> Google Maps: "Location backup — Unwired Labs"
+  (token, on/off, endpoint region, free cap, cap reset window, live usage meter).
+- TCP logs packet card ("Parsed & aligned" -> click a packet): the "Network-located"
+  row now shows WHICH provider located it (Google or Unwired Labs), and for Unwired
+  the trials remaining (e.g. "38 of 50 trials left today"). The geolocation block
+  header switches to "Geolocation (Unwired Labs)" when the backup was used.
+
+FILES IN THIS ZIP (unzip from the app root, keeping paths)
+  app/api/apiUtils/dataControl/appConfig.js        (modified — geo config)
+  app/api/apiUtils/dataControl/geoUsage.js         (NEW — atomic counter)
+  app/api/apiUtils/ingest/geolocate.js             (modified — Unwired adapter + fallback)
+  app/api/apiUtils/ingest/store.js                 (modified — logs which provider located)
+  app/api/mainapp/maps-config/route.js             (modified — serves/saves geo config)
+  app/mainapp/admin/maps/components/MapsControl.jsx(modified — the admin card)
+  app/mainapp/tcplogs/components/TcpLogs.jsx       (modified — provider + trials in packet card)
+  db/geo_provider.sql                              (NEW — geo_usage table + geo seed)
+
+DEPLOY STEPS  (from /var/www/html/baseapps/assetguard)
+  1) unzip -o assetguard-unwired-backup.zip
+     # if unzip is missing:
+     # python3 -c "import zipfile; zipfile.ZipFile('assetguard-unwired-backup.zip').extractall('.')"
+
+  2) Run the migration (creates geo_usage + seeds the geo config):
+     sudo -u postgres psql -d assetguard -f db/geo_provider.sql
+
+  3) Rebuild clean (clear stale Next cache) and restart BOTH instances:
+     rm -rf .next && npm run build
+     pm2 restart assetguard-3010 gps-3000
+
+  4) In the app: Admin -> Google Maps -> "Location backup — Unwired Labs"
+     - paste your Unwired Labs token
+     - tick "Use Unwired Labs as a backup provider"
+     - set the free cap (default 50) and whether it resets monthly or never
+     - Save
+
+VERIFY
+  - grep -c "requestUnwiredLocation" app/api/apiUtils/ingest/geolocate.js   # expect >= 2
+  - After a device sends a packet Google can't resolve, the ingest log shows:
+      [geolocate] -> Unwired backup (request 1/50 for total)
+      [ingest] <imei> geolocation OK (lbs via unwired) <lat>,<lng> ...
+  - The usage meter on the admin card climbs by 1 per Unwired call and stops the
+    backup at the cap.
+
+NOTES
+  - The token is stored server-side only; the browser never receives it back
+    (the page shows a "saved" placeholder and a *Set flag).
+  - Endpoint region default is us1; change to eu1/ap1 if closer.
+  - To reset the counter manually:
+      UPDATE geo_usage SET count=0 WHERE provider='unwired';
+  - The cell "signal" scale from the tracker is NOT dBm, so it is intentionally
+    omitted from both Google and Unwired requests; Wi-Fi RSSI (real dBm) is sent.

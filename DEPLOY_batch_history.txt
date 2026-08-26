@@ -1,0 +1,19 @@
+BATCH HISTORY — see completed batch operations (they no longer vanish)
+=====================================================================
+New "Batch history" button in Group devices (header). Lists every past batch —
+firmware rollouts (FWC-…) and command batches — newest first, with:
+  batch code, type, command, when (EAT), device count, and a result roll-up
+  (e.g. "5 confirmed · 1 failed", "2 active", "canceled").
+Click any row (or "View") to REOPEN its rollout/status modal (works for completed
+ones too — shows the final per-device outcome). Last 30 days.
+
+FILES (unzip from app root):
+  app/api/apiUtils/dataControl/deviceCommands.js         (listBatches)
+  app/api/mainapp/devices/commands/route.js              (GET ?scope=batches)
+  app/mainapp/devices/group/components/GroupDevices.jsx  (Batch history button + modal)
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-batch-history.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration — reads the existing device_command_queue.)

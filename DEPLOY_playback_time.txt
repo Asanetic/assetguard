@@ -1,0 +1,21 @@
+FIX: PLAYBACK TIMESTAMPS SORTED + REAL EAT
+==========================================
+Playback was built from COALESCE(device_time, received_at) — the DEVICE clock —
+which is unreliable, so points sorted out of order and the transport clock showed
+wrong times. Now playback uses received_at (SERVER time) for ordering, the timeline
+base, and the day filter, and the transport clock is computed in Africa/Nairobi.
+Incident pins and the available-dates list are aligned to the EAT day too.
+
+Applies to existing routes as well (received_at was always stored).
+
+FILE (unzip from app root):
+  app/api/apiUtils/dataControl/playback.js
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-playback-time.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration.)
+
+Verified: points sort by received_at even with a scrambled device clock; 06:00 UTC
+route start shows 09:00:00 EAT on the transport bar.

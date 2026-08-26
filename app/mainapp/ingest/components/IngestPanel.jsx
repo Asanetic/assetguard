@@ -10,7 +10,7 @@ const SAMPLE = "[3G*863957075080470*006A*UD,310726,175332,A,1.541982,S,37.261975
 
 function fmtTime(iso) {
   if (!iso) return "—";
-  try { return new Date(iso).toLocaleTimeString(); } catch { return iso; }
+  try { return new Date(iso).toLocaleTimeString("en-GB", { timeZone: "Africa/Nairobi", hour12: false }); } catch { return iso; }
 }
 
 export default function IngestPanel() {

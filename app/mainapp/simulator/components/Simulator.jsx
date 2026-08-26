@@ -19,7 +19,7 @@ const SCENARIOS = [
   { key: "all", label: "All (burst)", desc: "one of each" },
 ];
 
-function now() { try { return new Date().toLocaleTimeString(); } catch { return ""; } }
+function now() { try { return new Date().toLocaleTimeString("en-GB", { timeZone: "Africa/Nairobi", hour12: false }); } catch { return ""; } }
 function todayUTC() { try { return new Date().toISOString().slice(0, 10); } catch { return ""; } }
 
 // Build the EXACT GL-28 frame the server will send (mirrors ingest/simPackets.buildUD)

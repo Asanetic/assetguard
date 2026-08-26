@@ -34,6 +34,20 @@ export async function getRoute(deviceId, date) {
   return await routeFromTelemetry(deviceId, date);
 }
 
+/**
+ * `gps` | `wifi` | `lbs` | `wifi+lbs` | null.
+ *
+ * Null means the row predates the column, NOT that the fix was bad. A client
+ * filtering on source must keep those visible rather than hiding history it
+ * cannot classify.
+ */
+function srcOf(value) {
+  const v = String(value || "").toLowerCase().trim();
+  if (!v) return null;
+  if (v === "network") return "lbs";
+  return v;
+}
+
 function haversineKm(a, b) {
   const R = 6371, toRad = (d) => (d * Math.PI) / 180;
   const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
@@ -44,7 +58,8 @@ function haversineKm(a, b) {
 /** Build a playback route from device_telemetry for a device (device_id text) + date. */
 export async function routeFromTelemetry(deviceIdText, date) {
   const { rows } = await query(
-    `SELECT COALESCE(t.device_time, t.received_at) AS ts, t.lat, t.lng, t.speed
+    `SELECT COALESCE(t.device_time, t.received_at) AS ts, t.lat, t.lng, t.speed,
+            t.loc_source, t.accuracy
        FROM device_telemetry t
        JOIN devices d ON d.id = t.device_id
       WHERE d.device_id = $1
@@ -62,6 +77,12 @@ export async function routeFromTelemetry(deviceIdText, date) {
   const points = rows.map((r) => ({
     t: Math.max(0, Math.round((new Date(r.ts).getTime() - t0) / 1000)),
     lat: Number(r.lat), lng: Number(r.lng), spd: Math.round(Number(r.speed) || 0),
+    // Where the fix came from, so a client can filter by it. `network` is
+    // normalised to `lbs` — that is the word the rest of the UI uses for a
+    // cell-tower fix, and two names for one thing is how a filter comes to
+    // silently miss half its rows.
+    src: srcOf(r.loc_source),
+    acc: r.accuracy == null ? null : Math.round(Number(r.accuracy)),
   }));
 
   // distance, max speed, stop detection
@@ -103,7 +124,8 @@ const EAT_OFFSET = 3 * 3600; // Africa/Nairobi = UTC+3 (for display clock)
 /** Build a playback route from device_telemetry within a from→to datetime range. */
 export async function routeFromTelemetryRange(deviceIdText, fromIso, toIso) {
   const { rows } = await query(
-    `SELECT COALESCE(t.device_time, t.received_at) AS ts, t.lat, t.lng, t.speed
+    `SELECT COALESCE(t.device_time, t.received_at) AS ts, t.lat, t.lng, t.speed,
+            t.loc_source, t.accuracy
        FROM device_telemetry t
        JOIN devices d ON d.id = t.device_id
       WHERE d.device_id = $1
@@ -122,6 +144,12 @@ export async function routeFromTelemetryRange(deviceIdText, fromIso, toIso) {
   const points = rows.map((r) => ({
     t: Math.max(0, Math.round((new Date(r.ts).getTime() - t0) / 1000)),
     lat: Number(r.lat), lng: Number(r.lng), spd: Math.round(Number(r.speed) || 0),
+    // Where the fix came from, so a client can filter by it. `network` is
+    // normalised to `lbs` — that is the word the rest of the UI uses for a
+    // cell-tower fix, and two names for one thing is how a filter comes to
+    // silently miss half its rows.
+    src: srcOf(r.loc_source),
+    acc: r.accuracy == null ? null : Math.round(Number(r.accuracy)),
   }));
 
   let total_km = 0, max_speed = 0, stops = 0, stop_min = 0;

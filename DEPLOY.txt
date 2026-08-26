@@ -1,0 +1,11 @@
+AssetGuard - Add site map: remove Live maps, add +/- zoom
+==========================================================
+One file, NO migration.
+
+  cd /var/www/html/baseapps/assetguard
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-addsite-map.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+
+- Removed the "Live maps" button from the Add-site map.
+- Added +/- zoom buttons (bottom-right); Map/Satellite toggle moved to top-right.

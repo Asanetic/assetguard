@@ -1,0 +1,20 @@
+TRACK PAGE — map controls as an HTML overlay (fixes the stray circle)
+====================================================================
+Root cause: Google doesn't reliably honor the margin on RIGHT_BOTTOM controls, so
+the bottom button kept re-anchoring to the corner under the bar. Fixed by rendering
+our OWN controls as an HTML overlay we fully position — pinned bottom-right at
+bottom:120px, always immediately above the "Get directions" bar, never under it.
+
+Controls (top->bottom): Full screen · Satellite/Map toggle · Zoom + · Zoom - ·
+My location (responders) · Voice guidance. Also includes the satellite/normal map
+toggle you asked for.
+
+FILES (unzip from app root):
+  app/mainapp/track/components/TrackDevice.jsx
+  app/mainapp/track/components/track.module.css
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-track-controls.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration.)

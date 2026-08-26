@@ -56,10 +56,24 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 0;
+  /* rail itself never scrolls; the bottom cluster is pinned and always visible.
+     Generous bottom padding keeps "Log out" well clear of the very edge. */
+  padding: 10px 0 24px;
   gap: 4px;
   flex: none;
   height: 100%;
+  overflow: hidden;
+}
+/* the icon list scrolls if the viewport is too short to fit everything, so the
+   avatar + Log out below it are never pushed off the bottom */
+.railTop {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -122,10 +136,17 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 6px;
+  margin-top: 8px;
+  flex: none;
 }
 .railBottomBtn {
   width: 52px;
-  height: 44px;
+  height: auto;
+  min-height: 44px;
+  padding: 4px 0;
+  line-height: 1.2;
+  white-space: nowrap;
+  flex: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -174,9 +195,10 @@
 }
 /* Raised clear of the Playback transport bar so it never overlaps its controls. */
 .speakerRaised { bottom: 176px; }
-/* On Track Device the right side is reserved for Google's controls + the blue
-   guidance speaker, so the alarm buzzer sits bottom-left, clear of the bottom bar. */
-.speakerLeft { right: auto; left: 80px; bottom: 96px; }
+/* On Track Device the right side holds the map controls, so the alarm buzzer sits
+   bottom-LEFT — raised above the bottom "Get directions" bar so it never overlaps
+   the DEVICE SPEED readout. */
+.speakerLeft { right: auto; left: 80px; bottom: 156px; }
 .speakerLive::after {
   content: "";
   position: absolute;

@@ -1,0 +1,16 @@
+EDIT IMEI ON VIEW DEVICE
+========================
+- Devices -> View device -> Edit details: the IMEI is now editable (14-17 digits).
+- Server validates the format, rejects an IMEI already used by another device, and
+  re-points that device's active queued commands (firmware/commands) at the new IMEI.
+- The change is written to the device's activity log (IMEI old -> new).
+
+FILES (unzip from app root)
+  app/api/mainapp/devices/[id]/route.js                 (PATCH accepts imei, validated + unique)
+  app/mainapp/devices/view/components/ViewDevice.jsx    (editable IMEI field)
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-edit-imei.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration.)

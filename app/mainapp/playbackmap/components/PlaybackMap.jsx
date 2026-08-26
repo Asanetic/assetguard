@@ -48,6 +48,15 @@ export default function PlaybackMap() {
   // (or today) 00:00 → now.
   const [from, setFrom] = useState(qsDate ? `${qsDate}T00:00` : `${todayStr()}T00:00`);
   const [to, setTo] = useState(qsDate ? `${qsDate}T23:59` : nowLocalInput());
+  // Which fix sources to include in playback. All three selected = no filter (everything).
+  const [srcSel, setSrcSel] = useState(["gps", "wifi", "lbs"]);
+  function toggleSrc(k) {
+    setSrcSel((cur) => {
+      const has = cur.includes(k);
+      const next = has ? cur.filter((x) => x !== k) : [...cur, k];
+      return next.length ? next : cur; // never allow zero selected
+    });
+  }
   const [route, setRoute] = useState(null);
   const [incidents, setIncidents] = useState([]);
   const [exporting, setExporting] = useState(false);
@@ -94,7 +103,9 @@ export default function PlaybackMap() {
     setLoading(true); setPlaying(false); setT(0); stopToastRef.current = false;
     (async () => {
       try {
-        const qs = `device_id=${encodeURIComponent(deviceId)}&from=${encodeURIComponent(eatIso(from))}&to=${encodeURIComponent(eatIso(to))}`;
+        let qs = `device_id=${encodeURIComponent(deviceId)}&from=${encodeURIComponent(eatIso(from))}&to=${encodeURIComponent(eatIso(to))}`;
+        // Only send the filter when a SUBSET is chosen; all three = everything (no param).
+        if (srcSel.length > 0 && srcSel.length < 3) qs += `&sources=${encodeURIComponent(srcSel.join(","))}`;
         const r = await fetch(`/api/mainapp/playback?${qs}`, { cache: "no-store" });
         const d = r.ok ? await r.json() : { route: null, incidents: [] };
         if (alive) { setRoute(d.route || null); setIncidents(Array.isArray(d.incidents) ? d.incidents : []); }
@@ -102,7 +113,7 @@ export default function PlaybackMap() {
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
-  }, [deviceId, from, to]);
+  }, [deviceId, from, to, srcSel]);
 
   useEffect(() => {
     function onDoc(e) { if (devWrap.current && !devWrap.current.contains(e.target)) setOpenDev(false); }
@@ -340,6 +351,29 @@ export default function PlaybackMap() {
             <button type="button" onClick={() => { const d = new Date(Date.now() - 864e5); const p = (n) => (n < 10 ? "0" : "") + n; const ds = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; setFrom(`${ds}T00:00`); setTo(`${ds}T23:59`); }}>Yesterday</button>
             <button type="button" onClick={() => { const now = new Date(); const p = (n) => (n < 10 ? "0" : "") + n; const f = new Date(now.getTime() - 3600e3); setFrom(`${f.getFullYear()}-${p(f.getMonth() + 1)}-${p(f.getDate())}T${p(f.getHours())}:${p(f.getMinutes())}`); setTo(nowLocalInput()); }}>Last hour</button>
           </div>
+
+          <div className={styles.lab} style={{ marginTop: 8 }}>FIX SOURCE</div>
+          <div className={styles.srcFilter}>
+            {[
+              { k: "gps",  label: "GPS",  icon: "ti-satellite" },
+              { k: "wifi", label: "Wi-Fi", icon: "ti-wifi" },
+              { k: "lbs",  label: "LBS",  icon: "ti-antenna-bars-4" },
+            ].map((o) => {
+              const on = srcSel.includes(o.k);
+              return (
+                <button
+                  key={o.k}
+                  type="button"
+                  className={`${styles.srcChip} ${on ? styles.srcChipOn : ""}`}
+                  aria-pressed={on}
+                  onClick={() => toggleSrc(o.k)}
+                >
+                  <i className={`ti ${on ? "ti-check" : o.icon}`} />{o.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className={styles.srcHint}>{srcSel.length === 3 ? "Showing all fix types" : `Showing ${srcSel.map((x) => x.toUpperCase()).join(" + ")} only`}</div>
 
           {route ? (
             <>

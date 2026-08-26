@@ -11,6 +11,8 @@ export async function GET(request) {
   const deviceId = searchParams.get("device_id");
   const date = searchParams.get("date");
   const from = searchParams.get("from"), to = searchParams.get("to");
+  // ?sources=gps,wifi,lbs — restrict playback to those fix sources (omit / all three = no filter)
+  const sources = (searchParams.get("sources") || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
   // ?dates=1 — just the dates that HAVE recorded data for this device (for the picker).
   if (searchParams.get("dates")) {
     if (!deviceId) return NextResponse.json({ error: "device_id is required" }, { status: 400 });
@@ -20,7 +22,7 @@ export async function GET(request) {
   // datetime RANGE mode: ?from=&to= (ISO with offset) — replay exactly that window.
   if (deviceId && from && to) {
     try {
-      const route = await routeFromTelemetryRange(deviceId, from, to);
+      const route = await routeFromTelemetryRange(deviceId, from, to, sources);
       let incidents = [];
       try { incidents = await getIncidentsRange(deviceId, from, to, route?.t0Ms ?? Date.parse(from)); }
       catch (e) { console.error("[playback range] incidents:", e?.message || e); }
@@ -32,7 +34,7 @@ export async function GET(request) {
   }
   if (!deviceId || !date) return NextResponse.json({ error: "device_id, and either date or from+to, are required" }, { status: 400 });
   try {
-    const route = await getRoute(deviceId, date);
+    const route = await getRoute(deviceId, date, sources);
     let incidents = [];
     try { incidents = await getIncidents(deviceId, date, route?.start_sec || 0); }
     catch (e) { console.error("[playback GET] incidents:", e?.message || e); }

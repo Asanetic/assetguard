@@ -1,0 +1,41 @@
+ALARM ESCALATION ORDER: DISTURBANCE -> GEOFENCE -> CRITICAL MOTION
+=================================================================
+Within a packet (and across the EAT day, per device), alarms now escalate in order:
+
+  1) DISTURBANCE is handled FIRST (graduated):
+        #1 ignore · #2 & #3 SMS+email only (no system alarm) · #4 raise the alarm
+        · #5+/already open -> event. New EAT day resets.
+  2) GEOFENCE is raised ONLY AFTER the Disturbance alarm is in the system
+        (i.e. the 4th disturbance has raised it, or it's already open today).
+        Until then a geofence breach is HELD.
+  3) CRITICAL MOTION is raised ONLY AFTER the Geofence alarm is in the system.
+
+So even if one packet carries geofence (and/or critical motion), disturbance goes
+first; geofence waits for disturbance; critical motion waits for geofence. On the
+packet where disturbance is raised, geofence (then critical motion) can raise in the
+same pass if present. Battery / temperature / offline / low-data alarms are NOT part
+of the chain and fire normally.
+
+CAVEAT (by request): if a device never sends the disturbance bit (00100008), a
+geofence breach stays HELD. The rule assumes disturbance "will most of the time be
+there". Tell me if you want a fallback (e.g. geofence after N minutes off-site even
+without a disturbance).
+
+FILES (unzip from app root) — supersedes the graduated-disturbance zip:
+  app/api/apiUtils/ingest/alarmEngine.js       (disturb_streak = 4)
+  app/api/apiUtils/dataControl/alarms.js       (decision bands + hasOpenAlarmToday gate)
+  app/api/apiUtils/ingest/store.js             (escalation ordering + graduated disturbance)
+  app/api/apiUtils/notify/alarmNotify.js       (early-warning SMS/email)
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-alarm-escalation.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration. Early-warning SMS/email are logged to notifications — apply the
+   db/notifications.sql grant if you haven't, or the count/log stays 0.)
+
+TEST (device on a site with contacts, no open alarms today, same EAT day):
+  Send frames that carry BOTH 00100008 and an off-site position, 4+ times:
+   #1 nothing · #2,#3 SMS+email (no alarm; geofence HELD) ·
+   #4 Disturbance alarm raised (+SMS/email), THEN Geofence raised, THEN Critical
+      Motion raised if the packet also qualifies.

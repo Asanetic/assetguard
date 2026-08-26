@@ -1,0 +1,14 @@
+DISTURBANCE EARLY-WARNING LABELS -> 1/3, 2/3 (no confusing "of 4")
+=================================================================
+The 1st disturbance is still ignored internally, but the SMS/email warnings now
+read "Disturbance 1/3" and "Disturbance 2/3" (the full alarm is the final 3rd step).
+No user-facing "4" anywhere.
+
+FILE (unzip from app root):
+  app/api/apiUtils/notify/alarmNotify.js
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-disturbance-labels.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration. Requires the disturbance-streak zip already deployed.)

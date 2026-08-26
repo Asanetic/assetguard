@@ -3,7 +3,32 @@
 // whatsapp later). Falls back gracefully if db/notifications.sql hasn't been run.
 import { query } from "../s_env/db.js";
 
+// Self-heal: create the notifications log on first use so sends are ALWAYS counted,
+// even if db/notifications.sql was never run on this database. Runs once per process.
+let _ensured = false;
+async function ensureTable() {
+  if (_ensured) return;
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id BIGSERIAL PRIMARY KEY,
+        alarm_id TEXT, incident_id TEXT, site TEXT, site_id BIGINT, device_id TEXT,
+        priority TEXT, channel TEXT NOT NULL, recipient TEXT NOT NULL, name TEXT,
+        role TEXT, subject TEXT, status TEXT NOT NULL DEFAULT 'sent', error TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications (created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_notifications_alarm   ON notifications (alarm_id);
+      CREATE INDEX IF NOT EXISTS idx_notifications_status  ON notifications (status);
+    `);
+    _ensured = true;
+  } catch (e) {
+    console.error("[notifications] ensureTable failed:", e?.message || e);
+  }
+}
+
 export async function insertNotification(r) {
+  await ensureTable();
   try {
     await query(
       `INSERT INTO notifications
@@ -51,6 +76,7 @@ export async function listNotifications({ status, channel, q, range, limit = 300
   }
   params.push(Math.min(1000, Number(limit) || 300));
   const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  await ensureTable();
   try {
     const { rows } = await query(
       `SELECT * FROM notifications ${clause} ORDER BY created_at DESC LIMIT $${params.length}`, params);
@@ -67,6 +93,7 @@ export async function listNotifications({ status, channel, q, range, limit = 300
 // they now reflect whatever range was requested.
 export async function notificationStats(range = "today") {
   const rs = rangeStart(range) || RANGE_START.today;
+  await ensureTable();
   try {
     const { rows } = await query(
       `SELECT
@@ -87,6 +114,7 @@ export async function notificationStats(range = "today") {
 export async function channelBreakdown(range) {
   const rs = rangeStart(range);
   const scope = rs ? `WHERE created_at >= ${rs}` : "";
+  await ensureTable();
   try {
     const { rows } = await query(
       `SELECT channel,

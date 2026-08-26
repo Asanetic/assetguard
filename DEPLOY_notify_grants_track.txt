@@ -1,0 +1,38 @@
+FIX: NOTIFICATIONS NOT LOGGED/COUNTED  +  TRACK POPUP REAL DATA
+==============================================================
+
+ROOT CAUSE of "email sent but nothing on Notifications page / count = 0":
+  The `notifications` table was created by the postgres superuser WITHOUT granting
+  the app role (assetguard) access. So every insert (listener) and read (page)
+  failed silently — mail still went out, but nothing was logged or counted.
+
+FIX 1 — grants (REQUIRED, run as postgres):
+  sudo -u postgres psql -d assetguard -f db/notifications.sql
+  (Idempotent: creates the table if missing AND grants assetguard SELECT/INSERT/
+   UPDATE/DELETE + sequence usage. Safe to re-run.)
+  Quick equivalent if you prefer not to re-run the file:
+    sudo -u postgres psql -d assetguard -c "GRANT SELECT,INSERT,UPDATE,DELETE ON notifications TO assetguard; GRANT USAGE,SELECT ON SEQUENCE notifications_id_seq TO assetguard;"
+
+FIX 2 — Track popup now uses REAL data:
+  - Geofence line: real distance of the device's live position from the SITE centre
+    vs the device's configured geofence radius (was hardcoded "340m / 100m").
+    Shows "Within its Nm geofence" (green) when inside.
+  - "Updated": real time since the platform received the last fix (was a fake 1-9s
+    ticker). Live route now returns received_at.
+
+FILES (unzip from app root)
+  db/notifications.sql                            (grants added)
+  app/api/mainapp/track/live/route.js            (returns received_at)
+  app/mainapp/track/components/TrackDevice.jsx   (real geofence distance + real "updated")
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-notify-grants-track.zip').extractall('.')"
+  sudo -u postgres psql -d assetguard -f db/notifications.sql    # <-- the important one
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+
+VERIFY
+  - After the grant, raise an alarm on a site with contacts: the Notifications page
+    "Sent" count increments and the row appears in the log.
+  - Track a device: the popup shows the real metres-from-geofence and a real
+    "updated N ago" that ticks up from the last packet.

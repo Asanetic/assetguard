@@ -1,0 +1,25 @@
+FIX: LIFECYCLE LOG ORDER + ACCURATE TIMESTAMPS + KEEP ALL EVENTS
+================================================================
+Two bugs:
+1) The alarm RAISE was timestamped from the DEVICE clock (often wrong/ahead), while
+   ack/close use the server clock — so the raise sorted AFTER its own ack/close and
+   the log looked scrambled (raise at 23:22 but ack/close at 20:27/20:28).
+   FIX: alarms.created_at is now the SERVER time (now()). Every lifecycle event is
+   on one accurate clock, so the log reads oldest→newest top-to-bottom:
+      alarm (Disturbance) → Geofence → Critical Motion → Acknowledged → Closed.
+2) When an alarm was CLOSED, the linked siblings were dropped, so the log collapsed
+   to just that alarm. FIX: the lifecycle keeps EVERY alarm in the incident
+   (Disturbance, Geofence, Critical Motion), of any status — nothing is deleted —
+   in order, up to closing.
+
+FILE (unzip from app root):
+  app/api/apiUtils/dataControl/alarms.js
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-lifecycle-order.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration.)
+
+NOTE: applies to alarms raised AFTER deploy. Alarms already stored keep their old
+device-clock created_at; new incidents will read correctly.

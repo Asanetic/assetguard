@@ -1,0 +1,16 @@
+FIX: "A site with that code already exists" when EDITING a site
+==============================================================
+The edit route compared the clashing site's id (a string from Postgres bigint)
+against the numeric route id with !==, so it always tripped on the site being
+edited itself. Now compared as numbers: editing a site keeping its own code is
+fine; the error only appears when adding a new site, or when you set a code that
+belongs to a DIFFERENT site.
+
+FILE (unzip from app root)
+  app/api/mainapp/sites/[id]/route.js
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-site-code-edit.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration.)

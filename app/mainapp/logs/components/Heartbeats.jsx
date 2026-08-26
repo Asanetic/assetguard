@@ -18,6 +18,32 @@ function fmtWhen(v) {
 }
 // availability colour: green ≥95, amber 80–95, red <80
 function pctColor(p) { return p >= 95 ? "#10B981" : p >= 80 ? "#F59E0B" : "#EF4444"; }
+function fmtInterval(sec) {
+  const s = Number(sec) || 0;
+  if (s % 86400 === 0 && s >= 86400) return `${s / 86400} d`;
+  if (s % 3600 === 0 && s >= 3600) return `${s / 3600} h`;
+  if (s >= 3600) return `${Math.round((s / 3600) * 10) / 10} h`;
+  return `${Math.round(s / 60)} min`;
+}
+
+// A stable, distinct colour per site name (so the list reads by site at a glance).
+function siteColor(name) {
+  const s = String(name || "—");
+  let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return `hsl(${h % 360} 62% 45%)`;
+}
+
+// Expected next heartbeat → EAT clock + a "in Nm / overdue Nm" hint.
+function fmtNext(v) {
+  if (!v) return { text: "—", overdue: false };
+  const t = new Date(v).getTime();
+  const clock = new Date(t).toLocaleString("en-GB", { timeZone: "Africa/Nairobi", hour: "2-digit", minute: "2-digit" });
+  const diffMin = Math.round((t - Date.now()) / 60000);
+  const rel = (m) => (Math.abs(m) < 60 ? `${Math.abs(m)}m` : `${Math.round(Math.abs(m) / 60)}h`);
+  return diffMin >= 0
+    ? { text: `${clock} · in ${rel(diffMin)}`, overdue: false }
+    : { text: `${clock} · overdue ${rel(diffMin)}`, overdue: true };
+}
 
 const WINDOWS = [
   { k: "d7", days: 7, label: "7 days" },
@@ -30,6 +56,7 @@ export default function Heartbeats() {
   const [tab, setTab] = useState("fleet");         // "fleet" | "detail"
   const [detailDevice, setDetailDevice] = useState("");
   const [win, setWin] = useState(30);              // per-device table window
+  const [stateFilter, setStateFilter] = useState("all"); // all | up | down | inactive
   const [fleet, setFleet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -51,7 +78,7 @@ export default function Heartbeats() {
       <div style={S.head}>
         <div>
           <div style={S.title}>Heartbeats</div>
-          <div style={S.sub}>Device availability across the fleet · a device counts as “up” when it sends data at least once in 24 h</div>
+          <div style={S.sub}>Device availability across the fleet · a device counts as “up” when it reports within its wake interval (± tolerance). Inactive devices are excluded.</div>
         </div>
         <div style={S.tabs}>
           <button style={{ ...S.tab, ...(tab === "fleet" ? S.tabOn : null) }} onClick={() => setTab("fleet")}>Fleet availability</button>
@@ -71,7 +98,7 @@ export default function Heartbeats() {
               <div style={S.cardK}>Reporting now</div>
               <div style={S.nowRow}>
                 <span style={{ ...S.bigPct, color: pctColor(fleet?.now?.pct ?? 0) }}>{fleet?.now?.pct ?? 0}%</span>
-                <span style={S.nowSub}>{fleet?.now?.up ?? 0} of {fleet?.now?.total ?? 0} devices<br />sent data in the last 24 h</span>
+                <span style={S.nowSub}>{fleet?.now?.up ?? 0} of {fleet?.now?.total ?? 0} devices<br />reported within their wake interval{fleet?.now?.inactive ? ` · ${fleet.now.inactive} inactive` : ""}</span>
               </div>
             </div>
             {WINDOWS.map((w) => {
@@ -87,6 +114,25 @@ export default function Heartbeats() {
           </div>
 
           {/* per-device breakdown */}
+          {(() => {
+            const devs = fleet?.devices || [];
+            const counts = {
+              all: devs.length,
+              up: devs.filter((d) => d.state === "up").length,
+              down: devs.filter((d) => d.state === "down").length,
+              inactive: devs.filter((d) => d.state === "inactive").length,
+            };
+            const FILTERS = [
+              { k: "all", label: "All", color: "#334155" },
+              { k: "up", label: "Up", color: "#047857" },
+              { k: "down", label: "Down", color: "#B91C1C" },
+              { k: "inactive", label: "Inactive", color: "#5B21B6" },
+            ];
+            const shown = devs
+              .filter((d) => stateFilter === "all" || d.state === stateFilter)
+              .slice()
+              .sort((a, b) => (b.pct - a.pct) || (new Date(b.last_seen || 0) - new Date(a.last_seen || 0))); // best availability first
+            return (
           <div style={S.panel}>
             <div style={S.panelHead}>
               <span style={S.panelTitle}>Per-device availability</span>
@@ -98,6 +144,24 @@ export default function Heartbeats() {
               </span>
             </div>
 
+            {/* state filter chips with live counts */}
+            <div style={{ display: "flex", gap: 8, padding: "0 4px 12px", flexWrap: "wrap" }}>
+              {FILTERS.map((f) => {
+                const on = stateFilter === f.k;
+                return (
+                  <button key={f.k} onClick={() => setStateFilter(f.k)}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 7, border: `1px solid ${on ? f.color : "#E2E8F0"}`,
+                             background: on ? f.color : "#fff", color: on ? "#fff" : f.color, borderRadius: 999,
+                             padding: "5px 13px", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
+                    {f.k !== "all" && <span style={{ width: 8, height: 8, borderRadius: "50%", background: on ? "#fff" : f.color }} />}
+                    {f.label}
+                    <span style={{ background: on ? "rgba(255,255,255,.25)" : "#F1F5F9", color: on ? "#fff" : "#475569",
+                                   borderRadius: 999, padding: "1px 8px", fontSize: 11.5, fontVariantNumeric: "tabular-nums" }}>{counts[f.k]}</span>
+                  </button>
+                );
+              })}
+            </div>
+
             <div style={S.tableWrap}>
               <table style={S.table}>
                 <thead>
@@ -105,38 +169,61 @@ export default function Heartbeats() {
                     <th style={S.th}>Device</th>
                     <th style={S.th}>Site</th>
                     <th style={S.th}>Availability ({win === 365 ? "12 mo" : `${win}d`})</th>
-                    <th style={S.thR}>Days up</th>
+                    <th style={S.thR}>Wake interval</th>
                     <th style={S.thR}>Last seen</th>
+                    <th style={S.thR}>Expected heartbeat time</th>
                     <th style={S.thR}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {loading && !fleet && <tr><td colSpan={6} style={S.empty}>Loading…</td></tr>}
-                  {fleet && fleet.devices.length === 0 && <tr><td colSpan={6} style={S.empty}>No devices.</td></tr>}
-                  {fleet && fleet.devices.map((d) => (
-                    <tr key={d.device_id || d.imei} style={S.tr} onClick={() => openDevice(d.device_id || d.imei)}>
+                  {loading && !fleet && <tr><td colSpan={7} style={S.empty}>Loading…</td></tr>}
+                  {fleet && shown.length === 0 && <tr><td colSpan={7} style={S.empty}>{stateFilter === "all" ? "No devices." : `No ${stateFilter} devices.`}</td></tr>}
+                  {fleet && shown.map((d) => (
+                    <tr key={d.device_id || d.imei} style={{ ...S.tr, borderLeft: `4px solid ${siteColor(d.site)}` }} onClick={() => openDevice(d.device_id || d.imei)}>
                       <td style={S.tdDev}>{d.device_id || d.imei}</td>
-                      <td style={S.td}>{d.site}</td>
+                      <td style={S.td}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                          <span style={{ width: 9, height: 9, borderRadius: 3, background: siteColor(d.site), flex: "none" }} />
+                          <span style={{ color: siteColor(d.site), fontWeight: 700 }}>{d.site}</span>
+                        </span>
+                      </td>
                       <td style={S.td}>
                         <div style={S.rowBarWrap}>
                           <div style={S.rowTrack}><div style={{ ...S.fill, width: `${Math.min(100, d.pct)}%`, background: pctColor(d.pct) }} /></div>
                           <b style={{ color: pctColor(d.pct), fontVariantNumeric: "tabular-nums" }}>{d.pct}%</b>
                         </div>
                       </td>
-                      <td style={S.tdR}>{d.days_up}/{d.days}</td>
+                      <td style={S.tdR}>
+                        {fmtInterval(d.interval_sec)}
+                        {d.pending_sec != null && d.pending_sec !== d.interval_sec && (
+                          <span style={{ marginLeft: 6, color: "#B45309", fontWeight: 700, fontSize: 11 }} title="Queued — waiting for the device to confirm">→ {fmtInterval(d.pending_sec)} (pending)</span>
+                        )}
+                      </td>
                       <td style={S.tdR}>{fmtWhen(d.last_seen)}</td>
                       <td style={S.tdR}>
-                        <span style={{ ...S.badge, background: d.up ? "#ECFDF5" : "#FEF2F2", color: d.up ? "#047857" : "#B91C1C", border: `1px solid ${d.up ? "#A7F3D0" : "#FECACA"}` }}>
-                          {d.up ? "Up" : "Down"}
-                        </span>
+                        {d.state === "inactive" ? "—" : (() => {
+                          const n = fmtNext(d.next_at);
+                          return <span style={{ color: n.overdue ? "#B91C1C" : "#334155", fontWeight: n.overdue ? 700 : 500 }}>{n.text}</span>;
+                        })()}
+                      </td>
+                      <td style={S.tdR}>
+                        {d.state === "inactive" ? (
+                          <span style={{ ...S.badge, background: "#EDE9FE", color: "#5B21B6", border: "1px solid #DDD6FE" }}>Inactive</span>
+                        ) : (
+                          <span style={{ ...S.badge, background: d.up ? "#ECFDF5" : "#FEF2F2", color: d.up ? "#047857" : "#B91C1C", border: `1px solid ${d.up ? "#A7F3D0" : "#FECACA"}` }}>
+                            {d.up ? "Up" : "Down"}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div style={S.hint}>Sorted worst-first for SLA triage · click a device for its daily heartbeat detail</div>
+            <div style={S.hint}>Sorted best-first by availability · click a device for its daily heartbeat detail</div>
           </div>
+            );
+          })()}
         </>
       )}
     </div>

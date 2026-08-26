@@ -1,0 +1,24 @@
+CHANGE UPLOAD INTERVAL (3s–1min)
+================================
+- Sends the GL-28 reporting-cadence command update,<seconds> (valid 3..60 s).
+- Two places:
+  * Group devices -> select -> "Set upload interval (3s-1min)" -> pick 3/5/10/15/20/30/45/60s.
+  * View device -> Edit details -> UPLOAD INTERVAL (3-60s), sends on Save.
+- Goes through the device command queue: applied on the device's next wake, tracked
+  in the Command queue (confirmed on the device's reply). Also stored on the device
+  (config.upload_interval_s) so the View page shows the current setting.
+
+REQUIRES: the firmware/command-queue feature already deployed (device_command_queue
+table + /api/mainapp/devices/commands + ingest/commandRunner). If not yet deployed,
+deploy assetguard-firmware-batch first.
+
+FILES (unzip from app root)
+  app/api/mainapp/devices/commands/route.js              (adds op "interval" = update,N)
+  app/mainapp/devices/group/components/GroupDevices.jsx  (batch upload-interval picker)
+  app/mainapp/devices/view/components/ViewDevice.jsx     (per-device interval + send on save)
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-upload-interval.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration.)

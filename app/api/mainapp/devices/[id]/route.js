@@ -28,6 +28,12 @@ export async function GET(request, { params }) {
   try {
     const device = await findDevice(params?.id);
     if (!device) return NextResponse.json({ error: "Device not found" }, { status: 404 });
+    // Estimated data-bundle usage (no carrier API yet).
+    try {
+      const { deviceDataUsage, fmtMb } = await import("../../../apiUtils/dataControl/dataUsage.js");
+      device.data_usage = await deviceDataUsage(device);
+      if (device.data_usage?.remaining_mb != null) device.data_left = fmtMb(device.data_usage.remaining_mb);
+    } catch (e) { console.error("[device usage]", e?.message || e); }
     let activity = [];
     try {
       const { rows } = await query(
@@ -53,6 +59,33 @@ export async function PATCH(request, { params }) {
 
   const dev = await findDevice(params?.id);
   if (!dev) return NextResponse.json({ error: "Device not found" }, { status: 404 });
+
+  // IMEI edit — validated, must be unique. Handled first so a clash aborts before
+  // any other change. Also re-points this device's active queued commands at the
+  // new IMEI so they still reach it.
+  let imeiChanged = false, newImei = null;
+  if (body.imei !== undefined) {
+    newImei = String(body.imei || "").trim();
+    if (!/^\d{14,17}$/.test(newImei)) {
+      return NextResponse.json({ error: "IMEI must be 14–17 digits" }, { status: 400 });
+    }
+    if (newImei !== String(dev.imei || "").trim()) {
+      const { rows: clash } = await query(
+        `SELECT id FROM devices WHERE btrim(imei) = btrim($1) AND id <> $2 LIMIT 1`,
+        [newImei, dev.id]
+      );
+      if (clash.length) return NextResponse.json({ error: "That IMEI is already registered to another device" }, { status: 409 });
+      try {
+        await query(`UPDATE devices SET imei = $1 WHERE id = $2`, [newImei, dev.id]);
+        imeiChanged = true;
+        // keep any active downlink jobs pointed at the device
+        try { await query(`UPDATE device_command_queue SET imei = $1 WHERE device_id = $2 AND status = ANY($3)`, [newImei, dev.id, ["pending", "sent", "acked", "paused"]]); } catch {}
+      } catch (err) {
+        console.error("[device PATCH] imei error", err);
+        return NextResponse.json({ error: "Could not update IMEI" }, { status: 500 });
+      }
+    }
+  }
 
   // Core columns (status/sim) always exist — update them together.
   const sets = [], vals = [];
@@ -80,8 +113,10 @@ export async function PATCH(request, { params }) {
 
   const action = body.status !== undefined ? `Status changed to ${body.status}`
     : body.firmware !== undefined ? `Firmware updated to ${body.firmware}`
+    : imeiChanged ? "IMEI updated"
     : "Device details updated";
-  logAudit(request, { action, category: "Devices", detail: `${action} — ${dev.device_id}` });
+  const detail = imeiChanged ? `IMEI ${dev.imei} → ${newImei} — ${dev.device_id}` : `${action} — ${dev.device_id}`;
+  logAudit(request, { action, category: "Devices", detail });
 
   const device = await findDevice(params?.id);
   return NextResponse.json({ device });

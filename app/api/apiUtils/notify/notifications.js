@@ -2,8 +2,8 @@
 // Shared account notifications (email + SMS). Every message greets "Hi <name>,".
 import { sendEmail } from "./send-email.js";
 import { mosySendSMS } from "./send-sms.js";
+import { getAppBaseUrl } from "./appUrl.js";
 
-const APP_URL = process.env.APP_URL || "http://localhost:3000";
 const hi = (name) => (name ? `Hi ${name},` : "Hi,");
 
 function wrap(inner) {
@@ -23,7 +23,7 @@ async function dispatch({ email, phone, subject, text, html }) {
 
 /** Account approved -> can now log in. */
 export async function notifyApproved({ name, email, phone }) {
-  const login = `${APP_URL}/mainapp/login`;
+  const login = `${await getAppBaseUrl()}/mainapp/login`;
   const text = `${hi(name)} your AssetGuard account has been approved. You can now sign in at ${login}.`;
   const html = wrap(`${hi(name)}<br><br>Your AssetGuard account has been <b>approved</b>. You can now sign in at <a href="${login}">${login}</a>.`);
   return dispatch({ email, phone, subject: "Your AssetGuard account is approved", text, html });
@@ -45,7 +45,7 @@ export async function notifyAccessDeclined({ name, email, phone }) {
 
 /** New account created by an admin — hand over credentials. */
 export async function notifyCredentials({ name, email, phone, password }) {
-  const login = `${APP_URL}/mainapp/login`;
+  const login = `${await getAppBaseUrl()}/mainapp/login`;
   const text = `${hi(name)} your AssetGuard account is ready. Sign in at ${login} with email ${email} and password ${password}. Please change it after your first login.`;
   const html = wrap(`${hi(name)}<br><br>Your AssetGuard account is ready. Sign in at <a href="${login}">${login}</a><br><b>Email:</b> ${email}<br><b>Temporary password:</b> <span style="font-family:ui-monospace,monospace">${password}</span><br><br>Please change your password after your first login.`);
   return dispatch({ email, phone, subject: "Your AssetGuard account is ready", text, html });

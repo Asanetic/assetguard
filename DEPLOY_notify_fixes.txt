@@ -1,0 +1,33 @@
+NOTIFICATIONS FIXES + TRACK ACCURACY CIRCLE
+===========================================
+1) Links no longer point to localhost. The "Open the alarm" link in alarm emails/SMS
+   (and account login/credentials links) now use the real public URL:
+     - APP_URL / NEXT_PUBLIC_APP_URL env if set (localhost is ignored), else
+     - the org domain from Settings (https://assetguard.symphony.co.ke), else that host.
+   To pin a different production host, set APP_URL in .env (e.g. APP_URL=https://assetguard.symphony.co.ke).
+2) Email/SMS sends are now ALWAYS counted. The notifications log table self-heals
+   (created on first use) so even if db/notifications.sql was never run, every send
+   is recorded and the Notifications page stats/by-channel/providers populate.
+3) Track device draws a BLUE ACCURACY CIRCLE around the device (sized to the fix's
+   ± metres) and shows the fix SOURCE (GPS / Wi-Fi / LBS / Wi-Fi+LBS) as a chip + in
+   the popup.
+
+FILES (unzip from app root)
+  app/api/apiUtils/notify/appUrl.js                 (NEW - real base URL resolver)
+  app/api/apiUtils/notify/alarmNotify.js            (alarm link uses real URL)
+  app/api/apiUtils/notify/notifications.js          (account links use real URL)
+  app/api/apiUtils/dataControl/notifications.js     (self-heal table + always count)
+  app/api/mainapp/track/live/route.js               (returns source + accuracy)
+  app/mainapp/track/components/TrackDevice.jsx      (blue accuracy circle + source)
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-notify-fixes.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration required — the table self-heals. Running db/notifications.sql is still fine.)
+
+VERIFY
+  - Trigger an alarm on a site with contacts; the email's "Open the alarm" link is
+    https://assetguard.symphony.co.ke/... (not localhost), and the Notifications page
+    SENT count increments for email/sms.
+  - Track a device: blue circle around it + a GPS/Wi-Fi/LBS chip.

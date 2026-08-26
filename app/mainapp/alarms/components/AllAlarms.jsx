@@ -45,12 +45,13 @@ export default function AllAlarms() {
   const [priority, setPriority] = useState("All priorities");
   const [status, setStatus] = useState("All statuses");
   const [statFilter, setStatFilter] = useState(null);
+  const [view, setView] = useState("real");   // "real" | "test"
   const [toast, setToast] = useState("");
   const toastTimer = useRef(null);
 
   async function load() {
     try {
-      const res = await fetch("/api/mainapp/alarms?scope=all", { cache: "no-store" });
+      const res = await fetch("/api/mainapp/alarms?scope=all&test=all", { cache: "no-store" });
       const d = res.ok ? await res.json() : { alarms: [], counts: {} };
       setAlarms(Array.isArray(d.alarms) ? d.alarms : []);
       setViewer(d.viewer || {});
@@ -62,9 +63,14 @@ export default function AllAlarms() {
 
   function flash(msg) { setToast(msg); if (toastTimer.current) clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(""), 2400); }
 
+  const isTest = (a) => a.source === "test";
+  const testCount = useMemo(() => alarms.filter(isTest).length, [alarms]);
+
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     return alarms.filter((a) => {
+      // Real view hides test/drill alarms; Test view shows only them.
+      if (view === "test" ? !isTest(a) : isTest(a)) return false;
       if (priority !== "All priorities" && a.priority !== priority) return false;
       // Filter on the per-side status the viewer actually sees (so a monitoring
       // user filtering "Open" still gets alarms the security side already acked).
@@ -72,7 +78,7 @@ export default function AllAlarms() {
       if (!term) return true;
       return (`${a.name} ${a.device_id} ${a.site} ${a.serial} ${a.id}`).toLowerCase().includes(term);
     });
-  }, [alarms, q, priority, status, viewer]);
+  }, [alarms, q, priority, status, viewer, view]);
 
   const STAT_CARDS = [
     { key: "Critical", color: alarmSeverityColor("Critical"), n: counts.bySeverity?.Critical || 0, hint: "active" },
@@ -128,6 +134,17 @@ export default function AllAlarms() {
           <select className={styles.select} value={status} onChange={(e) => { setStatus(e.target.value); setStatFilter(null); }}>
             {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
+          {/* Real / Test (drill) view toggle */}
+          <div style={{ display: "inline-flex", gap: 4, background: "#F1F5F9", padding: 4, borderRadius: 999, marginLeft: "auto" }}>
+            {[["real", "Real"], ["test", "Test"]].map(([k, l]) => (
+              <button key={k} onClick={() => setView(k)}
+                style={{ border: 0, cursor: "pointer", borderRadius: 999, padding: "6px 14px", fontSize: 12.5, fontWeight: 700,
+                         background: view === k ? "#fff" : "transparent", color: view === k ? "#0F274A" : "#64748b",
+                         boxShadow: view === k ? "0 1px 3px rgba(15,23,42,.12)" : "none" }}>
+                {l}{k === "test" && testCount > 0 ? ` (${testCount})` : ""}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className={styles.tableWrap}>

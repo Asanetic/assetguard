@@ -35,7 +35,9 @@ export async function listSites({ q, region, status } = {}) {
   const { rows } = await query(
     `SELECT ${COLS}, lat, lng, county, dist_region, security_region,
             response_cluster, smpms_vendor,
-            security_company, monitoring_company
+            security_company, monitoring_company,
+            armed, mute_until,
+            (mute_until IS NOT NULL AND mute_until > now()) AS muted
        FROM sites ${clause} ORDER BY id ASC`,
     params
   );
@@ -54,6 +56,20 @@ export async function siteStats() {
 export async function getSite(id) {
   const { rows } = await query(`SELECT * FROM sites WHERE id = $1`, [id]);
   return rows[0] || null;
+}
+
+// Recent alarm activity for a site (its devices), newest first.
+export async function recentSiteActivity(siteId, limit = 12) {
+  const { rows } = await query(
+    `SELECT a.id, a.name, a.priority, a.status, a.created_at, a.device_id
+       FROM alarms a
+       JOIN devices d ON d.device_id = a.device_id
+      WHERE d.site_id = $1
+      ORDER BY a.created_at DESC
+      LIMIT $2`,
+    [siteId, limit]
+  );
+  return rows;
 }
 
 export async function getSiteByCode(code) {
@@ -156,6 +172,202 @@ export async function batchDeleteSites(ids = []) {
   if (!ids.length) return 0;
   const { rowCount } = await query(`DELETE FROM sites WHERE id = ANY($1::bigint[])`, [ids]);
   return rowCount;
+}
+
+// ---- status interlink (site <-> devices) ----------------------------------
+// A site's status and its devices' statuses are linked:
+//   • Cascade DOWN: setting a site Live/Testing/Maintenance applies that to every
+//     device at the site (cascadeStatusToDevices).
+//   • Roll UP: whenever devices change, a site whose devices ALL share one
+//     effective state auto-switches to that state; a mixed site is "Live".
+//     (recomputeSiteStatus). Inactive/Offline therefore surface from the devices.
+// A device's *effective* state = its stored status (Inactive/Testing/Maintenance),
+// else "Offline" when it is overdue past its own wake interval (+tolerance), else
+// "Live". This mirrors the offline/heartbeat model used elsewhere.
+
+const STATE_LABEL = {
+  live: "Live", offline: "Offline", inactive: "Inactive",
+  testing: "Testing", maintenance: "Maintenance",
+};
+
+/** Push a status to all of a site set's devices (used for Live/Testing/Maintenance). */
+export async function cascadeStatusToDevices(siteIds = [], status) {
+  if (!siteIds.length || !status) return 0;
+  const { rowCount } = await query(
+    `UPDATE devices SET status = $1 WHERE site_id = ANY($2::bigint[])`,
+    [String(status), siteIds]
+  );
+  return rowCount;
+}
+
+/**
+ * Recompute one site's status from its devices' effective states and store it.
+ * Returns the new status, or null when the site has no devices (left as-is).
+ */
+export async function recomputeSiteStatus(siteId) {
+  if (!siteId) return null;
+
+  // A scheduled maintenance window (details.maintenance_window {start,end})
+  // OVERRIDES the device roll-up while active: during the window the site is
+  // Maintenance (so its alarms become test alarms). An ended window is cleared,
+  // then normal device-derived status resumes. A not-yet-started window is ignored.
+  try {
+    const { rows: sr } = await query(`SELECT details FROM sites WHERE id = $1`, [siteId]);
+    const win = sr[0]?.details?.maintenance_window;
+    if (win && win.start && win.end) {
+      const now = Date.now(), start = Date.parse(win.start), end = Date.parse(win.end);
+      if (Number.isFinite(start) && Number.isFinite(end)) {
+        if (now >= start && now < end) {
+          await query(`UPDATE sites SET status = 'Maintenance' WHERE id = $1`, [siteId]);
+          return "Maintenance";
+        }
+        if (now >= end) {
+          await query(`UPDATE sites SET details = details - 'maintenance_window' WHERE id = $1`, [siteId]);
+        }
+      }
+    }
+  } catch {}
+
+  const { rows } = await query(
+    `WITH eff AS (
+       SELECT CASE
+         WHEN lower(coalesce(d.status,'')) IN ('inactive','testing','maintenance')
+           THEN lower(d.status)
+         WHEN d.last_seen IS NULL THEN 'offline'
+         WHEN now() - d.last_seen >
+              (COALESCE(NULLIF(d.config->>'wake_interval_sec','')::numeric, 86400)
+             + COALESCE(NULLIF(d.config->>'hb_tolerance_sec','')::numeric, 300)) * interval '1 second'
+           THEN 'offline'
+         ELSE 'live'
+       END AS state
+       FROM devices d
+      WHERE d.site_id = $1
+     )
+     SELECT count(*)::int AS n,
+            count(DISTINCT state)::int AS distinct_states,
+            min(state) AS only_state
+       FROM eff`,
+    [siteId]
+  );
+  const r = rows[0] || { n: 0 };
+  if (!r.n) return null; // no devices → don't clobber a manually-set status
+  const next = r.distinct_states === 1 ? (STATE_LABEL[r.only_state] || "Live") : "Live";
+  await query(`UPDATE sites SET status = $2 WHERE id = $1`, [siteId, next]);
+  return next;
+}
+
+/** Recompute every site touched by a set of device ids (after a device changes). */
+export async function recomputeSitesForDevices(deviceIds = []) {
+  if (!deviceIds.length) return 0;
+  const { rows } = await query(
+    `SELECT DISTINCT site_id FROM devices
+      WHERE id = ANY($1::bigint[]) AND site_id IS NOT NULL`,
+    [deviceIds]
+  );
+  let n = 0;
+  for (const row of rows) { try { await recomputeSiteStatus(row.site_id); n++; } catch {} }
+  return n;
+}
+
+/** Recompute status for every site that has devices (used by the offline sweep). */
+export async function recomputeAllSiteStatuses() {
+  const { rows } = await query(
+    `SELECT DISTINCT site_id FROM devices WHERE site_id IS NOT NULL`
+  );
+  let n = 0;
+  for (const row of rows) { try { await recomputeSiteStatus(row.site_id); n++; } catch {} }
+  return n;
+}
+
+// ---- arm / disarm + mute ---------------------------------------------------
+/** Arm (armed=true) or disarm (false) monitoring for a set of sites. */
+export async function setSitesArmed(ids = [], armed = true) {
+  if (!ids.length) return 0;
+  const { rowCount } = await query(
+    `UPDATE sites SET armed = $1 WHERE id = ANY($2::bigint[])`,
+    [!!armed, ids]
+  );
+  return rowCount;
+}
+
+/**
+ * Mute alarms for a set of sites until `now() + amount unit`. Pass amount<=0 to
+ * clear the mute. `unit` ∈ minutes|hours|days.
+ */
+export async function setSitesMute(ids = [], amount = 0, unit = "hours") {
+  if (!ids.length) return 0;
+  const n = Number(amount) || 0;
+  if (n <= 0) {
+    const { rowCount } = await query(
+      `UPDATE sites SET mute_until = NULL WHERE id = ANY($1::bigint[])`, [ids]);
+    return rowCount;
+  }
+  const u = ["minutes", "hours", "days"].includes(String(unit)) ? String(unit) : "hours";
+  const { rowCount } = await query(
+    `UPDATE sites SET mute_until = now() + ($1 || ' ' || $2)::interval
+      WHERE id = ANY($3::bigint[])`,
+    [String(n), u, ids]
+  );
+  return rowCount;
+}
+
+/** Transfer a set of sites to another CLIENT/owning company (details.company). */
+export async function setSitesClientCompany(ids = [], companyName) {
+  if (!ids.length || !companyName) return 0;
+  const { rowCount } = await query(
+    `UPDATE sites
+        SET details = COALESCE(details, '{}'::jsonb)
+                    || jsonb_build_object('company',
+                         COALESCE(details->'company', '{}'::jsonb)
+                         || jsonb_build_object('name', $1::text))
+      WHERE id = ANY($2::bigint[])`,
+    [String(companyName), ids]
+  );
+  return rowCount;
+}
+
+/**
+ * Schedule a maintenance window for a set of sites. Pass start+end ISO strings to
+ * set it, or null/empty to clear it. When the window is already active the site is
+ * moved to Maintenance immediately (recompute honours it thereafter).
+ */
+export async function setSitesMaintenanceWindow(ids = [], start, end) {
+  if (!ids.length) return 0;
+  if (!start || !end) {
+    const { rowCount } = await query(
+      `UPDATE sites SET details = COALESCE(details,'{}'::jsonb) - 'maintenance_window'
+        WHERE id = ANY($1::bigint[])`, [ids]);
+    for (const id of ids) { try { await recomputeSiteStatus(id); } catch {} }
+    return rowCount;
+  }
+  const { rowCount } = await query(
+    `UPDATE sites
+        SET details = COALESCE(details,'{}'::jsonb)
+                    || jsonb_build_object('maintenance_window',
+                         jsonb_build_object('start', $1::text, 'end', $2::text))
+      WHERE id = ANY($3::bigint[])`,
+    [String(start), String(end), ids]
+  );
+  for (const id of ids) { try { await recomputeSiteStatus(id); } catch {} }
+  return rowCount;
+}
+
+/**
+ * The live monitoring policy for a site (read by the alarm-notify layer).
+ * @returns {Promise<{armed:boolean, muted:boolean, testing:boolean, status:string}|null>}
+ */
+export async function getSitePolicy(siteId) {
+  if (!siteId) return null;
+  const { rows } = await query(
+    `SELECT status, COALESCE(armed, true) AS armed,
+            (mute_until IS NOT NULL AND mute_until > now()) AS muted
+       FROM sites WHERE id = $1`,
+    [siteId]
+  );
+  const s = rows[0];
+  if (!s) return null;
+  const testing = /^(testing|maintenance)$/i.test(String(s.status || ""));
+  return { armed: !!s.armed, muted: !!s.muted, testing, status: s.status };
 }
 
 // -----------------------------------------------------------------------------

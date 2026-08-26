@@ -1,0 +1,27 @@
+ESCALATION: "ORDER, DON'T SUPPRESS"
+===================================
+Each alarm now fires on its OWN genuine condition; a missing or CLOSED earlier
+stage never blocks a later one. Processing order (Disturbance → Geofence →
+Critical Motion → others) only sequences alarms that land in the SAME packet.
+De-dupe (one open Geofence / one open Critical per device) and incident grouping
+stay in insertLiveAlarm, so the Lifecycle Log still reads Disturbance → Geofence →
+Critical under one incident in true time order.
+
+Fixes vs the old strict gate:
+  • Off-site with no disturbance bit  -> Geofence fires now (no 5-min wait).      (Ex3)
+  • Disturbance closed as false, then device driven off -> Geofence still fires.  (Ex4)  <-- the dangerous one
+  • Violent on-site attack -> Critical Motion fires without needing a Geofence.    (Ex5)
+  • Wakes off-site+disturbed -> Geofence not held for 3 packets.                   (Ex2)
+Unchanged good case: tampered->off-site->fast still logs D->G->C in order.          (Ex1)
+
+Removed the geofence fallback timer (GEOFENCE_FALLBACK_MIN) — no longer needed.
+
+FILES (unzip from app root):
+  app/api/apiUtils/ingest/store.js
+  app/api/apiUtils/dataControl/alarms.js   (dedupe one-open-per-device + disturbance independence; unchanged if already deployed)
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-escalation-order.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration.)

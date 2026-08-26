@@ -41,6 +41,26 @@ export async function setBranding(value, updatedBy = null) {
   return setConfig("branding", merged, updatedBy);
 }
 
+// ---- Firmware -------------------------------------------------------------
+// The latest firmware version available. Firmware currently lives on the OEM
+// servers, so an admin types the current version here; a device is labelled to
+// this version once it CONFIRMS an OTA update. (Later, firmware will be hosted
+// on our own servers.)
+export async function getFirmwareConfig() {
+  const v = (await getConfig("firmware").catch(() => null)) || {};
+  return { latest: (v.latest && String(v.latest).trim()) || "v2.4.1", notes: v.notes || null, updated_at: v.updated_at || null };
+}
+export async function saveFirmwareConfig(patch = {}, updatedBy = null) {
+  const cur = await getFirmwareConfig();
+  const next = {
+    latest: patch.latest != null ? String(patch.latest).trim() : cur.latest,
+    notes: patch.notes != null ? String(patch.notes).trim() || null : cur.notes,
+    updated_at: new Date().toISOString(),
+  };
+  await setConfig("firmware", next, updatedBy);
+  return next;
+}
+
 // ---- Google Maps ----------------------------------------------------------
 
 export const MAPS_LIBRARIES = ["places", "geometry", "drawing", "marker", "visualization"];
@@ -96,6 +116,66 @@ export async function saveMapsConfig(patch = {}, updatedBy = null) {
 
   await setConfig("maps", next, updatedBy);
   return next;
+}
+
+// ---- Geolocation providers (LBS / Wi-Fi position resolver) ----------------
+// Google is the PRIMARY resolver (it reuses the Google Maps key above). Unwired
+// Labs is an optional BACKUP that is tried only when Google can't resolve a
+// packet — and only while we're still under a configured free-request cap, so a
+// trial token is never overrun. The request count is tracked in geo_usage (see
+// dataControl/geoUsage.js), not here.
+export const GEO_REGIONS = ["us1", "eu1", "ap1"];      // Unwired endpoint nodes
+export const GEO_CAP_WINDOWS = ["total", "month", "day"]; // lifetime trial / monthly / daily
+
+export const GEO_DEFAULTS = {
+  unwiredEnabled: false,
+  unwiredToken: "",
+  unwiredRegion: "us1",
+  unwiredFreeCap: 50,          // stop calling Unwired after this many requests
+  unwiredCapWindow: "total",   // "total" = trial lifetime, "month"/"day" = resets
+};
+
+/** Full geo config (includes the Unwired token) — for the resolver. Falls back
+ *  to an env token (UNWIRED_LABS_TOKEN / UNWIRED_TOKEN) if none is saved. */
+export async function getGeoConfig() {
+  const v = (await getConfig("geo")) || {};
+  const envTok = process.env.UNWIRED_LABS_TOKEN || process.env.UNWIRED_TOKEN || "";
+  const capN = Number(v.unwiredFreeCap);
+  return {
+    ...GEO_DEFAULTS,
+    ...v,
+    unwiredEnabled: v.unwiredEnabled === undefined ? GEO_DEFAULTS.unwiredEnabled : !!v.unwiredEnabled,
+    unwiredToken: (v.unwiredToken && String(v.unwiredToken).trim()) || envTok,
+    unwiredRegion: GEO_REGIONS.includes(v.unwiredRegion) ? v.unwiredRegion : GEO_DEFAULTS.unwiredRegion,
+    unwiredCapWindow: GEO_CAP_WINDOWS.includes(v.unwiredCapWindow) ? v.unwiredCapWindow : GEO_DEFAULTS.unwiredCapWindow,
+    unwiredFreeCap: Number.isFinite(capN) ? Math.max(0, Math.round(capN)) : GEO_DEFAULTS.unwiredFreeCap,
+  };
+}
+
+/** Validate + save a geo config patch. The token is only changed when a
+ *  non-empty value is supplied, so the UI never blanks it by omission. */
+export async function saveGeoConfig(patch = {}, updatedBy = null) {
+  const cur = await getGeoConfig();
+  const next = { ...cur };
+  if (patch.unwiredEnabled !== undefined) next.unwiredEnabled = !!patch.unwiredEnabled;
+  if (patch.unwiredRegion && GEO_REGIONS.includes(patch.unwiredRegion)) next.unwiredRegion = patch.unwiredRegion;
+  if (patch.unwiredCapWindow && GEO_CAP_WINDOWS.includes(patch.unwiredCapWindow)) next.unwiredCapWindow = patch.unwiredCapWindow;
+  if (patch.unwiredFreeCap !== undefined) {
+    const n = Number(patch.unwiredFreeCap);
+    if (Number.isFinite(n)) next.unwiredFreeCap = Math.max(0, Math.round(n));
+  }
+  if (typeof patch.unwiredToken === "string" && patch.unwiredToken.trim() !== "") next.unwiredToken = patch.unwiredToken.trim();
+  else next.unwiredToken = cur.unwiredToken;
+  await setConfig("geo", next, updatedBy);
+  return next;
+}
+
+/** Geo config for the admin page — the token is removed and replaced by a
+ *  boolean *Set flag, so the secret never leaves the server. */
+export async function getGeoConfigPublic() {
+  const g = await getGeoConfig();
+  const { unwiredToken, ...safe } = g;
+  return { ...safe, unwiredTokenSet: !!(unwiredToken && String(unwiredToken).length) };
 }
 
 // ---- Messaging: Email (SMTP) + SMS ----------------------------------------

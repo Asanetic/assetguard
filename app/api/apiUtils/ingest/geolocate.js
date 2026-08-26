@@ -8,7 +8,8 @@
 // by a (cells + Wi-Fi) fingerprint so a stationary device doesn't bill a call
 // on every packet. Any Google error is returned (and stored on the telemetry row
 // so it shows in the packet popup).
-import { getMapsConfig } from "../dataControl/appConfig.js";
+import { getMapsConfig, getGeoConfig } from "../dataControl/appConfig.js";
+import { reserveCall } from "../dataControl/geoUsage.js";
 
 const CACHE = new Map();          // fingerprint -> { location, error }
 const CACHE_MAX = 500;
@@ -88,6 +89,61 @@ export async function requestGoogleLocation(payload) {
 }
 
 // ---------------------------------------------------------------------------
+// BACKUP provider: Unwired Labs LocationAPI. Different (flat) schema from Google:
+// mcc/mnc/radio at the top level, cells as {lac,cid}, wifi as {bssid,signal}.
+// Returns the SAME shape as requestGoogleLocation so the caller is provider-blind.
+// `cfg` is a getGeoConfig() object (carries the token + region). This function
+// does NOT check the free-request cap — the caller reserves a slot first.
+// ---------------------------------------------------------------------------
+export async function requestUnwiredLocation({ cells = [], wifi = [], mcc = 0, mnc = 0 } = {}, cfg = {}) {
+  const token = (cfg.unwiredToken || "").trim();
+  const region = cfg.unwiredRegion || "us1";
+  if (!token) return { lat: null, lng: null, accuracy: null, raw: null, error: "no Unwired Labs token configured" };
+
+  const body = {
+    token,
+    radio: "gsm",
+    mcc: mcc || 0,
+    mnc: mnc || 0,
+    cells: (cells || [])
+      .filter((c) => c.lac != null && c.cid != null)
+      .map((c) => ({ lac: c.lac, cid: c.cid })),
+    address: 0, // coordinates only — no reverse-geocode credit spent
+  };
+  const wapts = (wifi || [])
+    .filter((w) => w.mac && w.mac !== "" && !isNaN(w.rssi))
+    .map((w) => ({ bssid: w.mac, signal: w.rssi }));
+  if (wapts.length) body.wifi = wapts;
+
+  const url = `https://${region}.unwiredlabs.com/v2/process.php`;
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json().catch(() => null);
+    if (!data || data.status !== "ok" || data.lat == null) {
+      const reason = data && data.message
+        ? `Unwired: ${data.message}`
+        : `Unwired geolocation HTTP ${response.status}`;
+      console.error("[geolocate] Unwired failed:", response.status, reason);
+      return { lat: null, lng: null, accuracy: null, raw: data, error: reason };
+    }
+    return {
+      lat: data.lat,
+      lng: data.lon,
+      accuracy: Math.round(data.accuracy ?? 0) || null,
+      raw: data,
+      error: null,
+    };
+  } catch (err) {
+    console.error("[geolocate] Unwired network error:", err?.message || err);
+    return { lat: null, lng: null, accuracy: null, raw: null, error: "network error reaching Unwired Labs" };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Reverse-geocode a position to its nearest road name, for the Critical Motion
 // alarm ("… on Waiyaki Way"). Uses the same admin Google Maps key (the Geocoding
 // API must be enabled on it). Cached on a coarse grid (~11 m) so a moving asset
@@ -152,23 +208,47 @@ export async function geolocate({ cells = [], wifi = [], mcc = null, mnc = null 
   const fp = fingerprint(cells, wifi);
   if (CACHE.has(fp)) return CACHE.get(fp);
 
+  // Google is the primary resolver — ONE attempt only (no cells-only retry).
   const firstLabel = cells.length && wifi.length ? "cells+wifi" : cells.length ? "cells" : "wifi";
   let r = await locateOnce(cells, wifi, mcc, mnc, firstLabel);
   let usedFallback = false;
+  let trials = null; // Unwired usage snapshot (used/cap/remaining/window), when the backup runs
 
-  // Fallback: if Google couldn't compute a location (a bad/unknown Wi-Fi AP can
-  // do that) and we still have cell towers, retry with cell towers only.
-  const notLocatable = r.error && /could not compute|not\s*found|404|invalid|geolocation failed/i.test(r.error);
-  if (notLocatable && cells.length && wifi.length) {
-    console.warn(`[geolocate] combined lookup failed (${r.error}); retrying with cell towers only`);
-    const r2 = await locateOnce(cells, [], mcc, mnc, "cells-only");
-    if (!r2.error) { r = r2; usedFallback = true; }
-    else r = { ...r2, error: `cells+Wi-Fi failed (${r.error}); cells-only also failed (${r2.error})` };
+  // --- BACKUP provider: Unwired Labs -----------------------------------------
+  // Only when Google produced no location, the backup is enabled, a token is set,
+  // and we're still under the free-request cap. reserveCall() atomically claims a
+  // slot so we never overrun the trial. A cap-skip does NOT overwrite Google's
+  // error, so the packet still shows why Google missed.
+  let provider = r.error ? null : "google";
+  if (r.error) {
+    try {
+      const gcfg = await getGeoConfig();
+      if (gcfg.unwiredEnabled && gcfg.unwiredToken) {
+        const res = await reserveCall("unwired", gcfg.unwiredCapWindow, gcfg.unwiredFreeCap);
+        const cap = gcfg.unwiredFreeCap;
+        const remaining = Math.max(0, cap - res.count);
+        trials = { used: res.count, cap, remaining, window: gcfg.unwiredCapWindow, period: res.period };
+        if (!res.allowed) {
+          console.warn(`[geolocate] Unwired backup skipped — free cap reached (${res.count}/${cap} for ${res.period})`);
+        } else {
+          console.log(`[geolocate] -> Unwired backup (request ${res.count}/${cap} for ${res.period}, ${remaining} left)`);
+          const u = await requestUnwiredLocation({ cells, wifi, mcc, mnc }, gcfg);
+          if (!u.error) {
+            r = u;
+            provider = "unwired";
+          } else {
+            r = { ...r, error: `Google: ${r.error}; Unwired backup also failed (${u.error})`, raw: u.raw ?? r.raw };
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[geolocate] Unwired backup error:", e?.message || e);
+    }
   }
 
   // Label by the signals the PACKET provided for the network fix, not by which one
-  // Google ended up using — so a packet carrying both cells + Wi-Fi reads "wifi+lbs"
-  // even when the combined call fell back to cells-only.
+  // the provider ended up using — so a packet carrying both cells + Wi-Fi reads
+  // "wifi+lbs" even when the combined call fell back to cells-only.
   let source = null;
   if (!r.error) {
     const hc = cells.length > 0, hw = wifi.length > 0;
@@ -177,8 +257,8 @@ export async function geolocate({ cells = [], wifi = [], mcc = null, mnc = null 
   void usedFallback;
 
   const result = r.error
-    ? { location: null, error: r.error, raw: r.raw ?? null, source: null }
-    : { location: { lat: r.lat, lng: r.lng, accuracy: r.accuracy }, error: null, raw: r.raw ?? null, source };
+    ? { location: null, error: r.error, raw: r.raw ?? null, source: null, provider: null, trials }
+    : { location: { lat: r.lat, lng: r.lng, accuracy: r.accuracy }, error: null, raw: r.raw ?? null, source, provider, trials };
 
   // Cache successes and stable "not found" misses (not config/network errors).
   const cacheable = !r.error || /could not compute|not\s*found|404/i.test(r.error);

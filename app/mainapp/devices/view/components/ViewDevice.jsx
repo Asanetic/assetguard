@@ -19,7 +19,12 @@ const STATUS_PILL = {
   Maintenance: ["#E0F2FE", "#075985", "#0EA5E9"],
 };
 const RADII = ["25", "50", "100", "250", "500"];
-const INTERVALS = ["30 seconds", "1 minute", "5 minutes", "15 minutes", "1 hour"];
+// Reporting cadence (GL-28 `update,N`): 3–60 seconds. [value(seconds), label].
+const INTERVALS = [["3", "3 seconds"], ["5", "5 seconds"], ["10", "10 seconds"], ["15", "15 seconds"], ["20", "20 seconds"], ["30", "30 seconds"], ["45", "45 seconds"], ["60", "60 seconds (1 min)"]];
+// Wake (sleep) interval in MINUTES. [value, label]. Default 24 h.
+const WAKE = [["6", "6 min"], ["10", "10 min"], ["15", "15 min"], ["30", "30 min"], ["60", "1 hour"], ["120", "2 hours"], ["360", "6 hours"], ["720", "12 hours"], ["1440", "24 hours"]];
+const MUTE_UNITS = ["minutes", "hours", "days"];
+const fmtWake = (sec) => { const m = Math.round((Number(sec) || 0) / 60); return m % 1440 === 0 && m >= 1440 ? `${m / 1440} d` : m % 60 === 0 && m >= 60 ? `${m / 60} h` : `${m} min`; };
 const DATA_CAP_GB = 5;
 
 function relTime(v) {
@@ -48,15 +53,20 @@ export default function ViewDevice() {
   const [editing, setEditing] = useState(false);
   const [busyFw, setBusyFw] = useState(false);
   const [decomArmed, setDecomArmed] = useState(false);
+  const [pwrArmed, setPwrArmed] = useState(false);
   const [toast, setToast] = useState("");
   const [track, setTrack] = useState([]);
 
   // editable draft
+  const [dImei, setDImei] = useState("");
   const [dSim, setDSim] = useState("");
   const [dGeo, setDGeo] = useState("100");
   const [dMot, setDMot] = useState(50);
-  const [dInt, setDInt] = useState("1 minute");
+  const [dInt, setDInt] = useState("3");
+  const [dWake, setDWake] = useState("1440");   // wake interval draft, minutes
   const [dNotes, setDNotes] = useState("");
+  const [muteAmt, setMuteAmt] = useState(2);
+  const [muteUnit, setMuteUnit] = useState("hours");
 
   const mapRef = useRef(null);
   const decomTimer = useRef(null);
@@ -70,6 +80,12 @@ export default function ViewDevice() {
       setDevice(d.device);
       setActivity(Array.isArray(d.activity) ? d.activity : []);
       if (d.latestFirmware) setLatestFw(d.latestFirmware);
+      // Latest available firmware is a platform-wide setting (Admin → Firmware).
+      try {
+        const fr = await fetch("/api/mainapp/firmware-config", { cache: "no-store" });
+        const fd = await fr.json();
+        if (fr.ok && fd.firmware?.latest) setLatestFw(fd.firmware.latest);
+      } catch {}
     } catch { setNotFound(true); }
     finally { setLoading(false); }
   }
@@ -77,19 +93,29 @@ export default function ViewDevice() {
 
   // config-derived values
   const cfg = device?.config || {};
-  const geoRadius = String(cfg?.geofence?.radius_m ?? 100);
-  const motion = Number(cfg?.motion_sensitivity ?? 50);
-  const interval = cfg?.upload_interval || "1 minute";
+  // Read the FLAT geofence_radius_m the engine uses (fall back to the legacy nested key).
+  const geoRadius = String(cfg?.geofence_radius_m ?? cfg?.geofence?.radius_m ?? 30);
+  const motion = Number(cfg?.motion_sensitivity ?? 30);
+  const intervalSec = Number(cfg?.upload_interval_s ?? 3);
+  const interval = intervalSec ? `${intervalSec}s` : "—";
+  const wakeSec = Number(cfg?.wake_interval_sec ?? 86400);
+  const wakeMin = Math.round(wakeSec / 60);
+  const pendingWakeSec = cfg?.pending_wake_interval_sec != null ? Number(cfg.pending_wake_interval_sec) : null;
+  const muteActive = device?.mute_until && new Date(device.mute_until) > new Date();
+  const usage = device?.data_usage || null;
+  const fmtMbC = (mb) => (mb == null ? "—" : mb >= 1024 ? `${Math.round((mb / 1024) * 100) / 100} GB` : `${Math.round(mb)} MB`);
   const notes = cfg?.mounting_notes || "—";
   const firmware = device?.firmware || "v2.3.8";
   const updateAvailable = firmware !== latestFw;
 
   useEffect(() => {
     if (!device) return;
+    setDImei(device.imei || "");
     setDSim(device.sim || "");
     setDGeo(geoRadius);
     setDMot(motion);
-    setDInt(interval);
+    setDInt(String(intervalSec || 3));
+    setDWake(String(wakeMin || 1440));
     setDNotes(cfg?.mounting_notes || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [device]);
@@ -125,10 +151,24 @@ export default function ViewDevice() {
         if (cancelled || !mapRef.current) return;
         const pos = { lat, lng };
         const map = new maps.Map(mapRef.current, {
-          center: pos, zoom: 15, mapTypeId: "roadmap", disableDefaultUI: true, gestureHandling: "none", keyboardShortcuts: false,
+          center: pos, zoom: 17, mapTypeId: "roadmap", disableDefaultUI: true, gestureHandling: "none", keyboardShortcuts: false,
         });
         new maps.Marker({ map, position: pos, icon: devicePinIcon(maps, device.status), optimized: false });
-        new maps.Circle({ map, center: pos, radius: Number(geoRadius) || 100, strokeColor: "#2E6CF5", strokeOpacity: 0.8, strokeWeight: 2, fillColor: "#2E6CF5", fillOpacity: 0.08 });
+        // Geofence ring — blue circle. Fit the map to its bounds so it's always visible
+        // (a 30 m ring is only a few pixels at a fixed zoom).
+        const circle = new maps.Circle({
+          map, center: pos, radius: Number(geoRadius) || 30,
+          strokeColor: "#2E6CF5", strokeOpacity: 0.95, strokeWeight: 2.5,
+          fillColor: "#2E6CF5", fillOpacity: 0.14,
+        });
+        try {
+          const b = circle.getBounds();
+          if (b) {
+            map.fitBounds(b, 24); // 24px padding around the ring
+            // Don't zoom in past 18 for a tiny geofence.
+            maps.event.addListenerOnce(map, "idle", () => { if (map.getZoom() > 18) map.setZoom(18); });
+          }
+        } catch {}
       } catch { setMapErr("fail"); }
     })();
     return () => { cancelled = true; };
@@ -152,18 +192,119 @@ export default function ViewDevice() {
   }
 
   function changeStatus(v) { patch({ status: v }, `Status changed to ${v}`); }
+  // Power off (deactivate): queue *HQ,IMEI,pwroff#. Sends on the device's next wake;
+  // when it acks, the device is set INACTIVE (sticky — reinstate manually later).
+  async function powerOff() {
+    if (!device?.id) return;
+    if (!pwrArmed) { setPwrArmed(true); setTimeout(() => setPwrArmed(false), 4000); return; }
+    setPwrArmed(false);
+    try {
+      const r = await fetch("/api/mainapp/devices/commands", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [device.id], op: "poweroff" }),
+      });
+      flash(r.ok ? "Power-off queued — sends on the device's next wake, then it goes Inactive" : "Could not queue power-off");
+    } catch { flash("Could not queue power-off"); }
+  }
+
   async function updateFirmware() {
-    if (busyFw || !updateAvailable) return;
+    if (busyFw || !updateAvailable || !device?.id) return;
     setBusyFw(true);
-    await patch({ firmware: latestFw }, `Firmware updated to ${latestFw} ✓`);
+    // Queue the OTA command — it sends on the device's next wake (no critical alarm),
+    // and the device is labelled to the latest version only once it CONFIRMS by
+    // reporting again. We do NOT set firmware directly here.
+    try {
+      const r = await fetch("/api/mainapp/devices/commands", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [device.id], op: "firmware" }),
+      });
+      flash(r.ok ? `Firmware update to ${latestFw} queued — applies on next wake, confirmed when it reports back`
+                 : "Could not queue the firmware update");
+    } catch { flash("Could not queue the firmware update"); }
     setBusyFw(false);
   }
-  function saveEdits() {
-    patch({
+  async function sendPing() {
+    if (!device?.id) return;
+    try {
+      const r = await fetch("/api/mainapp/devices/commands", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [device.id], op: "ping" }),
+      });
+      flash(r.ok ? "Test ping queued — confirms when the device next reports" : "Could not queue ping");
+    } catch { flash("Network error"); }
+  }
+  async function applyMute(amount, unit) {
+    if (!device?.id) return;
+    try {
+      const r = await fetch("/api/mainapp/devices/batch", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [device.id], op: "mute", value: { amount, unit } }),
+      });
+      if (r.ok) { flash(amount > 0 ? `Alerts muted for ${amount} ${unit}` : "Alerts unmuted"); load(); }
+      else flash("Could not update mute");
+    } catch { flash("Network error"); }
+  }
+  async function resetDataBundle() {
+    if (!device?.id) return;
+    if (typeof window !== "undefined" && !window.confirm("Reset the data-bundle counter? Usage starts from zero now.")) return;
+    try {
+      const r = await fetch("/api/mainapp/devices/batch", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [device.id], op: "dreset" }),
+      });
+      if (r.ok) { flash("Data bundle reset — counting from now"); load(); }
+      else flash("Could not reset data bundle");
+    } catch { flash("Network error"); }
+  }
+  async function saveEdits() {
+    const imei = dImei.trim();
+    if (!/^\d{14,17}$/.test(imei)) { flash("IMEI must be 14–17 digits"); return; }
+    const body = {
       sim: dSim.trim() || null,
-      config: { geofence: { enabled: true, radius_m: Number(dGeo) }, motion_sensitivity: Number(dMot), upload_interval: dInt, mounting_notes: dNotes.trim() || null },
-    }, "Device details saved");
-    setEditing(false);
+      // Canonical flat keys the engine + sync read. Wake interval is NOT written here —
+      // it's queued as a command and only becomes active when the device confirms it.
+      config: { geofence_enabled: true, geofence_radius_m: Number(dGeo), motion_sensitivity: Number(dMot), upload_interval_s: Number(dInt), mounting_notes: dNotes.trim() || null },
+    };
+    if (imei !== String(device?.imei || "").trim()) body.imei = imei; // only send when changed
+    const ok = await patch(body, "Device details saved");
+    if (ok) {
+      setEditing(false);
+      // Only fields that REQUIRE a device command get one queued, and only when they
+      // actually changed. (Geofence radius, notes, SIM and IMEI are registry-only — no
+      // command.) Commands send on the device's next wake.
+      const queued = [];
+      const prevMot = Number(cfg?.motion_sensitivity ?? 50);
+      if (device?.id && Number(dInt) !== intervalSec) {
+        try {
+          const r = await fetch("/api/mainapp/devices/commands", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: [device.id], op: "interval", value: Number(dInt) }),
+          });
+          if (r.ok) queued.push(`interval ${dInt}s`);
+        } catch { /* config saved; command best-effort */ }
+      }
+      if (device?.id && Number(dMot) !== prevMot) {
+        try {
+          const r = await fetch("/api/mainapp/devices/commands", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: [device.id], op: "sensitivity", value: Number(dMot) }),
+          });
+          if (r.ok) queued.push(`sensitivity ${dMot}`);
+        } catch { /* config saved; command best-effort */ }
+      }
+      // Wake interval → queue UPT. Backend stores it pending; it becomes active only
+      // when the device ACK-confirms (so the interval "resets" only after success).
+      if (device?.id && Number(dWake) !== wakeMin) {
+        try {
+          const r = await fetch("/api/mainapp/devices/commands", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: [device.id], op: "upt", value: Number(dWake) }),
+          });
+          if (r.ok) { queued.push(`wake ${dWake} min (pending)`); load(); }
+        } catch { /* config saved; command best-effort */ }
+      }
+      if (queued.length) flash(`Queued to the device on next wake: ${queued.join(", ")}`);
+    }
   }
   function decommission() {
     if (!decomArmed) {
@@ -235,7 +376,6 @@ export default function ViewDevice() {
                 <div className={styles.pinDot} style={{ background: deviceStatusColor(device.status) }}><i className="ti ti-gps" /></div>
               </div>
             ) : <div ref={mapRef} className={styles.mapReal} />}
-            <a className={styles.liveMaps} href="/mainapp/devicemap"><i className="ti ti-map-2" style={{ fontSize: 13 }} />Live maps</a>
             <span className={styles.geoChip}><i className="ti ti-map-pin-cog" style={{ fontSize: 12 }} />Geofence {geoRadius}m</span>
             {device.site_lat != null && device.site_lng != null
               ? <span className={styles.mapChip}>{Number(device.site_lat).toFixed(4)}, {Number(device.site_lng).toFixed(4)}</span> : null}
@@ -249,9 +389,15 @@ export default function ViewDevice() {
               <div className={styles.bar}><span style={{ width: `${battery}%`, background: battColor === "#DC2626" ? "#EF4444" : "#10B981" }} /></div>
             </div>
             <div className={styles.stat}>
-              <div className={styles.statK}>DATA BUNDLE REMAINING</div>
-              <div className={styles.statV} style={{ color: "#475569" }}>{device.data_left || "—"} <span className={styles.statSub}>/ {DATA_CAP_GB} GB</span></div>
-              <div className={styles.bar}><span style={{ width: `${dataPct}%`, background: "#0EA5E9" }} /></div>
+              <div className={styles.statK}>DATA BUNDLE <span style={{ fontWeight: 600, color: "#94a3b8" }}>(est.)</span></div>
+              <div className={styles.statV} style={{ color: "#475569" }}>
+                {usage?.assigned_mb ? `${fmtMbC(usage.remaining_mb)} left` : "No plan"}
+                {usage?.assigned_mb ? <span className={styles.statSub}> / {fmtMbC(usage.assigned_mb)}</span> : null}
+              </div>
+              <div className={styles.bar}><span style={{ width: `${usage?.pct != null ? Math.min(100, usage.pct) : 0}%`, background: (usage?.pct ?? 0) >= 90 ? "#EF4444" : "#0EA5E9" }} /></div>
+              <div className={styles.statSub} style={{ marginTop: 4 }}>
+                {usage ? `used ${fmtMbC(usage.used_mb)} · ↑${fmtMbC(usage.up_mb)} ↓${fmtMbC(usage.down_mb)}${usage.since ? "" : " · all-time"}` : "—"}
+              </div>
             </div>
           </div>
 
@@ -260,7 +406,12 @@ export default function ViewDevice() {
             <div className={styles.secH}><span className={styles.chip} style={{ background: "#D1FAE5", color: "#047857" }}><i className="ti ti-cpu" /></span>Device details<span className={styles.editingLbl}>{editing ? "Editing…" : ""}</span></div>
             <div className={styles.detGrid}>
               <div><div className={styles.dl}>DEVICE ID</div><div className={styles.dv}>{device.device_id}</div></div>
-              <div><div className={styles.dl}>IMEI</div><div className={styles.dv}>{device.imei}</div></div>
+              <div>
+                <div className={styles.dl}>IMEI</div>
+                {editing
+                  ? <input className={styles.in} value={dImei} onChange={(e) => setDImei(e.target.value.replace(/[^\d]/g, ""))} inputMode="numeric" maxLength={17} placeholder="15-digit IMEI" />
+                  : <div className={styles.dv}>{device.imei}</div>}
+              </div>
               <div>
                 <div className={styles.dl}>SIM NUMBER</div>
                 {editing ? <input className={styles.in} value={dSim} onChange={(e) => setDSim(e.target.value)} placeholder="e.g. +254 7…" />
@@ -274,13 +425,18 @@ export default function ViewDevice() {
               <div>
                 <div className={styles.dl}>MOTION SENSITIVITY</div>
                 {editing ? (
-                  <div><input type="range" min="1" max="100" value={dMot} className={styles.slider} onChange={(e) => setDMot(Number(e.target.value))} /><div className={styles.hint}>{dMot} / 100 · 1 = low · 100 = high</div></div>
-                ) : <div className={styles.dv}>{motion} / 100</div>}
+                  <div><input type="range" min="1" max="50" value={dMot} className={styles.slider} onChange={(e) => setDMot(Number(e.target.value))} /><div className={styles.hint}>{dMot} / 50 · 1 = most sensitive · 50 = least sensitive</div></div>
+                ) : <div className={styles.dv}>{motion} / 50</div>}
               </div>
               <div>
-                <div className={styles.dl}>UPLOAD INTERVAL</div>
-                {editing ? <select className={styles.in} value={dInt} onChange={(e) => setDInt(e.target.value)}>{INTERVALS.map((i) => <option key={i} value={i}>{i}</option>)}</select>
+                <div className={styles.dl}>MOVING INTERVAL</div>
+                {editing ? <select className={styles.in} value={dInt} onChange={(e) => setDInt(e.target.value)}>{INTERVALS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
                   : <div className={styles.dv}>{interval}</div>}
+              </div>
+              <div>
+                <div className={styles.dl}>WAKE-UP INTERVAL</div>
+                {editing ? <select className={styles.in} value={dWake} onChange={(e) => setDWake(e.target.value)}>{WAKE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+                  : <div className={styles.dv}>{fmtWake(wakeSec)}{pendingWakeSec != null && pendingWakeSec !== wakeSec ? <span style={{ color: "#B45309", fontWeight: 700, marginLeft: 5 }}>→ {fmtWake(pendingWakeSec)} pending</span> : null}</div>}
               </div>
               <div><div className={styles.dl}>FIRMWARE</div><div className={styles.dv}>{firmware}{updateAvailable ? <span className={styles.fwUpd}>UPDATE AVAILABLE</span> : null}</div></div>
               <div><div className={styles.dl}>LAST SEEN</div><div className={styles.dv}>{relTime(device.last_seen)}</div></div>
@@ -383,8 +539,26 @@ export default function ViewDevice() {
               <i className={busyFw ? "ti ti-loader-2" : "ti ti-refresh"} style={{ fontSize: 14, color: "#2e6cf5" }} />
               {busyFw ? "Updating firmware…" : updateAvailable ? "Update firmware" : "Firmware up to date"}
             </button>
-            <button className={`${styles.ghost} ${styles.wFull}`} onClick={() => flash("Test ping sent — response received in 340ms")}><i className="ti ti-antenna-bars-5" style={{ fontSize: 14 }} />Send test ping</button>
-            <button className={`${styles.ghost} ${styles.wFull}`} onClick={() => flash("Alerts muted for this device for 2 hours")}><i className="ti ti-bell-off" style={{ fontSize: 14 }} />Mute alerts for 2 hours</button>
+            <button className={`${styles.ghost} ${styles.wFull}`} onClick={sendPing}><i className="ti ti-antenna-bars-5" style={{ fontSize: 14 }} />Send test ping</button>
+            {/* Mute alerts — pick amount + unit, or unmute */}
+            <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8 }}>
+              <input type="number" min={0} value={muteAmt} onChange={(e) => setMuteAmt(e.target.value)}
+                style={{ width: 54, padding: "8px 8px", border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 13 }} />
+              <select value={muteUnit} onChange={(e) => setMuteUnit(e.target.value)}
+                style={{ flex: 1, padding: "8px 8px", border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 13 }}>
+                {MUTE_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              </select>
+              <button className={styles.ghost} style={{ padding: "8px 12px" }} onClick={() => applyMute(Number(muteAmt) || 0, muteUnit)}><i className="ti ti-bell-off" style={{ fontSize: 14 }} />Mute</button>
+            </div>
+            {muteActive && (
+              <button className={`${styles.ghost} ${styles.wFull}`} onClick={() => applyMute(0, "hours")}>
+                <i className="ti ti-bell" style={{ fontSize: 14, color: "#047857" }} />Unmute (muted until {new Date(device.mute_until).toLocaleString("en-GB", { timeZone: "Africa/Nairobi", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" })})
+              </button>
+            )}
+            <button className={`${styles.ghost} ${styles.wFull}`} onClick={resetDataBundle}><i className="ti ti-database-cog" style={{ fontSize: 14, color: "#b45309" }} />Reset data bundle</button>
+            <button className={`${styles.ghost} ${styles.wFull}`} onClick={powerOff}>
+              <i className="ti ti-power" style={{ fontSize: 14, color: pwrArmed ? "#dc2626" : "#8B5CF6" }} />{pwrArmed ? "Confirm power off (device → Inactive)?" : "Power off (deactivate)"}
+            </button>
             <button className={`${styles.danger} ${styles.wFull}`} style={{ marginBottom: 0 }} onClick={decommission}>
               <i className={decomArmed ? "ti ti-alert-triangle" : "ti ti-trash"} style={{ fontSize: 14 }} />{decomArmed ? "Confirm decommission?" : "Decommission device"}
             </button>

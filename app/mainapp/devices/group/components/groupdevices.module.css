@@ -113,3 +113,46 @@
 .catRow { display: flex; gap: 10px; align-items: flex-end; margin: 18px 0 14px; }
 .catField { display: flex; flex-direction: column; }
 .catLbl { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: .4px; margin-bottom: 4px; }
+
+/* ---- Firmware rollout modal -------------------------------------------- */
+.roScrim { position: fixed; inset: 0; background: rgba(15,23,42,.5); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 20px; }
+.roModal { width: min(720px, 96vw); max-height: 90vh; display: flex; flex-direction: column; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 24px 60px rgba(2,6,23,.35); }
+
+.roHead { display: flex; align-items: center; gap: 12px; padding: 16px 18px; background: #16294d; color: #fff; }
+.roHeadIcon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 11px; background: rgba(255,255,255,.14); color: #fff; font-size: 20px; flex: none; }
+.roHeadText { flex: 1; min-width: 0; }
+.roTitle { font-size: 17px; font-weight: 800; letter-spacing: .2px; }
+.roSub { font-size: 12.5px; color: #b9c6de; margin-top: 2px; }
+.roX { width: 34px; height: 34px; border: 0; border-radius: 9px; background: rgba(255,255,255,.14); color: #fff; cursor: pointer; font-size: 16px; display: inline-flex; align-items: center; justify-content: center; }
+.roX:hover { background: rgba(255,255,255,.24); }
+@keyframes agspin { to { transform: rotate(360deg); } }
+.spin { animation: agspin 1.6s linear infinite; }
+
+.roBody { padding: 16px 18px 8px; overflow: auto; }
+.roBanner { display: flex; gap: 9px; align-items: flex-start; background: #FEF3C7; color: #92400E; border-radius: 10px; padding: 10px 12px; font-size: 12.7px; line-height: 1.4; margin-bottom: 14px; }
+.roBanner i { font-size: 16px; margin-top: 1px; flex: none; }
+.roCountRow { display: flex; align-items: baseline; justify-content: space-between; }
+.roCountBig { font-size: 26px; font-weight: 800; color: #0F274A; }
+.roCountSub { font-size: 14px; color: #64748b; margin-left: 4px; }
+.roTrack { height: 10px; background: #E5E7EB; border-radius: 999px; overflow: hidden; margin: 12px 0 12px; }
+.roFill { height: 100%; background: #16A34A; border-radius: 999px; transition: width .4s ease; }
+.roStats { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.7px; font-weight: 600; padding-bottom: 12px; border-bottom: 1px solid #EEF2F7; }
+.roPills { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 12px; }
+.roPill { border: 1px solid #E2E8F0; background: #fff; color: #475569; border-radius: 999px; padding: 6px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.roPill:hover { border-color: #cbd5e1; }
+.roPillOn { background: #2E6CF5; border-color: #2E6CF5; color: #fff; }
+.roList { display: flex; flex-direction: column; }
+.roRow { display: flex; align-items: center; gap: 10px; padding: 12px 2px; border-top: 1px solid #F1F5F9; }
+.roRow:first-child { border-top: 0; }
+.roDot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.roDev { font-weight: 700; color: #0F274A; font-size: 13.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.roRowStatus { font-weight: 700; font-size: 13px; flex: none; }
+.roEmpty { color: #64748b; font-size: 13px; padding: 22px 2px; text-align: center; }
+
+.roFoot { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-top: 1px solid #EEF2F7; background: #FbFcFe; }
+.roFootNote { flex: 1; font-size: 13px; font-weight: 600; }
+.roActions { display: flex; gap: 8px; }
+.roBtnGhost { border: 1px solid #E2E8F0; background: #fff; color: #334155; border-radius: 10px; padding: 9px 16px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.roBtnGhost:hover { border-color: #cbd5e1; }
+.roBtnPrimary { border: 0; background: #2E6CF5; color: #fff; border-radius: 10px; padding: 9px 18px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.roBtnPrimary:hover { background: #1E56DB; }

@@ -7,10 +7,50 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "./tcplogs.module.css";
 
-function fmtTime(iso) { if (!iso) return "—"; try { return new Date(iso).toLocaleTimeString(); } catch { return iso; } }
+const EAT_TZ = "Africa/Nairobi";
+function fmtTime(iso) { if (!iso) return "—"; try { return new Date(iso).toLocaleTimeString("en-GB", { timeZone: EAT_TZ, hour12: false }); } catch { return iso; } }
 function coord(lat, lng) { if (lat == null || lng == null) return "no fix"; return `${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`; }
 const DISTURB = new Set(["00100008", "00100009"]);
-const DISTURB_MG = 300, MOTION_MG = 600, SPEED_KPH = 5; // mirror the alarm engine defaults
+// Net motion (gravity removed) thresholds — mirror the alarm engine defaults.
+// --- Motion model -----------------------------------------------------------
+// The MEMS "net vector" is the device's reported dynamic-acceleration figure.
+// IMPORTANT (from field tests): a device sitting PERFECTLY STILL does NOT read
+// ~0 mg — it idles around a REST BASELINE of ~1450 mg (1430–1450). So real
+// motion is what rises ABOVE that baseline, and the whole model is anchored to
+// it: rest ≈ 0 % on the gauge, not 27 %.
+//   REST_MG   ~1450 mg   idle/self-noise floor — treated as zero motion
+//   still     : vector <  1800 mg   (baseline + headroom — device at rest)
+//   moving    : 1800 – 3000 mg      (handling / disturbance)
+//   critical  : vector ≥ 3000 mg    (violent; scales to a 5000 mg hard-impact ceiling)
+// The motion % is band-anchored (not a naive ratio): measured from REST_MG so a
+// resting device reads ~0 %. still 0–33 %, moving 33–66 %, critical 66–100 %,
+// still climbing with real intensity inside the critical band. Speed has its own
+// anchored curve (walking→moving, driven-away→critical); the higher drives the gauge.
+const REST_MG   = 1450;   // net mg the accelerometer idles at when perfectly still
+const STILL_MAX = 1800;   // net mg: below this the device is considered at rest
+const CRIT_MG   = 3000;   // net mg: at/above this is critical motion
+const CRIT_CEIL = 5000;   // net mg mapped to 100 % (hard impact)
+const SPEED_KPH = 5;      // km/h: above this the asset is actually moving
+const SPEED_FAST = 25;    // km/h: being driven — critical band
+const SPEED_MAX = 80;     // km/h mapped to 100 %
+// Back-compat aliases kept for the row colouring / disturbance references below.
+const DISTURB_MG = STILL_MAX, MOTION_MG = CRIT_MG;
+
+// Piecewise, band-anchored 0–100 intensity, measured from `base` (the zero-motion
+// floor). Boundaries land exactly on 33 % and 66 % so the number and the label
+// always agree; anything at/below `base` reads 0 %.
+function bandPercent(v, base, lo, mid, ceil) {
+  const x = Number(v);
+  if (!Number.isFinite(x) || x <= base) return 0;
+  if (x < lo)  return ((x - base) / (lo - base)) * 33;    // 0–33  across base..lo
+  if (x < mid) return 33 + ((x - lo) / (mid - lo)) * 33;  // 33–66 across lo..mid
+  return 66 + Math.min(1, (x - mid) / (ceil - mid)) * 34; // 66–100 across mid..ceil
+}
+function motionPercent(dyn, spd) {
+  const di = dyn == null ? 0 : bandPercent(dyn, REST_MG, STILL_MAX, CRIT_MG, CRIT_CEIL);
+  const si = spd == null ? 0 : bandPercent(spd, 0,       SPEED_KPH, SPEED_FAST, SPEED_MAX);
+  return Math.max(di, si);
+}
 
 // --- interpretation helpers (compute from stored fields; robust to old rows) ---
 function memsMag(t) {
@@ -23,18 +63,24 @@ function memsVector(t) {                 // dynamic component (gravity removed) 
   const m = memsMag(t);
   return m == null ? null : Math.abs(m - 1000);
 }
-function motionState(t) {                 // processed speed + MEMS -> critical-motion prediction
+function motionState(t) {                 // net MEMS + processed speed -> motion state + intensity %
   const dyn = memsVector(t), spd = t.speed;
-  const critical = (spd != null && spd >= SPEED_KPH) || (dyn != null && dyn >= MOTION_MG);
-  const moving = (spd != null && spd > 0) || (dyn != null && dyn >= DISTURB_MG);
-  const index = Math.min(100, Math.round(Math.max((Number(spd) || 0) / SPEED_KPH, (dyn || 0) / MOTION_MG) * 100));
-  return { kind: critical ? "critical" : moving ? "moving" : "still", index };
+  // Kind from the RAW thresholds (authoritative — no rounding at the 1500/2000 edges).
+  const dHi = dyn != null && dyn >= CRIT_MG;      // ≥2000 mg net → violent
+  const dMid = dyn != null && dyn >= STILL_MAX;   // ≥1500 mg net → disturbance
+  const sHi = spd != null && spd >= SPEED_FAST;   // ≥25 km/h → being driven
+  const sMid = spd != null && spd >= SPEED_KPH;   // ≥5 km/h → moving
+  const kind = (dHi || sHi) ? "critical" : (dMid || sMid) ? "moving" : "still";
+  // Intensity % is the band-anchored gauge (still 0–33, moving 33–66, critical 66–100).
+  const index = (dyn == null && spd == null) ? 0 : Math.round(motionPercent(dyn, spd));
+  return { kind, index };
 }
 function deriveAlarms(t) {                 // stored alarms, or a decoded-flags fallback
   if (Array.isArray(t.alarms) && t.alarms.length) return t.alarms;
   const out = [], mb = String(t.motion_byte || "").toUpperCase();
-  if (t.status_disturbance || DISTURB.has(mb) || (memsVector(t) != null && memsVector(t) >= DISTURB_MG && (t.speed == null || t.speed < SPEED_KPH))) out.push("DISTURBANCE");
-  if (t.speed != null && t.speed >= SPEED_KPH) out.push("CRITICAL_MOTION");
+  const vv = memsVector(t);
+  if (t.status_disturbance || DISTURB.has(mb) || (vv != null && vv >= DISTURB_MG && vv < MOTION_MG && (t.speed == null || t.speed < SPEED_KPH))) out.push("DISTURBANCE");
+  if ((t.speed != null && t.speed >= SPEED_KPH) || (vv != null && vv >= MOTION_MG)) out.push("CRITICAL_MOTION");
   if (t.battery != null && t.battery <= 20) out.push("LOW_BATTERY");
   return out;
 }
@@ -203,6 +249,17 @@ function LogDetail({ row, more, onSelect, onClose }) {
     ? `valid · X ${t.mems_x} · Y ${t.mems_y} · Z ${t.mems_z} · roll ${t.roll ?? "—"} · pitch ${t.pitch ?? "—"}`
     : t.mems_valid === false ? "invalid (accel ignored)" : "—";
 
+  // Which provider located this packet, and (for Unwired) the trial snapshot at
+  // the time of the fix. Stamped by the ingest pipeline into geo_raw._ag; we also
+  // fall back to sniffing the raw shape for older rows saved before that stamp.
+  const ag = t.geo_raw && typeof t.geo_raw === "object" ? t.geo_raw._ag : null;
+  const geoProvider = ag?.provider
+    || (t.geo_raw && (t.geo_raw.status === "ok" || t.geo_raw.lon != null || t.geo_raw.balance != null) ? "unwired"
+        : t.geo_raw && t.geo_raw.location ? "google" : null);
+  const providerLabel = geoProvider === "unwired" ? "Unwired Labs" : geoProvider === "google" ? "Google" : null;
+  const trials = ag?.trials || null;
+  const trialWord = trials?.window === "day" ? " today" : trials?.window === "month" ? " this month" : "";
+
   return (
     <div className={styles.modalWrap} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -229,7 +286,7 @@ function LogDetail({ row, more, onSelect, onClose }) {
         {/* geolocation: what we sent to Google and what came back */}
         {(t.loc_source === "network" || t.geo_error || t.geo_raw) ? (
           <div className={styles.geoBlock}>
-            <div className={styles.dK}>Geolocation (Google)</div>
+            <div className={styles.dK}>Geolocation ({providerLabel || "Google"})</div>
             <div className={styles.geoLine}>
               <b>Sent:</b> {(Array.isArray(t.cells) ? t.cells.length : 0)} cell tower(s) + {(Array.isArray(t.wifi) ? t.wifi.length : 0)} Wi‑Fi AP(s)
             </div>
@@ -245,17 +302,23 @@ function LogDetail({ row, more, onSelect, onClose }) {
         {/* interpretation summary */}
         <div className={styles.interpBar}>
           <span className={styles.interp}><span className={styles.interpK}>MEMS vector</span> {mag != null ? `${mag} mg` : "—"}</span>
-          <span className={styles.interp}><span className={styles.interpK}>Dynamic Δ</span> <b style={{ color: vec != null && vec >= 300 ? "#B91C1C" : "#0F274A" }}>{vec != null ? `${vec} mg` : "—"}</b></span>
+          <span className={styles.interp}><span className={styles.interpK}>Dynamic Δ</span> <b style={{ color: vec != null && vec >= DISTURB_MG ? "#B91C1C" : "#0F274A" }}>{vec != null ? `${vec} mg` : "—"}</b></span>
           <span className={styles.interp}><span className={styles.interpK}>Motion</span> <span className={`${styles.motion} ${ms.kind === "critical" ? styles.motCrit : ms.kind === "moving" ? styles.motMove : styles.motStill}`}>{ms.kind}</span> {ms.index}%</span>
         </div>
 
         <div className={styles.detGrid}>
-          <Field k="Received" v={new Date(t.received_at).toLocaleString()} />
-          <Field k="Device time" v={t.device_time ? new Date(t.device_time).toLocaleString() : "—"} />
+          <Field k="Received" v={new Date(t.received_at).toLocaleString("en-GB", { timeZone: EAT_TZ, hour12: false })} />
+          <Field k="Device time" v={t.device_time ? new Date(t.device_time).toLocaleString("en-GB", { timeZone: EAT_TZ, hour12: false }) : "—"} />
           <div className={styles.dField}><div className={styles.dK}>GPS fix</div><div className={styles.dV}>{t.fix || "—"} · <Flag on={t.fix_valid} yes="valid" no="void" /></div></div>
           <Field k="Position" v={pos} />
           <Field k="Accuracy" v={t.accuracy != null ? `±${Math.round(t.accuracy)} m (${t.loc_source || "gps"})` : t.geo_error ? "failed to compute" : "—"} />
-          <div className={styles.dField}><div className={styles.dK}>Network‑located</div><div className={styles.dV}><Flag on={t.network_located} /></div></div>
+          <div className={styles.dField}><div className={styles.dK}>Network‑located</div><div className={styles.dV}>
+            <Flag on={t.network_located} />
+            {t.network_located && providerLabel ? <> · via <b>{providerLabel}</b></> : null}
+            {t.network_located && geoProvider === "unwired" && trials
+              ? <> · <span title={`Used ${trials.used} of ${trials.cap}${trialWord}`}>{trials.remaining} of {trials.cap} trials left{trialWord}</span></>
+              : null}
+          </div></div>
           <Field k="Speed" v={t.speed != null ? `${t.speed} km/h` : "—"} />
           <Field k="Course" v={t.course != null ? `${t.course}°` : "—"} />
           <Field k="Altitude" v={t.altitude != null ? `${t.altitude} m` : "—"} />

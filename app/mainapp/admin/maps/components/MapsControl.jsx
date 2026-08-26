@@ -33,6 +33,14 @@ export default function MapsControl() {
   const [saveNote, setSaveNote] = useState("");
   const [toast, setToast] = useState("");
   const [test, setTest] = useState({ state: "idle", msg: "" }); // idle | loading | ok | error
+  // Geolocation backup (Unwired Labs). Token is write-only: the server sends back
+  // only `unwiredTokenSet`, and we send `unwiredToken` up only when the admin types a new one.
+  const [geo, setGeo] = useState({
+    unwiredEnabled: false, unwiredTokenSet: false, unwiredToken: "",
+    unwiredRegion: "us1", unwiredFreeCap: 50, unwiredCapWindow: "total",
+  });
+  const [geoUsage, setGeoUsage] = useState({ count: 0, period: "total" });
+  const [showTok, setShowTok] = useState(false);
   const mapRef = useRef(null);
   const toastTimer = useRef(null);
 
@@ -50,6 +58,8 @@ export default function MapsControl() {
         if (res.ok) {
           const data = await res.json();
           if (alive && data.config) setCfg((c) => ({ ...c, ...data.config }));
+          if (alive && data.geo) setGeo((g) => ({ ...g, ...data.geo, unwiredToken: "" }));
+          if (alive && data.geoUsage) setGeoUsage(data.geoUsage);
         }
       } catch { /* keep defaults */ }
       finally { if (alive) setLoaded(true); }
@@ -58,6 +68,7 @@ export default function MapsControl() {
   }, []);
 
   const set = (k, v) => setCfg((c) => ({ ...c, [k]: v }));
+  const setG = (k, v) => setGeo((g) => ({ ...g, [k]: v }));
   const setCenter = (k, v) => setCfg((c) => ({ ...c, defaultCenter: { ...c.defaultCenter, [k]: v } }));
   function toggleLib(key) {
     setCfg((c) => {
@@ -80,11 +91,21 @@ export default function MapsControl() {
           },
           defaultZoom: Number(cfg.defaultZoom),
           mapType: cfg.mapType,
+          geo: {
+            unwiredEnabled: !!geo.unwiredEnabled,
+            unwiredRegion: geo.unwiredRegion,
+            unwiredFreeCap: Number(geo.unwiredFreeCap),
+            unwiredCapWindow: geo.unwiredCapWindow,
+            // only send the token when the admin actually typed a new one
+            ...(geo.unwiredToken && geo.unwiredToken.trim() ? { unwiredToken: geo.unwiredToken.trim() } : {}),
+          },
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Save failed");
       setCfg((c) => ({ ...c, ...data.config }));
+      if (data.geo) setGeo((g) => ({ ...g, ...data.geo, unwiredToken: "" }));
+      if (data.geoUsage) setGeoUsage(data.geoUsage);
       setSaveNote("Saved — every maps page will use this configuration.");
       flashToast("Maps configuration saved");
     } catch (err) {
@@ -150,6 +171,101 @@ export default function MapsControl() {
           Browser keys are meant to be public, but referrer restrictions stop anyone else from using yours.
         </div>
       </div>
+
+      {/* geolocation backup — Unwired Labs */}
+      {(() => {
+        const cap = Math.max(0, Number(geo.unwiredFreeCap) || 0);
+        const used = Math.max(0, Number(geoUsage.count) || 0);
+        const pct = cap > 0 ? Math.min(100, Math.round((used / cap) * 100)) : 0;
+        const remaining = Math.max(0, cap - used);
+        const barColor = pct >= 100 ? "#dc2626" : pct >= 80 ? "#d97706" : "#059669";
+        const tokReady = geo.unwiredTokenSet || (geo.unwiredToken && geo.unwiredToken.trim());
+        return (
+          <div className={styles.card}>
+            <div className={styles.cardH}>
+              <span className={styles.cardHIcon} style={{ background: "#e0f2fe", color: "#0284c7" }}><i className="ti ti-world-search" /></span>
+              Location backup — Unwired Labs
+              <span className={`${styles.statusPill} ${geo.unwiredEnabled ? styles.stOk : styles.stNone}`} style={{ marginLeft: "auto" }}>
+                <span className={styles.dot} style={{ background: geo.unwiredEnabled ? "#059669" : "#9ca3af" }} />
+                {geo.unwiredEnabled ? "Backup on" : "Backup off"}
+              </span>
+            </div>
+            <div className={styles.cardSub}>
+              When Google can’t resolve a packet’s cell towers / Wi-Fi (the “Not Found” case), AssetGuard falls back to
+              Unwired Labs — but only while under the free-request cap below, so a trial token is never overrun.
+            </div>
+
+            <label className={`${styles.lib} ${geo.unwiredEnabled ? styles.libOn : ""}`} style={{ display: "inline-flex", marginBottom: 12 }}>
+              <input type="checkbox" checked={!!geo.unwiredEnabled} onChange={(e) => setG("unwiredEnabled", e.target.checked)} />
+              Use Unwired Labs as a backup provider
+            </label>
+
+            <label className={styles.lab}>UNWIRED LABS ACCESS TOKEN</label>
+            <div className={styles.keyRow}>
+              <input className={styles.in} type={showTok ? "text" : "password"}
+                placeholder={geo.unwiredTokenSet ? "•••••••• (saved — type to replace)" : "paste your Unwired Labs token"}
+                value={geo.unwiredToken} onChange={(e) => setG("unwiredToken", e.target.value)} autoComplete="off" spellCheck={false} />
+              <button type="button" className={styles.eyeBtn} onClick={() => setShowTok((s) => !s)} aria-label={showTok ? "Hide token" : "Show token"}>
+                <i className={showTok ? "ti ti-eye-off" : "ti ti-eye"} />
+              </button>
+            </div>
+            <div className={styles.help}>
+              Get a token from the <a href="https://unwiredlabs.com" target="_blank" rel="noreferrer">Unwired Labs</a> dashboard
+              (LocationAPI → API tokens). The token is stored server-side and never sent back to the browser.
+            </div>
+
+            <div className={styles.g3} style={{ marginTop: 12 }}>
+              <div className={styles.field}>
+                <label className={styles.lab}>ENDPOINT REGION</label>
+                <select className={styles.in} value={geo.unwiredRegion} onChange={(e) => setG("unwiredRegion", e.target.value)}>
+                  <option value="us1">us1 · Americas</option>
+                  <option value="eu1">eu1 · Europe</option>
+                  <option value="ap1">ap1 · Asia-Pacific</option>
+                </select>
+              </div>
+              <div className={styles.field}>
+                <label className={styles.lab}>FREE-REQUEST CAP</label>
+                <input className={styles.in} type="number" min={0} value={geo.unwiredFreeCap}
+                  onChange={(e) => setG("unwiredFreeCap", e.target.value)} />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.lab}>CAP RESETS</label>
+                <select className={styles.in} value={geo.unwiredCapWindow} onChange={(e) => setG("unwiredCapWindow", e.target.value)}>
+                  <option value="total">Never (trial total)</option>
+                  <option value="day">Every day</option>
+                  <option value="month">Every month</option>
+                </select>
+              </div>
+            </div>
+
+            {/* usage meter */}
+            <div style={{ marginTop: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                <span className={styles.lab} style={{ margin: 0 }}>
+                  REQUESTS USED {geo.unwiredCapWindow === "month" ? `(this month · ${geoUsage.period})`
+                    : geo.unwiredCapWindow === "day" ? `(today · ${geoUsage.period})`
+                    : "(trial total)"}
+                </span>
+                <span style={{ fontWeight: 800, fontSize: 13, color: barColor }}>
+                  {used} / {cap} &nbsp;·&nbsp; {remaining} left
+                </span>
+              </div>
+              <div style={{ height: 10, borderRadius: 999, background: "#eef2f7", overflow: "hidden" }}>
+                <div style={{ width: `${pct}%`, height: "100%", background: barColor, transition: "width .3s" }} />
+              </div>
+              {pct >= 100 ? (
+                <div className={styles.help} style={{ color: "#b91c1c" }}>
+                  Cap reached — the backup will stay idle until you raise the cap{geo.unwiredCapWindow === "month" ? " or the month rolls over" : geo.unwiredCapWindow === "day" ? " or the day rolls over" : ""}.
+                </div>
+              ) : (!tokReady && geo.unwiredEnabled) ? (
+                <div className={styles.help} style={{ color: "#b45309" }}>
+                  Backup is on but no token is saved yet — add one above and save.
+                </div>
+              ) : null}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* libraries */}
       <div className={styles.card}>

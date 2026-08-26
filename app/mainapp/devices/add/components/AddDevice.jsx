@@ -14,9 +14,12 @@ import { useRouter } from "next/navigation";
 import styles from "./adddevice.module.css";
 
 const STATUSES = ["Testing", "Live", "Maintenance", "Offline", "Inactive"];
-const RADII = [["25", "25 m"], ["50", "50 m"], ["100", "100 m"], ["250", "250 m"], ["500", "500 m"]];
-const INTERVALS = ["30 seconds", "1 minute", "5 minutes", "15 minutes", "1 hour"];
-const GEO_PX = { 25: 36, 50: 52, 100: 76, 250: 118, 500: 150 };
+const RADII = [["30", "30 m"], ["50", "50 m"], ["100", "100 m"], ["250", "250 m"], ["500", "500 m"]];
+// Moving/report cadence (GL-28 update,N) in seconds. [value, label].
+const INTERVALS = [["3", "3 seconds"], ["5", "5 seconds"], ["10", "10 seconds"], ["15", "15 seconds"], ["30", "30 seconds"], ["60", "60 seconds"]];
+// Wake (sleep) interval in MINUTES. [value, label]. Default 24 h.
+const WAKE = [["6", "6 min"], ["10", "10 min"], ["15", "15 min"], ["30", "30 min"], ["60", "1 hour"], ["120", "2 hours"], ["360", "6 hours"], ["720", "12 hours"], ["1440", "24 hours (default)"]];
+const GEO_PX = { 30: 40, 50: 52, 100: 76, 250: 118, 500: 150 };
 
 function siteId(code) { const m = String(code || "").match(/(\d+)\s*$/); return m ? m[1].padStart(3, "0") : "000"; }
 function pascal(name) { return String(name || "").replace(/\s+/g, ""); }
@@ -33,9 +36,10 @@ export default function AddDevice() {
   const [sim, setSim] = useState("");
   const [status, setStatus] = useState("Testing");
   const [geoOn, setGeoOn] = useState(true);
-  const [radius, setRadius] = useState("100");
-  const [motion, setMotion] = useState(50);
-  const [interval, setIntervalV] = useState("1 minute");
+  const [radius, setRadius] = useState("30");
+  const [motion, setMotion] = useState(30);
+  const [interval, setIntervalV] = useState("3");      // moving interval, seconds
+  const [wakeMin, setWakeMin] = useState("1440");      // wake interval, minutes (24 h)
   const [photo, setPhoto] = useState(null); // { name, url }
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
@@ -88,9 +92,12 @@ export default function AddDevice() {
     setImeiErr(false);
     setBusy(true);
     const config = {
-      geofence: { enabled: geoOn, radius_m: Number(radius) },
+      // Canonical flat keys the alarm engine + command sync read.
+      geofence_enabled: geoOn,
+      geofence_radius_m: Number(radius),
       motion_sensitivity: Number(motion),
-      upload_interval: interval,
+      upload_interval_s: Number(interval),
+      wake_interval_sec: Number(wakeMin) * 60,
       mounting_notes: notes.trim() || null,
       install_photo: photo?.name || null,
     };
@@ -101,7 +108,7 @@ export default function AddDevice() {
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) { setErr(d.error || "Could not add device"); setBusy(false); return; }
-      setMsg(`Saved ${d.device?.device_id || previewId} — status: ${status} · sensitivity ${motion}/100${photo ? " · photo attached" : ""}`);
+      setMsg(`Saved ${d.device?.device_id || previewId} — status: ${status} · sensitivity ${motion}/50${photo ? " · photo attached" : ""}`);
       setBusy(false);
       // reset for the next device (same site/orientation keeps auto-numbering)
       setImei(""); setSim(""); setNotes(""); setPhoto(null);
@@ -200,12 +207,16 @@ export default function AddDevice() {
           {/* Sensor & reporting */}
           <div className={styles.card}>
             <div className={styles.cardHead}><span className={styles.chip} style={{ background: "#EDE9FE", color: "#7C3AED" }}><i className="ti ti-adjustments" /></span>Sensor &amp; reporting</div>
-            <label className={styles.lab}>Motion sensitivity <span className={styles.motVal}>{motion}</span> / 100</label>
-            <input type="range" min="1" max="100" value={motion} className={styles.slider} onChange={(e) => setMotion(Number(e.target.value))} />
+            <label className={styles.lab}>Motion sensitivity <span className={styles.motVal}>{motion}</span> / 50 · lower = more sensitive</label>
+            <input type="range" min="1" max="50" value={motion} className={styles.slider} onChange={(e) => setMotion(Number(e.target.value))} />
             <div className={styles.sliderEnds}><span>1 · saves battery</span><span>100 · detects smallest movement</span></div>
-            <label className={styles.lab}>Upload interval</label>
+            <label className={styles.lab}>Moving interval <span className={styles.op}>report cadence while awake</span></label>
             <select className={styles.in} value={interval} onChange={(e) => setIntervalV(e.target.value)}>
-              {INTERVALS.map((i) => <option key={i} value={i}>{i}</option>)}
+              {INTERVALS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+            <label className={styles.lab} style={{ marginTop: 12 }}>Wake-up interval <span className={styles.op}>sleep cadence · default 24 h</span></label>
+            <select className={styles.in} value={wakeMin} onChange={(e) => setWakeMin(e.target.value)}>
+              {WAKE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </div>
 

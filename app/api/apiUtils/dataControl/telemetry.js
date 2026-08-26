@@ -15,9 +15,9 @@ export async function insertTelemetry(r) {
           mems_valid, mems_x, mems_y, mems_z, roll, pitch, temperature,
           mcc, mnc, lac, cell_id, raw, src_ip, src_port,
           fix_valid, network_located, status_disturbance, status_low_batt,
-          mems_dynamic, cells, wifi, alarms, accuracy, loc_source, geo_error, geo_raw)
+          mems_dynamic, cells, wifi, alarms, accuracy, loc_source, geo_error, geo_raw, voltage)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,
-               $29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40)
+               $29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41)
        RETURNING id`,
       [
         r.deviceId, r.siteId, r.imei, r.deviceTime, r.fix, r.lat, r.lng, r.speed, r.course,
@@ -33,6 +33,7 @@ export async function insertTelemetry(r) {
         r.alarms ? JSON.stringify(r.alarms) : null,
         r.accuracy ?? null, r.locSource ?? null, r.geoError ?? null,
         r.geoRaw ? JSON.stringify(r.geoRaw) : null,
+        r.voltage ?? null,
       ]
     );
     return rows[0]?.id ?? null;
@@ -62,6 +63,22 @@ export async function insertTelemetry(r) {
     console.error("[telemetry] insert failed:", e.message);
     return null;
   }
+}
+
+// Recent raw voltage readings for a device (newest first), for the settled
+// (max-over-window) battery estimate. Empty on any error / missing column.
+export async function recentVoltages(deviceId, minutes = 2) {
+  if (!deviceId) return [];
+  try {
+    const { rows } = await query(
+      `SELECT voltage FROM device_telemetry
+        WHERE device_id = $1 AND voltage IS NOT NULL
+          AND received_at >= now() - ($2 || ' minutes')::interval
+        ORDER BY received_at DESC LIMIT 40`,
+      [deviceId, minutes]
+    );
+    return rows.map((r) => Number(r.voltage)).filter((x) => Number.isFinite(x));
+  } catch { return []; }
 }
 
 // Keep the devices row's live state in sync with the newest telemetry.

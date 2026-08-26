@@ -22,6 +22,7 @@ export async function GET(request) {
       status: searchParams.get("status") || undefined,
       q: searchParams.get("q") || undefined,
       includeClosed: searchParams.get("scope") === "all",
+      test: searchParams.get("test") || undefined,   // exclude (default) | only | all
       role: me.role,
       restrictCritical: perms.criticalOnly,
     });

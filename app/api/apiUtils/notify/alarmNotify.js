@@ -6,13 +6,13 @@
 // NOC and response teams, and any manually-typed alert emails/phones. Every send is
 // logged to `notifications`; if nothing could be delivered we raise a Medium
 // "Notification Failed To Send" alarm so the gap is visible.
-import { getSite } from "../dataControl/sites.js";
+import { getSite, getSitePolicy } from "../dataControl/sites.js";
 import { insertNotification } from "../dataControl/notifications.js";
 import { insertLiveAlarm } from "../dataControl/alarms.js";
+import { query } from "../s_env/db.js";
 import { sendEmail } from "./send-email.js";
 import { mosySendSMS } from "./send-sms.js";
-
-const APP_URL = process.env.APP_URL || "http://localhost:3000";
+import { getAppBaseUrl } from "./appUrl.js";
 
 const cleanPhone = (p) => String(p || "").replace(/[^\d+]/g, "");
 const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e || "").trim());
@@ -54,16 +54,19 @@ export function flattenSiteContacts(details) {
   for (const e of d.alerts?.emails || []) people.push({ name: "", emails: [e], phones: [], role: "Alert recipient" });
   for (const p of d.alerts?.sms || [])    people.push({ name: "", emails: [], phones: [p], role: "Alert recipient" });
 
-  // De-dupe by contact value; first name/role seen wins.
+  // De-dupe by contact value; first name/role seen wins. Each recipient carries a
+  // `security` flag (its role belongs to the security company) so non-critical
+  // alarms can exclude them — High/Medium/Low never reach the security company.
+  const isSecurity = (role) => /^security/i.test(String(role || ""));
   const emailMap = new Map(), phoneMap = new Map();
   for (const person of people) {
     for (const e of person.emails) {
       const v = String(e || "").trim().toLowerCase();
-      if (validEmail(v) && !emailMap.has(v)) emailMap.set(v, { value: v, name: person.name, role: person.role });
+      if (validEmail(v) && !emailMap.has(v)) emailMap.set(v, { value: v, name: person.name, role: person.role, security: isSecurity(person.role) });
     }
     for (const p of person.phones) {
       const v = cleanPhone(p);
-      if (validPhone(v) && !phoneMap.has(v)) phoneMap.set(v, { value: v, name: person.name, role: person.role });
+      if (validPhone(v) && !phoneMap.has(v)) phoneMap.set(v, { value: v, name: person.name, role: person.role, security: isSecurity(person.role) });
     }
   }
   return { emails: [...emailMap.values()], phones: [...phoneMap.values()] };
@@ -89,19 +92,31 @@ const fmtEAT = (v) => {
   } catch { return ""; }
 };
 
-function buildMessages(alarm, siteName) {
+// Per-severity presentation for the alert (emoji + banner colour + label).
+// Must match ALARM_SEVERITY_COLOR in app/mainapp/lib/googleMaps.js (the alarms-map
+// colours) so the email banner equals what the operator sees in the app.
+const PRIO = {
+  Critical: { emoji: "🔴", color: "#EF4444", label: "CRITICAL" },
+  High:     { emoji: "🟠", color: "#F59E0B", label: "HIGH" },
+  Medium:   { emoji: "🔵", color: "#2E6CF5", label: "MEDIUM" },
+  Low:      { emoji: "⚪", color: "#94A3B8", label: "LOW" },
+};
+function prioMeta(p) { return PRIO[p] || PRIO.Medium; }
+
+function buildMessages(alarm, siteName, baseUrl) {
+  const m = prioMeta(alarm.priority);
   const when = fmtEAT(alarm.created_at);
   const where = siteName || alarm.site || "site";
   const dev = alarm.device_id || alarm.serial || "device";
-  const link = `${APP_URL}/mainapp/alarms/${encodeURIComponent(alarm.id)}`;
-  const subject = `🔴 CRITICAL: ${alarm.name} — ${where}`;
+  const link = `${baseUrl}/mainapp/alarms/${encodeURIComponent(alarm.id)}`;
+  const subject = `${m.emoji} ${m.label}: ${alarm.name} — ${where}`;
   const text =
-    `CRITICAL ALARM\n${alarm.name}\nSite: ${where}\nDevice: ${dev}\nTime: ${when}\n\n` +
+    `${m.label} ALARM\n${alarm.name}\nSite: ${where}\nDevice: ${dev}\nTime: ${when}\n\n` +
     `Open the alarm: ${link}`;
   const html =
     `<div style="font-family:system-ui,-apple-system,'Segoe UI',Arial,sans-serif;color:#0F274A;line-height:1.6;font-size:14px">
-       <div style="background:#EF4444;color:#fff;font-weight:800;padding:10px 14px;border-radius:10px;display:inline-block">
-         🔴 CRITICAL ALARM
+       <div style="background:${m.color};color:#fff;font-weight:800;padding:10px 14px;border-radius:10px;display:inline-block">
+         ${m.emoji} ${m.label} ALARM
        </div>
        <h2 style="margin:14px 0 6px;font-size:18px">${alarm.name}</h2>
        <table style="border-collapse:collapse;font-size:14px">
@@ -113,22 +128,166 @@ function buildMessages(alarm, siteName) {
        <p style="color:#94A3B8;font-size:12px">You are receiving this because you are a registered contact for ${where} on AssetGuard.</p>
      </div>`;
   // SMS: short, no HTML.
-  const sms = `CRITICAL: ${alarm.name}. Site: ${where}. Device: ${dev}. ${when}. ${link}`;
+  const sms = `${m.label}: ${alarm.name}. Site: ${where}. Device: ${dev}. ${when}. ${link}`;
   return { subject, text, html, sms };
 }
 
 /**
- * Notify every site contact about a raised CRITICAL alarm (email + SMS).
- * Best-effort and self-contained: it never throws to the caller.
- * @param {object} alarm  the inserted alarm row (must be Critical + Open)
- * @param {{siteId?:number}} opts
+ * Disturbance EARLY WARNING (the 2nd/3rd report of the day) — send SMS + email to
+ * the site's contacts WITHOUT raising a system alarm. Disturbance is critical-tier,
+ * so the security company IS included. Logged to the notifications table (alarm_id
+ * null) so it's counted and visible on the Notifications page.
  */
-export async function notifyAlarmRaised(alarm, { siteId } = {}) {
+export async function notifyDisturbanceEarly({ deviceIdText, serial, site, siteId, at, count, threshold, deviceStatus, deviceArmed, deviceMuteUntil }) {
   try {
-    if (!alarm || alarm.priority !== "Critical") return { skipped: true };
-    const { site, emails, phones } = await resolveSiteAlertRecipients(siteId ?? null);
+    // Respect site + device monitoring policy: no early warnings while disarmed,
+    // muted, or under test (Testing/Maintenance) — handled at raise time instead.
+    const pol = (siteId != null ? await getSitePolicy(siteId).catch(() => null) : null) || {};
+    const devTesting = /^(testing|maintenance)$/i.test(String(deviceStatus || ""));
+    const devMuted = !!deviceMuteUntil && Date.parse(deviceMuteUntil) > Date.now();
+    if (pol.armed === false || deviceArmed === false || pol.muted || devMuted || pol.testing || devTesting) {
+      console.log(`[notify] disturbance early-warning skipped for ${site || siteId} (site/device policy)`);
+      return { skipped: true };
+    }
+    // User-facing numbering: the 1st disturbance is ignored, so the warnings are
+    // relabelled 1/3, 2/3 (the alarm is the final, 3rd step). No confusing "of 4".
+    const total = Math.max(2, (Number(threshold) || 4) - 1);   // 3
+    const step = Math.min(total, Math.max(1, (Number(count) || 2) - 1)); // #2→1, #3→2
+    const { site: siteRow, emails, phones } = await resolveSiteAlertRecipients(siteId ?? null);
+    const siteName = siteRow?.name || site || null;
+    if (!emails.length && !phones.length) {
+      await insertNotification({
+        alarmId: null, site: siteName, siteId: siteRow?.id ?? siteId ?? null, deviceId: deviceIdText || null,
+        priority: "Critical", channel: "none", recipient: "—",
+        name: "No contacts for disturbance warning", role: null, status: "no_contact",
+        subject: `Disturbance warning ${step}/${total}`,
+        error: siteRow ? "Add contacts to this site." : "Device not linked to a site.",
+      });
+      return { attempted: 0, delivered: 0, noContact: true };
+    }
+    const baseUrl = await getAppBaseUrl();
+    const where = siteName || "site";
+    const dev = deviceIdText || serial || "device";
+    // Use SERVER time (EAT), not the device clock (`at`), which is often 3h off.
+    const when = fmtEAT(Date.now());
+    const link = `${baseUrl}/mainapp/track?device=${encodeURIComponent(deviceIdText || "")}`;
+    const subject = `⚠️ Disturbance warning ${step}/${total} — ${where}`;
+    const text = `DISTURBANCE WARNING ${step}/${total}\n${dev} at ${where}\nTime: ${when}\n` +
+      `Track: ${link}`;
+    const html =
+      `<div style="font-family:system-ui,-apple-system,'Segoe UI',Arial,sans-serif;color:#0F274A;line-height:1.6;font-size:14px">
+         <div style="background:#F59E0B;color:#fff;font-weight:800;padding:10px 14px;border-radius:10px;display:inline-block">⚠️ DISTURBANCE WARNING ${step}/${total}</div>
+         <h2 style="margin:14px 0 6px;font-size:18px">${dev}</h2>
+         <table style="border-collapse:collapse;font-size:14px">
+           <tr><td style="color:#64748B;padding:2px 12px 2px 0">Site</td><td><b>${where}</b></td></tr>
+           <tr><td style="color:#64748B;padding:2px 12px 2px 0">Time</td><td>${when}</td></tr>
+         </table>
+         <p style="margin:12px 0;color:#334155">Disturbance warning ${step} of ${total}. If it continues, a full alarm is raised on ${total}/${total}.</p>
+         <p style="margin:12px 0"><a href="${link}" style="background:#14315D;color:#fff;text-decoration:none;padding:10px 16px;border-radius:9px;font-weight:700">Track device</a></p>
+       </div>`;
+    const sms = `DISTURBANCE WARNING ${step}/${total}: ${dev} at ${where}. ${when}. Track: ${link}`;
+
+    const base = { alarmId: null, site: siteName, siteId: siteRow?.id ?? siteId ?? null, deviceId: deviceIdText || null, priority: "Critical", subject };
+    let attempted = 0, delivered = 0;
+    const jobs = [
+      ...emails.map((r) => (async () => {
+        attempted++; let status = "sent", error = null;
+        try { const res = await sendEmail(r.value, subject, text, html); if (res.status === "success") delivered++; else { status = "failed"; error = res.message; } }
+        catch (e) { status = "failed"; error = e?.message || "send error"; }
+        await insertNotification({ ...base, channel: "email", recipient: r.value, name: r.name, role: r.role, status, error });
+      })()),
+      ...phones.map((r) => (async () => {
+        attempted++; let status = "sent", error = null;
+        try { const res = await mosySendSMS(r.value, sms); if (res.status === "success") delivered++; else { status = "failed"; error = res.message; } }
+        catch (e) { status = "failed"; error = e?.message || "send error"; }
+        await insertNotification({ ...base, channel: "sms", recipient: r.value, name: r.name, role: r.role, status, error });
+      })()),
+    ];
+    await Promise.all(jobs);
+    console.log(`[notify] disturbance early-warning ${count}/${threshold} for ${siteName || "site"} → ${delivered}/${attempted}`);
+    return { attempted, delivered };
+  } catch (e) {
+    console.error("[notify] notifyDisturbanceEarly error:", e?.message || e);
+    return { error: e?.message || "notify error" };
+  }
+}
+
+// A site/device in Testing or Maintenance turns real events into TEST alarms:
+// "<name> – test", Low priority, routed only to NOC + field technicians. A muted
+// site downgrades alarms to Low. Both persist the change to the alarm row so the
+// alarms list/dashboard reflect it. Returns the (possibly modified) alarm.
+const TEST_SUFFIX = " – test";
+const isTestRole = (role) => /noc|response|field|technician/i.test(String(role || ""));
+
+async function applyAlarmPolicy(alarm, { toLow, asTest }) {
+  let name = alarm.name || "";
+  let priority = alarm.priority;
+  if (asTest && !name.includes(TEST_SUFFIX.trim())) name = `${name}${TEST_SUFFIX}`;
+  if (toLow) priority = "Low";
+  const tag = asTest;   // mark test alarms with source='test' (drill mode + de-dupe exclusion)
+  if (name === alarm.name && priority === alarm.priority && !tag) return alarm;
+  try {
+    if (tag) await query(`UPDATE alarms SET name = $2, priority = $3, source = 'test' WHERE id = $1`, [alarm.id, name, priority]);
+    else await query(`UPDATE alarms SET name = $2, priority = $3 WHERE id = $1`, [alarm.id, name, priority]);
+  } catch (e) { console.error("[notify] policy relabel error:", e?.message || e); }
+  return { ...alarm, name, priority, ...(tag ? { source: "test" } : {}) };
+}
+
+/**
+ * Notify every site contact about a raised alarm (email + SMS), applying the
+ * site's monitoring policy first:
+ *   • DISARMED  → record the alarm but page nobody.
+ *   • TESTING/MAINTENANCE (site or device) → relabel "… – test", Low, and route
+ *     only to the NOC + field technicians.
+ *   • MUTED     → downgrade to Low (normal Low routing; no critical paging).
+ * Best-effort and self-contained: it never throws to the caller.
+ * @param {object} alarm  the inserted alarm row
+ * @param {{siteId?:number, deviceStatus?:string}} opts
+ */
+export async function notifyAlarmRaised(alarm, { siteId, deviceStatus, deviceArmed, deviceMuteUntil, forceTest = false } = {}) {
+  try {
+    if (!alarm) return { skipped: true };
+
+    // Merge SITE policy with per-DEVICE overrides — most-restrictive wins.
+    // forceTest (a manual "Send test alarm") always behaves as a test regardless.
+    const policy = (siteId != null ? await getSitePolicy(siteId).catch(() => null) : null) || {};
+    const devTesting = /^(testing|maintenance)$/i.test(String(deviceStatus || ""));
+    const deviceMuted = !!deviceMuteUntil && Date.parse(deviceMuteUntil) > Date.now();
+    const testing = forceTest || !!policy.testing || devTesting;
+    const disarmed = !forceTest && (policy.armed === false || deviceArmed === false);
+    const muted = !forceTest && (!!policy.muted || deviceMuted) && !testing;
+
+    const { site, emails: rawEmails, phones: rawPhones } = await resolveSiteAlertRecipients(siteId ?? null);
     const siteName = site?.name || alarm.site || null;
-    const msg = buildMessages(alarm, siteName);
+
+    // DISARMED: monitoring is off — keep the alarm on record, notify no one.
+    if (disarmed) {
+      await insertNotification({
+        alarmId: alarm.id, incidentId: alarm.incident_id || null, site: siteName,
+        siteId: site?.id ?? siteId ?? null, deviceId: alarm.device_id || null,
+        priority: alarm.priority, channel: "none", recipient: "—",
+        name: "Monitoring disarmed — alarm recorded, not paged", role: null,
+        status: "suppressed", subject: `${alarm.name} (disarmed)`,
+        error: "This site is disarmed. Arm monitoring to resume alarm notifications.",
+      }).catch(() => {});
+      console.log(`[notify] alarm ${alarm.id} SUPPRESSED — site ${siteName || siteId} disarmed`);
+      return { attempted: 0, delivered: 0, disarmed: true };
+    }
+
+    // TESTING → test alarm (Low, NOC+field only). MUTED → Low.
+    if (testing || muted) alarm = await applyAlarmPolicy(alarm, { toLow: true, asTest: testing });
+
+    const isCritical = alarm.priority === "Critical";
+    // Routing:
+    //  • test alarms go ONLY to NOC + field technicians (both monitoring & security side)
+    //  • otherwise every contact EXCEPT the security company on non-critical alarms.
+    const emails = testing ? rawEmails.filter((r) => isTestRole(r.role))
+                 : isCritical ? rawEmails : rawEmails.filter((r) => !r.security);
+    const phones = testing ? rawPhones.filter((r) => isTestRole(r.role))
+                 : isCritical ? rawPhones : rawPhones.filter((r) => !r.security);
+    const excludedSecurity = (rawEmails.length + rawPhones.length) - (emails.length + phones.length);
+    const baseUrl = await getAppBaseUrl();
+    const msg = buildMessages(alarm, siteName, baseUrl);
 
     const base = {
       alarmId: alarm.id, incidentId: alarm.incident_id || null, site: siteName,
@@ -139,15 +298,23 @@ export async function notifyAlarmRaised(alarm, { siteId } = {}) {
     // ALWAYS leave a trace, even when nobody is registered — so the operator can see
     // the alarm fired a notification and WHY nothing went out (empty contacts).
     if (emails.length === 0 && phones.length === 0) {
+      const onlySecurityExcluded = !!site && excludedSecurity > 0 && !testing;
       await insertNotification({
         ...base, channel: "none", recipient: "—",
-        name: site ? "No contacts registered for this site" : "Site not found for this alarm",
+        name: !site ? "Site not found for this alarm"
+          : testing ? "No NOC / field-technician contacts for test alarm"
+          : onlySecurityExcluded ? "Only security-company contacts — skipped for non-critical alarm"
+          : "No contacts registered for this site",
         role: null, status: "no_contact",
-        error: site
-          ? "Add alert contacts to this site (Sites → edit → contacts / alert recipients) so critical alarms can reach someone."
-          : "The alarm's device is not linked to a site, so no contacts could be resolved.",
+        error: !site
+          ? "The alarm's device is not linked to a site, so no contacts could be resolved."
+          : testing
+            ? "Test alarms only reach NOC + field technicians. Add a Monitoring NOC / response contact to this site."
+          : onlySecurityExcluded
+            ? `This ${alarm.priority} alarm does not notify the security company. Add client/monitoring contacts to reach someone on High/Medium/Low alarms.`
+            : "Add alert contacts to this site (Sites → edit → contacts / alert recipients) so alarms can reach someone.",
       });
-      console.log(`[notify] alarm ${alarm.id} (${alarm.name}) → NO CONTACTS for ${siteName || "site"} (logged as no_contact)`);
+      console.log(`[notify] alarm ${alarm.id} (${alarm.name}, ${alarm.priority}) → NO RECIPIENTS for ${siteName || "site"}${onlySecurityExcluded ? " (security-only, excluded)" : ""}`);
       return { attempted: 0, delivered: 0, noContact: true };
     }
 
@@ -175,9 +342,9 @@ export async function notifyAlarmRaised(alarm, { siteId } = {}) {
 
     await Promise.all([...emailJobs, ...smsJobs]);
 
-    // If there WERE recipients but nothing could be delivered, surface it as a
-    // Medium alarm so operators know the critical alert didn't reach anyone.
-    if (attempted > 0 && delivered === 0) {
+    // If a CRITICAL alert reached no one despite having recipients, surface it as a
+    // Medium alarm. (We don't escalate for High/Medium/Low to avoid alarm noise.)
+    if (isCritical && attempted > 0 && delivered === 0) {
       try {
         await insertLiveAlarm({
           alarmType: "NOTIFICATION_FAILED",

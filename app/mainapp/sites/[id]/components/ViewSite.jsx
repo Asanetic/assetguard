@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./viewsite.module.css";
-import { fetchMapsConfig, loadGoogleMaps, sitePinIcon } from "../../../lib/googleMaps.js";
+import { fetchMapsConfig, loadGoogleMaps, sitePinIcon, createWaveOverlay } from "../../../lib/googleMaps.js";
 
 // Status pill colours (prototype agStatusColour).
 const STATUS = {
@@ -30,7 +30,7 @@ function fmtDate(v) {
   try {
     const d = new Date(v);
     if (isNaN(d)) return String(v);
-    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    return d.toLocaleDateString("en-GB", { timeZone: "Africa/Nairobi", day: "2-digit", month: "short", year: "numeric" });
   } catch { return String(v); }
 }
 
@@ -43,9 +43,30 @@ function Detail({ label, value, sub }) {
   );
 }
 
+const ST_COLORS = { live: "#10B981", offline: "#EF4444", testing: "#F59E0B", inactive: "#8B5CF6", maintenance: "#0EA5E9" };
+const stColor = (s) => ST_COLORS[String(s || "").toLowerCase()] || "#64748B";
+const SEV = { Critical: "#EF4444", High: "#F59E0B", Medium: "#2E6CF5", Low: "#94A3B8" };
+const sevColor = (p) => SEV[p] || "#94A3B8";
+function relAgo(v) {
+  if (!v) return "never";
+  const s = Math.max(0, (Date.now() - new Date(v).getTime()) / 1000);
+  if (s < 60) return "just now";
+  const m = Math.round(s / 60); if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60); if (h < 24) return `${h}h ago`;
+  return `${Math.round(h / 24)}d ago`;
+}
+function fmtEATshort(v) {
+  if (!v) return "";
+  try { return new Date(v).toLocaleString("en-GB", { timeZone: "Africa/Nairobi", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) + " EAT"; }
+  catch { return ""; }
+}
+const rowCard = { display: "flex", alignItems: "center", gap: 11, width: "100%", textAlign: "left", background: "#fff", border: "1px solid #eef2f7", borderRadius: 10, padding: "10px 13px", cursor: "pointer", fontFamily: "inherit" };
+
 export default function ViewSite({ id }) {
   const router = useRouter();
   const [site, setSite] = useState(null);
+  const [devices, setDevices] = useState([]);
+  const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [mapState, setMapState] = useState({ status: "idle", msg: "" }); // idle|ok|nokey|noloc|error
@@ -58,7 +79,12 @@ export default function ViewSite({ id }) {
         const res = await fetch(`/api/mainapp/sites/${id}`, { cache: "no-store" });
         if (res.status === 404) { if (alive) { setNotFound(true); setLoading(false); } return; }
         const data = await res.json();
-        if (alive) { setSite(data.site || null); setLoading(false); }
+        if (alive) {
+          setSite(data.site || null);
+          setDevices(Array.isArray(data.devices) ? data.devices : []);
+          setActivity(Array.isArray(data.activity) ? data.activity : []);
+          setLoading(false);
+        }
       } catch { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
@@ -91,9 +117,21 @@ export default function ViewSite({ id }) {
           center: coords, zoom: 15,
           mapTypeId: cfg.mapType || "roadmap", streetViewControl: false, fullscreenControl: true,
           mapTypeControl: true,
-          mapTypeControlOptions: { style: maps.MapTypeControlStyle.HORIZONTAL_BAR, position: maps.ControlPosition.BOTTOM_LEFT },
+          // Map / Satellite toggle to the TOP-RIGHT so it never overlaps the
+          // coordinates chip (bottom-left).
+          mapTypeControlOptions: { style: maps.MapTypeControlStyle.HORIZONTAL_BAR, position: maps.ControlPosition.TOP_RIGHT },
+          // +/- zoom buttons, bottom-right (clear of the coordinates chip).
+          zoomControl: true,
+          zoomControlOptions: { position: maps.ControlPosition.RIGHT_BOTTOM },
         });
         new maps.Marker({ position: coords, map, title: site.name, icon: sitePinIcon(maps, site.status) });
+        // Live site → transmitting waves pulsing around the marker.
+        if (String(site.status || "").toLowerCase() === "live") {
+          try {
+            const wave = createWaveOverlay(maps, map, styles.wave);
+            wave.setPoints([{ lat: coords.lat, lng: coords.lng, color: "#10b981" }]);
+          } catch {}
+        }
         // ensure it renders at the right size after mount
         maps.event.trigger(map, "resize");
         map.setCenter(coords);
@@ -203,13 +241,32 @@ export default function ViewSite({ id }) {
       <div className={styles.sec}>
         <div className={styles.sech}>
           <span className={styles.chip} style={{ background: "#fef3c7", color: "#b45309" }}><i className="ti ti-cpu" /></span>
-          Installed devices <span className={styles.count}>{site.devices ?? 0}</span>
+          Installed devices <span className={styles.count}>{devices.length}</span>
           <button className={styles.link} onClick={() => router.push("/mainapp/devices")}>View all devices</button>
         </div>
-        <div className={styles.empty}>
-          {site.devices ? `${site.devices} device(s) registered — the per-site device list appears here once the Devices module is connected.`
-                         : "No devices registered to this site yet."}
-        </div>
+        {devices.length === 0 ? (
+          <div className={styles.empty}>No devices registered to this site yet.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {devices.map((d) => {
+              const c = stColor(d.status);
+              const batt = d.battery;
+              const bColor = batt == null ? "#94a3b8" : batt <= 10 ? "#ef4444" : batt <= 20 ? "#f59e0b" : "#10b981";
+              return (
+                <button key={d.id} style={rowCard} onClick={() => router.push(`/mainapp/devices/view?device=${encodeURIComponent(d.device_id || d.imei)}`)}>
+                  <span style={{ width: 10, height: 10, borderRadius: 3, background: c, flex: "none" }} />
+                  <span style={{ fontWeight: 800, color: "#0f274a" }}>{d.device_id || d.imei}</span>
+                  <span style={{ color: c, fontSize: 12, fontWeight: 700 }}>{d.status || "—"}</span>
+                  <span style={{ marginLeft: "auto", display: "flex", gap: 16, alignItems: "center", color: "#64748b", fontSize: 12.5, whiteSpace: "nowrap" }}>
+                    <span style={{ color: bColor, fontWeight: 700 }}><i className="ti ti-battery-2" style={{ marginRight: 3 }} />{batt != null ? `${batt}%` : "—"}</span>
+                    <span>seen {relAgo(d.last_seen)}</span>
+                    <i className="ti ti-chevron-right" style={{ color: "#cbd5e1" }} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* recent activity */}
@@ -217,19 +274,69 @@ export default function ViewSite({ id }) {
         <div className={styles.sech}>
           <span className={styles.chip} style={{ background: "#e0f2fe", color: "#0284c7" }}><i className="ti ti-history" /></span>
           Recent activity
-          <button className={styles.link} onClick={() => router.push("/mainapp/admin/audit")}>Open audit log</button>
+          <button className={styles.link} onClick={() => router.push("/mainapp/alarms")}>All alarms</button>
         </div>
-        <div className={styles.empty}>No recent activity recorded for this site yet.</div>
+        {activity.length === 0 ? (
+          <div className={styles.empty}>No recent activity recorded for this site yet.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {activity.map((a) => {
+              const c = sevColor(a.priority);
+              const closed = String(a.status || "").toLowerCase() === "closed";
+              return (
+                <button key={a.id} style={rowCard} onClick={() => router.push(`/mainapp/alarms/${encodeURIComponent(a.id)}`)}>
+                  <span style={{ width: 30, height: 30, borderRadius: 8, background: `${c}1a`, color: c, display: "grid", placeItems: "center", flex: "none" }}><i className="ti ti-alert-triangle" style={{ fontSize: 15 }} /></span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block", fontWeight: 700, color: "#0f274a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</span>
+                    <span style={{ display: "block", fontSize: 11.5, color: "#94a3b8" }}>{a.device_id || ""} · {fmtEATshort(a.created_at)}</span>
+                  </span>
+                  <span style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center", flex: "none" }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: c }}>{a.priority}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: closed ? "#047857" : "#b45309", background: closed ? "#d1fae5" : "#fef3c7", borderRadius: 999, padding: "2px 9px" }}>{closed ? "Closed" : (a.status || "Open")}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* photos */}
-      <div className={styles.sec}>
-        <div className={styles.sech}>
-          <span className={styles.chip} style={{ background: "#ede9fe", color: "#7c3aed" }}><i className="ti ti-photo" /></span>
-          Site photos
-        </div>
-        <div className={styles.empty}>No photos uploaded yet.</div>
-      </div>
+      {/* photos — installation photos of the site's devices */}
+      {(() => {
+        const shots = [];
+        for (const d of devices) {
+          const p = d.config?.install_photo;
+          if (p) shots.push({ id: d.id, label: d.device_id || d.imei, src: /^data:|^https?:/.test(String(p)) ? p : null, name: String(p) });
+        }
+        const sitePhotos = Array.isArray(site.details?.photos) ? site.details.photos : [];
+        for (let i = 0; i < sitePhotos.length; i++) { const p = sitePhotos[i]; shots.push({ id: `s${i}`, label: "Site photo", src: /^data:|^https?:/.test(String(p)) ? p : null, name: String(p) }); }
+        return (
+          <div className={styles.sec}>
+            <div className={styles.sech}>
+              <span className={styles.chip} style={{ background: "#ede9fe", color: "#7c3aed" }}><i className="ti ti-photo" /></span>
+              Site photos <span className={styles.count}>{shots.length}</span>
+            </div>
+            {shots.length === 0 ? (
+              <div className={styles.empty}>No photos uploaded yet.</div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12 }}>
+                {shots.map((s) => (
+                  <div key={s.id} style={{ border: "1px solid #eef2f7", borderRadius: 12, overflow: "hidden", background: "#fff" }}>
+                    <div style={{ aspectRatio: "4/3", background: "#f1f5f9", display: "grid", placeItems: "center", overflow: "hidden" }}>
+                      {s.src ? <img src={s.src} alt={s.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                             : <i className="ti ti-camera" style={{ fontSize: 30, color: "#cbd5e1" }} />}
+                    </div>
+                    <div style={{ padding: "8px 10px", fontSize: 12 }}>
+                      <div style={{ fontWeight: 700, color: "#0f274a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.label}</div>
+                      <div style={{ color: "#94a3b8", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.src ? "" : s.name}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

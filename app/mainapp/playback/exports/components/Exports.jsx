@@ -10,10 +10,10 @@ import styles from "./exports.module.css";
 import { subscribeExports, removeExport } from "../../../lib/exportsStore.js";
 
 function fmtDate(d) {
-  try { return new Date(d + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }); }
+  try { return new Date(d + "T12:00:00Z").toLocaleDateString("en-GB", { timeZone: "Africa/Nairobi", day: "2-digit", month: "short", year: "numeric" }); }
   catch { return d || "—"; }
 }
-function fmtStamp(iso) { try { return new Date(iso).toLocaleString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch { return ""; } }
+function fmtStamp(iso) { try { return new Date(iso).toLocaleString("en-GB", { timeZone: "Africa/Nairobi", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }); } catch { return ""; } }
 
 export default function Exports() {
   const [rows, setRows] = useState([]);

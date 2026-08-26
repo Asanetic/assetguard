@@ -11,23 +11,27 @@ const STATUS = [
   { key: "live", label: "Live & reporting", color: "#10B981" },
   { key: "offline", label: "Offline", color: "#EF4444" },
   { key: "testing", label: "Testing mode", color: "#F59E0B" },
-  { key: "maintenance", label: "Maintenance", color: "#8B5CF6" },
-  { key: "pending", label: "Pending", color: "#94A3B8" },
+  { key: "maintenance", label: "Maintenance", color: "#0EA5E9" },
+  { key: "inactive", label: "Inactive", color: "#8B5CF6" },
 ];
 
-// alarm_type → friendly category label + severity colour (mirrors LIVE_META).
+// alarm_type → friendly label + SEVERITY colour (matches the alarms model:
+// Critical #EF4444 · High #F59E0B · Medium #2E6CF5 · Low #94A3B8).
 const CATEGORY = {
+  // Critical (red)
   DISTURBANCE:          { label: "Disturbance", color: "#EF4444" },
-  DISTURBANCE_TECH:     { label: "Disturbance — tech on site", color: "#0EA5E9" },
   GEOFENCE_EXIT:        { label: "Geofence violation", color: "#EF4444" },
   CRITICAL_MOTION:      { label: "Critical motion", color: "#EF4444" },
-  CRITICAL_LOW_BATTERY: { label: "Critical low battery", color: "#F59E0B" },
-  LOW_BATTERY:          { label: "Low battery", color: "#F59E0B" },
-  HIGH_TEMPERATURE:     { label: "High temperature", color: "#F59E0B" },
+  // High (amber)
   DEVICE_OFFLINE:       { label: "Device offline", color: "#F59E0B" },
-  LOW_DATA:             { label: "Low data", color: "#8B5CF6" },
-  NOTIFICATION_FAILED:  { label: "Notification failed", color: "#8B5CF6" },
-  OTHER:                { label: "Other", color: "#6366F1" },
+  CRITICAL_LOW_BATTERY: { label: "Critical low battery", color: "#F59E0B" },
+  HIGH_TEMPERATURE:     { label: "High temperature", color: "#F59E0B" },
+  // Medium (blue)
+  LOW_BATTERY:          { label: "Low battery", color: "#2E6CF5" },
+  LOW_DATA:             { label: "Low data", color: "#2E6CF5" },
+  NOTIFICATION_FAILED:  { label: "Notification failed", color: "#2E6CF5" },
+  // Low (grey)
+  DISTURBANCE_TECH:     { label: "Disturbance — tech on site", color: "#94A3B8" },
 };
 
 function relTime(v) {
@@ -44,6 +48,33 @@ function fmtEAT(v) {
   try { return new Date(v).toLocaleString("en-GB", { timeZone: "Africa/Nairobi", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) + " EAT"; }
   catch { return ""; }
 }
+
+// Availability grading — same bands as the mobile app.
+const GRADES = [
+  { label: "Excellent", min: 99.5, color: "#10B981" },
+  { label: "Good",      min: 99,   color: "#22C55E" },
+  { label: "Fair",      min: 97,   color: "#F59E0B" },
+  { label: "Poor",      min: 93,   color: "#F97316" },
+  { label: "Critical",  min: 0,    color: "#EF4444" },
+];
+function grade(p) { const v = Number(p) || 0; return GRADES.find((g) => v >= g.min) || GRADES[GRADES.length - 1]; }
+function availColor(p) { return grade(p).color; }
+function availWord(p) { return grade(p).label; }
+// Heat colour for a count relative to the worst (max) — red = worst, green = lowest.
+function heatColor(n, max) {
+  const r = max > 0 ? (Number(n) || 0) / max : 0;
+  if (r >= 0.8) return "#EF4444";
+  if (r >= 0.6) return "#F97316";
+  if (r >= 0.4) return "#F59E0B";
+  if (r >= 0.2) return "#84CC16";
+  if (r > 0)    return "#22C55E";
+  return "#CBD5E1";
+}
+const tabBtn = (on) => ({
+  border: on ? "1px solid #2E6CF5" : "1px solid #E2E8F0", background: on ? "#2E6CF5" : "#fff",
+  color: on ? "#fff" : "#334155", borderRadius: 8, padding: "4px 11px", fontSize: 12, fontWeight: 700,
+  cursor: "pointer", fontFamily: "inherit",
+});
 
 export default function Dashboard() {
   const [d, setD] = useState(null);
@@ -74,21 +105,20 @@ export default function Dashboard() {
   const segs = STATUS.map((s) => ({ ...s, value: dev[s.key] || 0 }));
 
   // Every alarm category, even ones with zero alarms.
+  // Only the defined alarm catalogue, in this fixed severity order — no "Other"
+  // bucket and no stray/unknown alarm_type rows.
   const catMap = Object.fromEntries((d.byCategory || []).map((c) => [c.alarm_type, c]));
-  const catList = Object.keys(CATEGORY).filter((k) => k !== "OTHER")
-    .map((k) => catMap[k] || { alarm_type: k, n: 0, open: 0 });
-  for (const c of (d.byCategory || [])) if (!CATEGORY[c.alarm_type]) catList.push(c); // unknown types
-  if (catMap.OTHER) catList.push(catMap.OTHER);
+  const catList = Object.keys(CATEGORY).map((k) => catMap[k] || { alarm_type: k, n: 0, open: 0 });
   catList.sort((a, b) => (b.n || 0) - (a.n || 0)); // busiest first, zeros last
 
   // Selected notifications-activity range (supports both the new {today,week,…}
   // shape and the older flat {sms,email,push} shape for safety).
   const A = (d.activity && (d.activity[actRange] || d.activity)) || {};
   const kpis = [
-    { label: "Total sites", value: d.sites?.total ?? 0, sub: d.sites?.addedThisMonth ? `↑ ${d.sites.addedThisMonth} added this month` : "—", icon: "ti-map-pin", color: "#2E6CF5", href: "/mainapp/sites" },
+    { label: "Total sites", value: d.sites?.total ?? 0, sub: d.sites?.addedThisMonth ? `↑ ${d.sites.addedThisMonth} added this month` : "—", subColor: d.sites?.addedThisMonth ? "#10B981" : undefined, icon: "ti-map-pin", color: "#2E6CF5", href: "/mainapp/sites" },
     { label: "Active devices", value: dev.live ?? 0, sub: `${dev.offline ?? 0} offline`, icon: "ti-cpu", color: "#10B981", href: "/mainapp/devices" },
-    { label: "Open alarms", value: d.alarms?.open ?? 0, sub: `${d.alarms?.critical ?? 0} critical`, icon: "ti-bell-ringing", color: "#EF4444", href: "/mainapp/alarms" },
-    { label: "Total users", value: d.users?.total ?? 0, sub: d.users?.pending ? `${d.users.pending} awaiting approval` : "—", icon: "ti-users", color: "#8B5CF6", href: "/mainapp/admin/users" },
+    { label: "Open alarms", value: d.alarms?.open ?? 0, sub: `${d.alarms?.critical ?? 0} critical`, subColor: (d.alarms?.critical ?? 0) > 0 ? "#EF4444" : undefined, icon: "ti-bell-ringing", color: "#EF4444", href: "/mainapp/alarms" },
+    { label: "Total users", value: d.users?.total ?? 0, sub: d.users?.pending ? `${d.users.pending} awaiting approval` : "—", icon: "ti-users", color: "#2E6CF5", href: "/mainapp/admin/users" },
   ];
 
   const T = d.telemetryToday || {};
@@ -120,7 +150,7 @@ export default function Dashboard() {
             <div className={styles.kpiBody}>
               <div className={styles.kpiLabel}>{k.label}</div>
               <div className={styles.kpiValue}>{k.value}</div>
-              <div className={styles.kpiSub}>{k.sub}</div>
+              <div className={styles.kpiSub} style={k.subColor ? { color: k.subColor } : null}>{k.sub}</div>
             </div>
             <div className={styles.kpiIcon} style={{ background: `${k.color}1a`, color: k.color }}><i className={`ti ${k.icon}`} /></div>
           </a>
@@ -209,25 +239,23 @@ export default function Dashboard() {
           </span>
         </div>
         <div className={styles.cols2}>
-          <HealthChart title="Platform uptime" sub="server online — 100% minus time the server was down" series={health?.platformUptime} summary={health?.summary?.platformUptime} color="#2E6CF5" />
-          <HealthChart title="Device availability" sub="installed devices online — 100% minus time devices were offline" series={health?.deviceAvailability} summary={health?.summary?.deviceAvailability} color="#10B981" />
+          <HealthChart title="Platform uptime" sub="server online — 10-min resolution · 100% minus time the app was down" series={health?.platformUptime} summary={health?.summary?.platformUptime} />
+          <HealthChart title="Device availability" sub="installed devices online — 100% minus time devices were offline" series={health?.deviceAvailability} summary={health?.summary?.deviceAvailability} />
         </div>
+        <GradingLegend />
       </div>
 
       {/* charts */}
-      <div className={styles.card}>
-        <div className={styles.cardHead}>Alarms by month<a className={styles.viewAll} href="/mainapp/alarms">View all →</a><span className={styles.since}>last 12 months</span></div>
-        <BarsV data={d.byMonth || []} color="#2E6CF5" tall />
-      </div>
+      <AlarmTimeChart byHour={d.byHour || []} byDay={d.byDay || []} byMonth={d.byMonth || []} />
 
       <div className={styles.cols2}>
         <div className={styles.card}>
-          <div className={styles.cardHead}>Alarms by site<a className={styles.viewAll} href="/mainapp/alarms">View all →</a><span className={styles.since}>top 10</span></div>
-          <BarsH data={(d.bySite || []).map((r) => ({ label: r.site, n: r.n }))} color="#F59E0B" />
+          <div className={styles.cardHead}>Alarms by site<a className={styles.viewAll} href="/mainapp/alarms">View all →</a><span className={styles.since}>top 10 · red = most</span></div>
+          <BarsH data={(d.bySite || []).map((r) => ({ label: r.site, n: r.n }))} heat />
         </div>
         <div className={styles.card}>
-          <div className={styles.cardHead}>Alarms by region<a className={styles.viewAll} href="/mainapp/alarms">View all →</a><span className={styles.since}>top 10</span></div>
-          <BarsH data={(d.byRegion || []).map((r) => ({ label: r.region, n: r.n }))} color="#10B981" />
+          <div className={styles.cardHead}>Alarms by region<a className={styles.viewAll} href="/mainapp/alarms">View all →</a><span className={styles.since}>top 10 · red = most</span></div>
+          <BarsH data={(d.byRegion || []).map((r) => ({ label: r.region, n: r.n }))} heat />
         </div>
       </div>
     </div>
@@ -257,7 +285,26 @@ const ACT_RANGES = [
   { k: "year", label: "Year" },
 ];
 
-function HealthChart({ title, sub, series, summary, color }) {
+// Grading legend — the availability bands, same as the mobile app.
+function GradingLegend() {
+  const bound = { Excellent: "≥99.5%", Good: "≥99%", Fair: "≥97%", Poor: "≥93%", Critical: "<93%" };
+  return (
+    <div style={{ marginTop: 14, borderTop: "1px solid #eef2f7", paddingTop: 12 }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 }}>Grading</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {GRADES.map((g) => (
+          <span key={g.label} style={{ display: "inline-flex", alignItems: "center", gap: 7, background: `${g.color}14`, color: g.color, borderRadius: 999, padding: "5px 12px", fontSize: 12.5, fontWeight: 800 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 999, background: g.color }} />
+            {g.label} {bound[g.label]}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HealthChart({ title, sub, series, summary }) {
+  const col = availColor(summary);
   return (
     <div>
       <div className={styles.hcHead}>
@@ -265,15 +312,18 @@ function HealthChart({ title, sub, series, summary, color }) {
           <div className={styles.hcTitle}>{title}</div>
           <div className={styles.hcSub}>{sub}</div>
         </div>
-        <div className={styles.hcPct} style={{ color }}>{summary != null ? `${summary}%` : "—"}</div>
+        <div style={{ textAlign: "right" }}>
+          <div className={styles.hcPct} style={{ color: col }}>{summary != null ? `${summary}%` : "—"}</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: col, letterSpacing: ".02em" }}>{summary != null ? availWord(summary) : ""}</div>
+        </div>
       </div>
-      <AreaChart data={series || []} color={color} />
+      <AreaChart data={series || []} color={col} dots />
     </div>
   );
 }
 
 // Line + filled area (coloured under the curve) for a 0–100% series.
-function AreaChart({ data = [], color = "#2E6CF5" }) {
+function AreaChart({ data = [], color = "#2E6CF5", dots = false }) {
   const W = 520, H = 150, pad = { l: 28, r: 8, t: 10, b: 22 };
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
   const n = data.length;
@@ -302,6 +352,11 @@ function AreaChart({ data = [], color = "#2E6CF5" }) {
       ))}
       <path d={area} fill={`url(#${gid})`} />
       <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      {dots ? data.map((row, i) => (
+        <circle key={`d${i}`} cx={x(i)} cy={y(row.pct)} r="2.6" fill={availColor(row.pct)}>
+          <title>{`${row.t}: ${row.pct}%`}</title>
+        </circle>
+      )) : null}
       {data.map((row, i) => (i % step === 0 || i === n - 1)
         ? <text key={`x${i}`} x={x(i)} y={H - 6} textAnchor="middle" className={styles.axLbl}>{row.t}</text>
         : null)}
@@ -320,7 +375,7 @@ function CatBars({ data = [] }) {
   return (
     <div className={styles.catBars}>
       {data.map((c) => {
-        const meta = CATEGORY[c.alarm_type] || CATEGORY.OTHER;
+        const meta = CATEGORY[c.alarm_type] || { label: c.alarm_type || "—", color: "#94A3B8" };
         return (
           <a key={c.alarm_type} className={styles.catBarRow} href={`/mainapp/alarms?type=${encodeURIComponent(c.alarm_type)}`}>
             <span className={styles.catBarLbl} title={meta.label}>
@@ -379,19 +434,46 @@ function BarsV({ data = [], color = "#2E6CF5", tall }) {
   );
 }
 
-// horizontal bars
-function BarsH({ data = [], color = "#F59E0B" }) {
+// horizontal bars — `heat` colours each bar by its count (red = worst/most).
+function BarsH({ data = [], color = "#F59E0B", heat = false }) {
   const max = Math.max(1, ...data.map((x) => x.n || 0));
   return (
     <div className={styles.barsH}>
-      {data.map((x, i) => (
-        <div key={i} className={styles.barHrow}>
-          <span className={styles.barHlbl} title={x.label}>{x.label}</span>
-          <span className={styles.barHtrack}><span className={styles.barHfill} style={{ width: `${Math.round(((x.n || 0) / max) * 100)}%`, background: color }} /></span>
-          <span className={styles.barHn}>{x.n}</span>
-        </div>
-      ))}
+      {data.map((x, i) => {
+        const c = heat ? heatColor(x.n, max) : color;
+        return (
+          <div key={i} className={styles.barHrow}>
+            <span className={styles.barHlbl} title={x.label}>{x.label}</span>
+            <span className={styles.barHtrack}><span className={styles.barHfill} style={{ width: `${Math.round(((x.n || 0) / max) * 100)}%`, background: c }} /></span>
+            <span className={styles.barHn} style={heat ? { color: c } : null}>{x.n}</span>
+          </div>
+        );
+      })}
       {data.length === 0 && <div className={styles.empty}>No data.</div>}
+    </div>
+  );
+}
+
+// Alarms over time — Daily (24 hourly bars) / Weekly (7 days) / Monthly (12 months, red).
+function AlarmTimeChart({ byHour = [], byDay = [], byMonth = [] }) {
+  const [tab, setTab] = useState("daily");
+  const cfg = {
+    daily:   { data: byHour,  color: "#2E6CF5", note: "today · by hour (EAT)" },
+    weekly:  { data: byDay,   color: "#2E6CF5", note: "last 7 days" },
+    monthly: { data: byMonth, color: "#EF4444", note: "last 12 months" },
+  }[tab];
+  return (
+    <div className={styles.card}>
+      <div className={styles.cardHead}>
+        Alarms over time
+        <span style={{ marginLeft: "auto", display: "inline-flex", gap: 6 }}>
+          {[["daily", "Daily"], ["weekly", "Weekly"], ["monthly", "Monthly"]].map(([k, l]) => (
+            <button key={k} type="button" onClick={() => setTab(k)} style={tabBtn(tab === k)}>{l}</button>
+          ))}
+        </span>
+        <span className={styles.since} style={{ marginLeft: 12 }}>{cfg.note}</span>
+      </div>
+      <BarsV data={cfg.data} color={cfg.color} tall />
     </div>
   );
 }

@@ -24,3 +24,15 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_alarm   ON notifications (alarm_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_status  ON notifications (status);
+
+-- CRITICAL: the app connects as role "assetguard". When this table is created by
+-- the postgres superuser, the app role has NO access by default, so every insert
+-- (listener) and read (Notifications page) fails silently — the classic
+-- "email was sent but nothing shows / count stays 0". Grant it explicitly.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'assetguard') THEN
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON notifications TO assetguard';
+    EXECUTE 'GRANT USAGE, SELECT ON SEQUENCE notifications_id_seq TO assetguard';
+  END IF;
+END $$;

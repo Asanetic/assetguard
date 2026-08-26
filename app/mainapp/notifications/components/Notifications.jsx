@@ -94,7 +94,7 @@ export default function Notifications() {
       <div className={styles.head}>
         <div>
           <div className={styles.title}>Notifications</div>
-          <div className={styles.sub}>Outgoing messages — every critical alarm is sent to all contacts registered on its site. Delivery &amp; failures across channels.</div>
+          <div className={styles.sub}>Outgoing messages — every alarm is sent by email &amp; SMS to all contacts registered on its site. High/Medium/Low skip the security company; only Critical alarms reach it.</div>
         </div>
       </div>
 
@@ -192,7 +192,7 @@ export default function Notifications() {
 
         {loading && !data && <div className={styles.muted}>Loading…</div>}
         {err && <div className={styles.err}>{err}</div>}
-        {!loading && rows.length === 0 && !err && <div className={styles.muted}>No notifications yet. They appear here as critical alarms are raised.</div>}
+        {!loading && rows.length === 0 && !err && <div className={styles.muted}>No notifications yet. They appear here as alarms are raised.</div>}
 
         {rows.length > 0 && (
           <div className={styles.tblWrap}>

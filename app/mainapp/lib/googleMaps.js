@@ -148,6 +148,8 @@ export function createWaveOverlay(maps, map, ringClass) {
 
 // ---- alarm severity colour + pin (alarms landing map) ----
 // Critical (disturbance / geofence / critical motion) | High | Medium | Low.
+// Severity colours as shown on the alarms map — the single source of truth, matched
+// by the alarm emails too (see PRIO in notify/alarmNotify.js).
 export const ALARM_SEVERITY_COLOR = { critical: "#EF4444", high: "#F59E0B", medium: "#2E6CF5", low: "#94A3B8" };
 export const ALARM_SEVERITIES = ["Critical", "High", "Medium", "Low"];
 export function alarmSeverityColor(sev) {

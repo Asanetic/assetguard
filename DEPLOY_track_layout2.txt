@@ -1,0 +1,20 @@
+TRACK PAGE LAYOUT — round 2
+===========================
+- Alarm buzzer (bottom-left) raised (bottom 96px -> 128px) so it clears the
+  DEVICE SPEED readout on the bottom bar.
+- Map controls returned to the BOTTOM-RIGHT but lifted to sit IMMEDIATELY ABOVE the
+  "Get directions" bar (not up at the top): a single stack with zoom +/-, my-location
+  (responders) and the blue voice-guidance speaker, raised ~110px.
+- Fullscreen control back at top-right.
+- Status chips (LIVE / device / km away / GPS) returned to top-right (as originally).
+
+FILES (unzip from app root):
+  app/mainapp/track/components/TrackDevice.jsx
+  app/mainapp/track/components/track.module.css
+  app/mainapp/shell/shell.module.css
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-track-layout2.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration.)

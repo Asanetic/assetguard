@@ -73,3 +73,13 @@
 
 @media (max-width: 1040px) { .dgrid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 760px) { .dgrid { grid-template-columns: repeat(2, 1fr); } }
+
+/* transmitting waves around a LIVE site marker */
+.wave { position: absolute; width: 0; height: 0; z-index: 1; pointer-events: none; }
+.wave::before, .wave::after {
+  content: ""; position: absolute; left: 0; top: 0; width: 48px; height: 48px; margin: -24px 0 0 -24px;
+  border-radius: 50%; border: 2px solid var(--wave-color, #10b981); box-sizing: border-box;
+  animation: vsWave 2.4s ease-out infinite;
+}
+.wave::after { animation-delay: .8s; }
+@keyframes vsWave { 0% { transform: scale(.5); opacity: .75; } 100% { transform: scale(1.7); opacity: 0; } }

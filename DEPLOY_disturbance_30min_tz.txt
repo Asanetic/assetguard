@@ -1,0 +1,24 @@
+DISTURBANCE: 30-MIN EPISODE (no repeat warnings) + WARNING TIME = REAL EAT
+==========================================================================
+1) TIMESTAMP: disturbance WARNING notifications (1/3, 2/3) now stamp the SERVER
+   time in Africa/Nairobi, not the device clock (which was ~3h off). Alarm
+   notifications already used server EAT.
+2) RESET: the disturbance counter now resets ONLY after a 30-MINUTE quiet gap
+   (no disturbance packet) or when the alarm is CLOSED. A clean packet / brief
+   settle no longer resets it — so "Disturbance warning 1/3" or "2/3" never
+   repeats within a 30-minute window; the count simply climbs 1→2→3→4 once.
+   Tunable: DISTURB_STREAK_GAP_MIN in .env (default 30).
+
+Verified: clean packet mid-episode keeps the count climbing (no repeat); a fresh
+disturbance >30 min after the last starts a new episode at 1.
+
+FILES (unzip from app root):
+  app/api/apiUtils/dataControl/alarms.js       (30-min gap reset; clean-reset removed)
+  app/api/apiUtils/notify/alarmNotify.js       (warning time = server EAT)
+
+DEPLOY (from /var/www/html/baseapps/assetguard)
+  python3 -c "import zipfile; zipfile.ZipFile('assetguard-disturbance-30min-tz.zip').extractall('.')"
+  npm run build
+  pm2 restart assetguard-3010 gps-3000
+  (No DB migration. For all server-side times in EAT, also set TZ=Africa/Nairobi in
+   .env and ALTER DATABASE assetguard SET timezone='Africa/Nairobi'; — see earlier note.)

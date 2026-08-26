@@ -4,7 +4,7 @@
 // expand any day to analyse its individual heartbeats. Reads /api/mainapp/logs.
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./deviceLogs.module.css";
 
 const TZ = "Africa/Nairobi";
@@ -12,7 +12,8 @@ const pad = (n) => String(n).padStart(2, "0");
 const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
 function fmtDay(d) {
-  try { return new Date(`${d}T12:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }); }
+  // Anchor at UTC noon and render in EAT so the label always equals the EAT date.
+  try { return new Date(`${d}T12:00:00Z`).toLocaleDateString("en-GB", { timeZone: TZ, weekday: "short", day: "2-digit", month: "short", year: "numeric" }); }
   catch { return d; }
 }
 function fmtTime(v) {
@@ -28,6 +29,13 @@ function fmtGap(s) {
   if (m < 60) return `${m}m ${s % 60}s`;
   const h = Math.floor(m / 60);
   return `${h}h ${m % 60}m`;
+}
+function fmtInterval(sec) {
+  const s = Number(sec) || 0;
+  if (s % 86400 === 0 && s >= 86400) return `${s / 86400}d`;
+  if (s % 3600 === 0 && s >= 3600) return `${s / 3600}h`;
+  if (s >= 3600) return `${Math.round((s / 3600) * 10) / 10}h`;
+  return `${Math.round(s / 60)}min`;
 }
 // Device state for the day, from the longest reporting gap + battery.
 function dayHealth(d) {
@@ -53,6 +61,26 @@ export default function DeviceLogs({ initialDevice = "" }) {
 
   const [open, setOpen] = useState({});            // day -> true
   const [detail, setDetail] = useState({});        // day -> { loading, beats, err }
+
+  // searchable device picker
+  const [devQ, setDevQ] = useState("");            // search text
+  const [openDev, setOpenDev] = useState(false);
+  const devWrap = useRef(null);
+  useEffect(() => {
+    function onDoc(e) { if (devWrap.current && !devWrap.current.contains(e.target)) setOpenDev(false); }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+  const devLabel = (x) => `${x.device_id || x.imei}${x.site ? ` · ${x.site}` : ""}`;
+  const filteredDevices = useMemo(() => {
+    const q = devQ.trim().toLowerCase();
+    if (!q) return devices;
+    return devices.filter((x) => `${x.device_id || ""} ${x.imei || ""} ${x.site || ""}`.toLowerCase().includes(q));
+  }, [devices, devQ]);
+  const currentDevLabel = useMemo(() => {
+    const x = devices.find((d) => (d.device_id || d.imei) === device);
+    return x ? devLabel(x) : device;
+  }, [devices, device]);
 
   // devices for the picker
   useEffect(() => {
@@ -130,16 +158,39 @@ export default function DeviceLogs({ initialDevice = "" }) {
 
       {/* controls */}
       <div className={styles.controls}>
-        <div className={styles.ctlField}>
+        <div className={styles.ctlField} ref={devWrap} style={{ position: "relative" }}>
           <label className={styles.ctlLab}>Device</label>
-          <select className={styles.select} value={device} onChange={(e) => setDevice(e.target.value)}>
-            {devices.length === 0 && <option value="">No devices</option>}
-            {devices.map((x) => (
-              <option key={x.id || x.imei} value={x.device_id || x.imei}>
-                {x.device_id || x.imei}{x.site ? ` · ${x.site}` : ""}
-              </option>
-            ))}
-          </select>
+          <input
+            className={styles.select}
+            type="text"
+            value={openDev ? devQ : currentDevLabel}
+            placeholder={devices.length ? "Search device or site…" : "No devices"}
+            onFocus={() => { setOpenDev(true); setDevQ(""); }}
+            onChange={(e) => { setDevQ(e.target.value); setOpenDev(true); }}
+            autoComplete="off"
+          />
+          {openDev && (
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 10px 30px rgba(15,23,42,.15)", zIndex: 20, maxHeight: 280, overflowY: "auto" }}>
+              {filteredDevices.length === 0 ? (
+                <div style={{ padding: "10px 12px", color: "#94a3b8", fontSize: 13 }}>No match</div>
+              ) : filteredDevices.map((x) => {
+                const val = x.device_id || x.imei;
+                const active = val === device;
+                return (
+                  <button
+                    key={x.id || x.imei}
+                    type="button"
+                    onClick={() => { setDevice(val); setDevQ(""); setOpenDev(false); }}
+                    style={{ display: "block", width: "100%", textAlign: "left", padding: "9px 12px", border: 0, background: active ? "#eaf1ff" : "transparent", color: active ? "#2e6cf5" : "#0f274a", fontSize: 13, fontWeight: active ? 700 : 500, cursor: "pointer", fontFamily: "inherit" }}
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    <i className="ti ti-cpu" style={{ fontSize: 13, marginRight: 7, color: active ? "#2e6cf5" : "#94a3b8" }} />
+                    {x.device_id || x.imei}{x.site ? <span style={{ color: "#94a3b8" }}> · {x.site}</span> : null}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div className={styles.ctlField}>
           <label className={styles.ctlLab}>From</label>
@@ -164,6 +215,24 @@ export default function DeviceLogs({ initialDevice = "" }) {
           {dev.imei && <span className={styles.devMeta}>IMEI {dev.imei}</span>}
           {dev.status && <span className={`${styles.devStatus} ${styles["st_" + String(dev.status).toLowerCase()] || ""}`}>{dev.status}</span>}
           <span className={styles.devMeta}>Last seen {fmtTime(dev.last_seen)}{dev.last_seen ? " EAT" : ""}</span>
+          {dev.interval_sec != null && (
+            <span className={styles.devMeta} title="Active wake interval (the last one the device accepted)">
+              <i className="ti ti-zzz" /> Wake {fmtInterval(dev.interval_sec)}
+              {dev.pending_sec != null && dev.pending_sec !== dev.interval_sec && (
+                <b style={{ color: "#B45309", marginLeft: 5 }} title="Queued — waiting for the device to confirm">→ {fmtInterval(dev.pending_sec)} pending</b>
+              )}
+            </span>
+          )}
+          {dev.next_at && dev.state !== "inactive" && (
+            <span className={styles.devMeta} title="Expected next heartbeat = last seen + active wake interval">
+              <i className="ti ti-clock" /> Next {fmtTime(dev.next_at)} EAT
+            </span>
+          )}
+          {dev.state && (
+            <span className={styles.devMeta} style={{ color: dev.state === "up" ? "#047857" : dev.state === "inactive" ? "#5B21B6" : "#B91C1C", fontWeight: 700 }}>
+              {dev.state === "up" ? "● Alive" : dev.state === "inactive" ? "● Inactive" : "● Offline"}
+            </span>
+          )}
         </div>
       )}
 
@@ -221,6 +290,11 @@ export default function DeviceLogs({ initialDevice = "" }) {
                   <span className={styles.hdot} />{h.label}{h.low ? " · low batt" : ""}
                 </span>
                 <span className={styles.metric}><b>{d.beats.toLocaleString()}</b><em>beats</em></span>
+                {dev?.expected_per_day != null && (
+                  <span className={styles.metric} title="Received vs expected at the active wake interval">
+                    <b style={{ color: d.beats >= dev.expected_per_day ? "#047857" : d.beats > 0 ? "#B45309" : "#B91C1C" }}>{d.beats}/{dev.expected_per_day}</b><em>received / expected</em>
+                  </span>
+                )}
                 <span className={styles.metric}><b>{fmtTime(d.first_at)}–{fmtTime(d.last_at)}</b><em>first → last</em></span>
                 <span className={styles.metric}><b>{fmtGap(d.max_gap_s)}</b><em>worst gap</em></span>
                 <span className={styles.metric}>

@@ -14,7 +14,7 @@ function ago(iso) {
   const h = Math.round(m / 60); if (h < 24) return `${h} hr ago`;
   return `${Math.round(h / 24)} d ago`;
 }
-function fmtTime(iso) { try { return new Date(iso).toLocaleTimeString(); } catch { return "—"; } }
+function fmtTime(iso) { try { return new Date(iso).toLocaleTimeString("en-GB", { timeZone: "Africa/Nairobi", hour12: false }); } catch { return "—"; } }
 function eventOf(t) {
   const al = Array.isArray(t.alarms) ? t.alarms : [];
   if (al.length) return al[0].replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -39,8 +39,7 @@ export default function PortsManager() {
   const [connected, setConnected] = useState([]);
   const [cmdImei, setCmdImei] = useState("");
   const [cmdText, setCmdText] = useState("UPGRADE");
-  const [cmdMode, setCmdMode] = useState("tc");   // "tc" = wrapped, "raw" = verbatim
-  const [cmdPrefix, setCmdPrefix] = useState("SG");
+  const [cmdMode, setCmdMode] = useState("hq");   // "hq" = *HQ,IMEI,cmd#  | "raw" = verbatim
   const [sending, setSending] = useState(false);
   const [sendMsg, setSendMsg] = useState(null);
 
@@ -64,15 +63,14 @@ export default function PortsManager() {
   // Prefill the IMEI with the first connected device once one appears.
   useEffect(() => { if (!cmdImei && connected[0]?.imei) setCmdImei(connected[0].imei); }, [connected]);
 
-  // Build the exact bytes to send: wrapped [PREFIX*IMEI*LEN*cmd], or raw verbatim.
-  // LEN = hex byte-length of the command payload (verified against real uplink frames).
+  // Build the exact bytes to send. HQ protocol: *HQ,<IMEI>,<command>#
+  // (no brackets, no length field). Raw mode sends exactly what's typed.
   function buildFrame() {
     if (cmdMode === "raw") return cmdText;
     const imei = (cmdImei || "IMEI").trim();
-    let payload = cmdText.trim();
-    if (!payload.endsWith("#")) payload += "#";   // every command ends with '#'
-    const len = byteLen(payload).toString(16).toUpperCase().padStart(4, "0");
-    return `[${(cmdPrefix || "SG").trim()}*${imei}*${len}*${payload}]`;
+    let body = cmdText.trim();
+    if (body.endsWith("#")) body = body.slice(0, -1);   // avoid a double #
+    return `*HQ,${imei},${body}#`;
   }
   const cmdTok = cmdText.trim().toUpperCase().split(",")[0];
   const cmdHelp = COMMANDS.find((c) => c.code === cmdTok)?.desc || "";
@@ -248,16 +246,11 @@ export default function PortsManager() {
 
         <div style={{ display: "flex", gap: 16, alignItems: "center", marginTop: 10, flexWrap: "wrap", fontSize: 13 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-            <input type="radio" checked={cmdMode === "tc"} onChange={() => setCmdMode("tc")} /> Wrapped&nbsp;<code style={SC.code}>[PREFIX*IMEI*LEN*cmd]</code>
+            <input type="radio" checked={cmdMode === "hq"} onChange={() => setCmdMode("hq")} /> HQ command&nbsp;<code style={SC.code}>*HQ,IMEI,cmd#</code>
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
             <input type="radio" checked={cmdMode === "raw"} onChange={() => setCmdMode("raw")} /> Raw exact (type the full frame)
           </label>
-          {cmdMode === "tc" && (
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              prefix <input style={{ ...SC.in, width: 70, padding: "5px 8px" }} value={cmdPrefix} onChange={(e) => setCmdPrefix(e.target.value)} />
-            </span>
-          )}
         </div>
 
         <label style={SC.lbl}>Bytes that will be sent</label>
@@ -274,26 +267,21 @@ export default function PortsManager() {
   );
 }
 
-// Official GL-28 "SG" downlink commands (from the manufacturer protocol sheet).
-// tmpl = a ready-to-edit payload; params after the comma are examples.
+// HQ-protocol downlink commands (final manufacturer sheet "TCP command TEST 2").
+// The card wraps the body below as  *HQ,<IMEI>,<body>#
+// tmpl = a ready-to-edit body; example parameter values shown.
 const COMMANDS = [
-  { code: "UPGRADE", tmpl: "UPGRADE", desc: "Firmware upgrade" },
+  { code: "UPGRADE", tmpl: "UPGRADE", desc: "OTA firmware upgrade" },
   { code: "RESET", tmpl: "RESET", desc: "Restart device" },
-  { code: "RFS", tmpl: "RFS", desc: "Restore factory settings (keeps IMEI, APN)" },
-  { code: "UPT", tmpl: "UPT,24", desc: "Upload interval after sleep — hours, 0–48" },
-  { code: "GS", tmpl: "GS,30", desc: "Sensor sensitivity threshold" },
-  { code: "CENTER", tmpl: "CENTER,13800138000", desc: "SMS alarm receiving phone number" },
-  { code: "APN", tmpl: "APN,cmnet,,", desc: "Cellular APN / account / password (restart after)" },
-  { code: "IP", tmpl: "IP,123.45.67.89,10219", desc: "Server IP and port (restart after)" },
-  { code: "IMEI", tmpl: "IMEI,861234567890123", desc: "Modify device IMEI" },
+  { code: "RFS", tmpl: "RFS", desc: "Restore factory settings (keeps IP/IMEI/APN)" },
+  { code: "pwroff", tmpl: "pwroff", desc: "Power off the device" },
+  { code: "update", tmpl: "update,3", desc: "Update interval while moving — 3s to 60s" },
+  { code: "UPT", tmpl: "UPT,60", desc: "Update interval during sleep — 6 to 1440 min" },
+  { code: "GS", tmpl: "GS,15", desc: "MEMS sensor sensitivity" },
+  { code: "IP", tmpl: "IP,tracker.yourhost.com,1234", desc: "Set server IP or domain + port" },
+  { code: "APN", tmpl: "APN,ctnet,user,1234", desc: "Set APN, user, password (blank = none)" },
+  { code: "IMEI", tmpl: "IMEI#123456789000001", desc: "Change IMEI (15 digits)" },
 ];
-
-// Byte length of the payload (LEN field). ASCII commands = 1 byte/char; this
-// stays correct for any UTF-8 too.
-function byteLen(s) {
-  try { return new TextEncoder().encode(String(s)).length; }
-  catch { return String(s).length; }
-}
 
 // Inline styles for the Send-command card (kept out of the CSS module to avoid
 // selector-purity issues and keep this drop-in self-contained).
