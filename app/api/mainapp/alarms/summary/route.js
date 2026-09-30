@@ -5,6 +5,7 @@ import { alarmCounts } from "../../../apiUtils/dataControl/alarms.js";
 import { getAuth } from "../../../apiUtils/authUtils/session.js";
 import { alarmPerms } from "../../../apiUtils/authUtils/alarmPerms.js";
 import { getUserOrg } from "../../../apiUtils/dataControl/companies.js";
+import { scopeFilterFor } from "../../../apiUtils/authUtils/regionScope.js";
 
 export async function GET(request) {
   const me = getAuth(request);
@@ -12,7 +13,8 @@ export async function GET(request) {
   try {
     const org = (await getUserOrg(me.sub).catch(() => null)) || { role: me.role, purposes: [] };
     const perms = alarmPerms({ role: me.role, purposes: org.purposes });
-    const c = await alarmCounts(me.role, perms.criticalOnly);
+    const { regions, siteIds } = await scopeFilterFor(me);
+    const c = await alarmCounts(me.role, perms.criticalOnly, regions, siteIds);
     return NextResponse.json({ open: c.open, critical: c.criticalOpen });
   } catch {
     return NextResponse.json({ open: 0, critical: 0 });

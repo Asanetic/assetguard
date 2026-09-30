@@ -248,10 +248,12 @@ export default function TrackDevice() {
         fitBoth();
         refreshDistance();
         setTimeout(repositionPopup, 60);
-        // Every viewer gets a working "My location" button — geolocation runs for all
-        // and the blue marker is created lazily on the first real GPS fix (see
-        // startGeolocation). Responders additionally broadcast + can route.
-        startGeolocation();
+        // MY LOCATION IS FOR THE RESPONDER ONLY. Only the person who arrived via
+        // "Track and respond" (respondMode + canRespond) starts geolocation and
+        // gets the blue "you" marker. A plain-Track watcher — admin, NOC, anyone
+        // who can only watch — never has their location read or shown: no GPS
+        // prompt, no marker. Responders additionally broadcast + can route.
+        if (showMineLocal) startGeolocation();
         // Every viewer (including plain-Track NOC) watches the responders.
         pollResponders();
         respPollTimer.current = setInterval(pollResponders, 5000);
@@ -310,8 +312,11 @@ export default function TrackDevice() {
     }).catch(() => {});
   }
 
-  // Distinct colours for responders (all different from the red target + blue me).
-  const RESP_COLORS = ["#059669", "#EA580C", "#7C3AED", "#0891B2", "#DB2777", "#CA8A04"];
+  // Distinct colours for responders. Deliberately kept WELL CLEAR of red and
+  // orange (the target device is red, alarms are red) so a responder icon can
+  // never be mistaken for the target — greens, teals, cyan and purples only, and
+  // all distinct from the blue "me" marker too.
+  const RESP_COLORS = ["#059669", "#7C3AED", "#0891B2", "#C026D3", "#0D9488", "#4338CA"];
 
   // Every Track viewer polls the active responders for this device and draws a
   // navigation-arrow marker + a name/team tag for each (excluding themselves).

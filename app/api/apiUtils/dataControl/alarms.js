@@ -13,12 +13,40 @@ export function criticalOnly(role) {
   return !FULL_VIEW_ROLES.has(String(role || "").toLowerCase());
 }
 
-export async function listAlarms({ priority, q, status, includeClosed = false, role, restrictCritical, test = "exclude" } = {}) {
+// Region-scope EXISTS: keep only alarms whose device's site security_region is in the
+// caller's regions. Alarms store device_id + serial (imei) + site name; we match the
+// device to its site. Returns "" (no filter) when regions is null/undefined.
+function regionScopeSql(regions, params) {
+  if (!Array.isArray(regions)) return "";
+  // Case-insensitive region match (see dataControl/sites.js).
+  params.push(regions.map((r) => String(r).toLowerCase()));
+  const n = params.length;
+  return `EXISTS (SELECT 1 FROM devices d JOIN sites s ON s.id = d.site_id
+                   WHERE (d.device_id = alarms.device_id OR d.imei = alarms.serial)
+                     AND lower(s.security_region) = ANY($${n}::text[]))`;
+}
+
+// List-scope EXISTS: keep only alarms whose device's site is in the caller's
+// assigned site list. Returns "" (no filter) when siteIds is null/undefined.
+function siteScopeSql(siteIds, params) {
+  if (!Array.isArray(siteIds)) return "";
+  params.push(siteIds);
+  const n = params.length;
+  return `EXISTS (SELECT 1 FROM devices d
+                   WHERE (d.device_id = alarms.device_id OR d.imei = alarms.serial)
+                     AND d.site_id = ANY($${n}::bigint[]))`;
+}
+
+export async function listAlarms({ priority, q, status, includeClosed = false, role, restrictCritical, test = "exclude", regions, siteIds } = {}) {
   const where = [];
   const params = [];
   // Test alarms (drills) are hidden by default; test:"only" shows just them, "all" shows both.
   if (test === "only") where.push(`source = 'test'`);
   else if (test !== "all") where.push(`source IS DISTINCT FROM 'test'`);
+  const rsql = regionScopeSql(regions, params);
+  if (rsql) where.push(rsql);
+  const ssql = siteScopeSql(siteIds, params);
+  if (ssql) where.push(ssql);
   // A restricted (security-side) user is forced to Critical regardless of the
   // requested priority filter — they can't widen their own view.
   const restrict = restrictCritical != null ? restrictCritical : criticalOnly(role);
@@ -62,9 +90,17 @@ export async function closeStaleTestAlarms(ttlMinutes = 30) {
  * Severity counts (Critical/High/Medium/Low EXCLUDE closed, like the prototype),
  * plus the closed total, the open total and critical-open (for the nav badge).
  */
-export async function alarmCounts(role, restrictCritical) {
-  // Test/drill alarms never count toward the KPIs or the nav badge.
-  const { rows } = await query(`SELECT priority, status, COUNT(*)::int AS n FROM alarms WHERE source IS DISTINCT FROM 'test' GROUP BY priority, status`);
+export async function alarmCounts(role, restrictCritical, regions, siteIds) {
+  // Test/drill alarms never count toward the KPIs or the nav badge. Scope-filtered
+  // so the nav badge / KPI a scoped user sees matches the alarms they can see.
+  const cp = [];
+  const rsql = regionScopeSql(regions, cp);
+  const ssql = siteScopeSql(siteIds, cp);
+  const scope = [rsql, ssql].filter(Boolean).map((s) => ` AND ${s}`).join("");
+  const { rows } = await query(
+    `SELECT priority, status, COUNT(*)::int AS n FROM alarms
+      WHERE source IS DISTINCT FROM 'test'${scope}
+      GROUP BY priority, status`, cp);
   const bySeverity = { Critical: 0, High: 0, Medium: 0, Low: 0 };
   let open = 0, criticalOpen = 0, closed = 0;
   rows.forEach((r) => {
@@ -110,9 +146,60 @@ const EPISODE_TYPES = new Set(["DISTURBANCE", "GEOFENCE_EXIT", "CRITICAL_MOTION"
  * Insert one live alarm, grouped into an incident. Returns the new row, or null
  * when it's a repeat within the same episode (deduped).
  */
-export async function insertLiveAlarm({ alarmType, value, deviceIdText, site, serial, lat, lng, road, at, incidentSince }) {
+/**
+ * Every alarm this function actually RAISES, offered to the push channel.
+ *
+ * `insertLiveAlarm` is the seam because it is the only place that knows the
+ * difference between raising an alarm and de-duping one — a de-duped alarm
+ * returns null, and a null never reaches here.
+ *
+ * Note it does NOT distinguish simulated traffic: `mainapp/ingest/simulate`
+ * calls `resolveAndStore`, which lands here like any device packet, and the
+ * insert stamps `source='device'` on both. Use PUSH_ENABLED=false when
+ * exercising the simulator on a server that has Firebase configured.
+ *
+ * Dynamically imported and never awaited. The dynamic import breaks what would
+ * otherwise be a cycle (alarms -> alarmPush -> alarmNotify -> alarms), and not
+ * awaiting means a slow or failing FCM call cannot delay a telemetry packet or
+ * throw into the ingest path.
+ */
+function raised(row) {
+  if (row) {
+    import("../notify/alarmPush.js")
+      .then((m) => m.pushAlarmRaised(row, {}))
+      .catch((e) => console.error("[push] hook:", e?.message || e));
+  }
+  return row || null;
+}
+
+export async function insertLiveAlarm({ alarmType, value, deviceIdText, site, serial, lat, lng, road, at, incidentSince, source = "device" }) {
+  // 'test' marks a TEST ALARM — raised by a drill, or by any device at a site
+  // with an open technician job. The rest of the platform already understands
+  // it: listAlarms hides these from the control room unless asked, the KPI
+  // counts leave them out, and the real de-dupe ignores them, so a test can
+  // never suppress a real alarm. Still an ordinary row the technician app can
+  // find, acknowledge and close.
+  const src = source === "test" ? "test" : "device";
+
   const meta = LIVE_META[alarmType] || { priority: "Medium", name: () => alarmType };
-  const name = meta.name(value, { road });
+
+  // A test alarm is labelled AT INSERT, not patched afterwards.
+  //
+  // The notify layer has always relabelled alarms from a Testing/Maintenance
+  // site to "… – test" at Low — but it ran after the row existed, so the row was
+  // born as an ordinary alarm and the de-dupe below (which only applies to
+  // tests) never fired. Every uplink produced another Disturbance row for the
+  // same device. Naming it here makes the row honest from the start and lets one
+  // rule cover every test alarm.
+  //
+  // The suffix and the tier are the platform's existing convention for a test —
+  // kept identical so nothing downstream has to learn a second shape.
+  const TEST_SUFFIX = " – test";
+  const baseName = meta.name(value, { road });
+  const name = src === "test" && !baseName.includes(TEST_SUFFIX.trim())
+    ? `${baseName}${TEST_SUFFIX}`
+    : baseName;
+  const priority = src === "test" ? "Low" : meta.priority;
   // Alarm location is ALWAYS the SITE location. When a caller doesn't supply coords
   // (e.g. the Device Offline sweep) resolve the device's site so it still pins.
   let plat = lat ?? null, plng = lng ?? null;
@@ -126,6 +213,54 @@ export async function insertLiveAlarm({ alarmType, value, deviceIdText, site, se
   }
   lat = plat; lng = plng;
 
+  // ONE TEST ALARM PER DEVICE PER KIND — REFRESHED, NEVER BLOCKED.
+  //
+  // The distinction is the whole bug this replaces. The first version returned
+  // the existing row untouched, which looked right — one row, no duplicates —
+  // and silently deafened the device. The wizard's poll asks for an alarm with
+  // `created_at > since`; a row whose timestamp never moves can never satisfy
+  // that again. So a single un-closed test alarm meant that tracker could never
+  // pass another test, for as long as it stayed open. "No duplicates" became
+  // "no alarms".
+  //
+  // Refreshing keeps both properties at once: the Tests tab still shows exactly
+  // one row per device and kind however many uplinks arrive, and that row is
+  // always the latest report — so the poll finds it, the notification fires, and
+  // the technician sees a current position rather than a stale one.
+  //
+  // Scoped to OPEN rows: closing one starts a fresh row next time, which is what
+  // makes closing meaningful.
+  if (src === "test" && deviceIdText) {
+    try {
+      const { rows: dup } = await query(
+        `UPDATE alarms
+            SET created_at = now(),
+                name       = $3,
+                lat        = COALESCE($4, lat),
+                lng        = COALESCE($5, lng),
+                -- It is happening again: an acknowledged alarm goes back to Open
+                -- rather than sitting silently while the device keeps reporting.
+                status     = CASE WHEN status = 'Acknowledged' THEN 'Open' ELSE status END
+          WHERE id = (
+                  SELECT id FROM alarms
+                   WHERE device_id = $1 AND alarm_type = $2
+                     AND source = 'test' AND status <> 'Closed'
+                   ORDER BY created_at DESC
+                   LIMIT 1)
+        RETURNING *`,
+        [deviceIdText, alarmType, name, plat, plng]
+      );
+      if (dup[0]) {
+        console.log(`[test-alarm] ${deviceIdText}/${alarmType} refreshed ${dup[0].id} (no duplicate row)`);
+        // Flagged so callers can tell a REFRESH from a first raise. The push
+        // hook uses it: one alert per test is the point — a technician shaking a
+        // tracker for thirty seconds does not want their phone buzzing on every
+        // uplink, and the first one already told them it worked.
+        return Object.assign(dup[0], { refreshed: true });
+      }
+    } catch (e) { console.error("[insertLiveAlarm] test refresh:", e?.message || e); }
+  }
+
   // ---- resolve the incident + per-episode de-dupe --------------------------
   const refMs = at ? Date.parse(at) : Date.now();
   let winStartMs = (Number.isFinite(refMs) ? refMs : Date.now()) - INCIDENT_TTL_MS;
@@ -135,13 +270,42 @@ export async function insertLiveAlarm({ alarmType, value, deviceIdText, site, se
 
   let incidentId = null;   // attach to this; null => generate a new incident
   try {
-    // the device's active episode = most recent OPEN, incident-tagged alarm in the
-    // window and no newer than this packet (can't join an episode from the future).
+    // The device's active episode: the most recent incident-tagged alarm in the
+    // window, no newer than this packet (you cannot join an episode from the
+    // future), whose incident is STILL LIVE.
+    //
+    // AN INCIDENT IS LIVE UNTIL ITS ANCHOR IS CLOSED. The anchor is the alarm
+    // that opened it — the earliest row carrying the incident id, normally the
+    // disturbance. Closing that is an operator saying "this case is finished",
+    // and nothing that happens afterwards belongs to it.
+    //
+    // Testing `status <> 'Closed'` on ANY member is not the same thing and was
+    // the bug: a disturbance closed as a false alarm at 13:24 still had its
+    // linked Low Battery sitting open, so the incident stayed alive through it
+    // and a Critical Low Battery at 13:30 attached to a case file that had been
+    // shut six minutes earlier. It then appeared in the closed alarm's linked
+    // list and its lifecycle, below the "Closed" entry — a record that grows
+    // after it has been signed off.
+    //
+    // Long-lived types are exactly the ones that leak this way: a battery alarm
+    // stays open for days because the battery is still low, and would keep a
+    // closed incident collecting new alarms for as long as it lasts.
     const act = await query(
-      `SELECT incident_id FROM alarms
-        WHERE device_id = $1 AND incident_id IS NOT NULL AND status <> 'Closed'
-          AND created_at > $2::timestamptz AND created_at <= $3::timestamptz
-        ORDER BY created_at DESC LIMIT 1`, [deviceIdText, winStart, refIso]);
+      `WITH cand AS (
+         SELECT a.incident_id, a.created_at
+           FROM alarms a
+          WHERE a.device_id = $1 AND a.incident_id IS NOT NULL AND a.status <> 'Closed'
+            AND a.created_at > $2::timestamptz AND a.created_at <= $3::timestamptz
+       )
+       SELECT c.incident_id
+         FROM cand c
+        WHERE COALESCE((
+                SELECT anc.status FROM alarms anc
+                 WHERE anc.incident_id = c.incident_id
+                 ORDER BY anc.created_at ASC, anc.id ASC
+                 LIMIT 1), 'Open') <> 'Closed'
+        ORDER BY c.created_at DESC
+        LIMIT 1`, [deviceIdText, winStart, refIso]);
     const activeInc = act.rows[0]?.incident_id || null;
 
     const isDisturbType = alarmType === "DISTURBANCE" || alarmType === "DISTURBANCE_TECH";
@@ -183,24 +347,24 @@ export async function insertLiveAlarm({ alarmType, value, deviceIdText, site, se
       // accurate clock so they read top→bottom in true order. (`at` no longer used.)
       `INSERT INTO alarms (id, name, priority, device_id, site, serial, status, lat, lng, alarm_type, source, road, created_at, incident_id)
          SELECT 'ALM-' || to_char(now(), 'YYYY') || '-' || nextval('alarms_live_seq'),
-                $1, $2, $3, $4, $5, 'Open', $6, $7, $8, 'device', $9, now(),
+                $1, $2, $3, $4, $5, 'Open', $6, $7, $8, $11, $9, now(),
                 COALESCE($10::text, ${NEWINC})
        RETURNING *`,
-      [name, meta.priority, deviceIdText || null, site || null, serial || null,
-       lat ?? null, lng ?? null, alarmType, road ?? null, incidentId]
+      [name, priority, deviceIdText || null, site || null, serial || null,
+       lat ?? null, lng ?? null, alarmType, road ?? null, incidentId, src]
     );
-    return rows[0] || null;
+    return raised(rows[0]);
   } catch {
     const { rows } = await query(
       `INSERT INTO alarms (id, name, priority, device_id, site, serial, status, lat, lng, alarm_type, source, created_at, incident_id)
          SELECT 'ALM-' || to_char(now(), 'YYYY') || '-' || nextval('alarms_live_seq'),
-                $1, $2, $3, $4, $5, 'Open', $6, $7, $8, 'device', now(),
+                $1, $2, $3, $4, $5, 'Open', $6, $7, $8, $10, now(),
                 COALESCE($9::text, ${NEWINC})
        RETURNING *`,
-      [name, meta.priority, deviceIdText || null, site || null, serial || null,
-       lat ?? null, lng ?? null, alarmType, incidentId]
+      [name, priority, deviceIdText || null, site || null, serial || null,
+       lat ?? null, lng ?? null, alarmType, incidentId, src]
     );
-    return rows[0] || null;
+    return raised(rows[0]);
   }
 }
 
@@ -247,81 +411,283 @@ export async function hasOpenAlarmToday(deviceIdText, alarmType, atIso = null) {
   } catch (e) { console.error("[hasOpenAlarmToday]", e?.message || e); return false; }
 }
 
-export async function disturbanceDecision(deviceIdText, alarmType, atIso, threshold = 4, sinceFloorIso = null, memsMg = 1800) {
-  const dev = String(deviceIdText || "");
-  const thr = Math.max(1, Number(threshold) || 4);
-  const mg = Number(memsMg) || 1800;
-  const DTYPES = ["DISTURBANCE", "DISTURBANCE_TECH"]; // reset spans either disturbance type
-  let count = 0, existing = false;
+/**
+ * SQL fragment: exclude telemetry produced by a TEST from the real disturbance
+ * streak. `alias` is the device_telemetry alias, `dalias` its devices alias.
+ *
+ * Without this a test silently changes real-alarm behaviour, which is the one
+ * thing the test bypass must never do. Two sources to exclude:
+ *
+ *   • A DRILL from batch-ops, which feeds packets through the live pipeline with
+ *     src_ip = 'batch-test'. Four drills would leave the device sitting at 3/4,
+ *     so the next genuine bump — wind, a lorry — raises immediately.
+ *
+ *   • A TECHNICIAN'S deliberate shake, inside an open on-site session. Those are
+ *     real packets from a real device, but they are not evidence anybody is
+ *     interfering with the asset, and leaving them in means a visit hands the
+ *     site a hair-trigger counter for the rest of the run.
+ *
+ * The row set here is already bounded to one run's disturbance packets, so the
+ * correlated NOT EXISTS is cheap.
+ */
+const notATestPacket = (alias, dalias) => `
+  ${alias}.src_ip IS DISTINCT FROM 'batch-test'
+  AND NOT EXISTS (
+    SELECT 1 FROM technician_work_sessions s
+     WHERE s.site_id = ${dalias}.site_id
+       AND ${alias}.received_at >= s.opened_at
+       AND ${alias}.received_at <= LEAST(COALESCE(s.closed_at, s.expires_at), s.expires_at)
+  )`;
 
-  // 1) An OPEN disturbance alarm (ANY age — NOT day-scoped) means we're already
-  //    raised and waiting to be closed → this report is just an event. The cycle
-  //    does not reset until that alarm is CLOSED.
+/**
+ * How far along is this device's disturbance episode, and what should happen?
+ *
+ * ---------------------------------------------------------------------------
+ * THREE TIME CONSTANTS, AND THEY ARE NOT THE SAME NUMBER
+ * ---------------------------------------------------------------------------
+ * The previous version had only one, and that is what broke it. A 30-minute
+ * window was used BOTH to decide "these packets are the same shake" AND to
+ * decide "the device has behaved for long enough, forget it". Those are
+ * different questions whose answers are two orders of magnitude apart.
+ *
+ *   burstGapSec   (120s)  a hole longer than this ENDS THE CURRENT SHAKE.
+ *                         Must exceed the device's reporting interval — set it
+ *                         to roughly 2.5x that. Too small and one shake is
+ *                         counted as several; too large and two unrelated
+ *                         bumps are welded into one long "sustained" event.
+ *
+ *   warn1/2/raise (60/120/180s)  how long a SINGLE shake must last to matter.
+ *
+ *   gapMin        (30 min) how long the device must stay quiet before the whole
+ *                          escalation is forgotten. THE 30-MINUTE RULE.
+ *
+ * ---------------------------------------------------------------------------
+ * WHAT WENT WRONG BEFORE
+ * ---------------------------------------------------------------------------
+ * `elapsed` was `last packet - first packet of the episode`, with nothing in
+ * between required. Two consequences, both reproduced against live data:
+ *
+ *   1. A device reporting every 5 minutes hit `elapsed = 300s` on its SECOND
+ *      disturbance packet and raised immediately. The 60s and 120s warnings
+ *      could never fire at that cadence — they were unreachable by
+ *      construction, which is why the ladder looked like it had no warnings.
+ *
+ *   2. One stray bump 20 minutes after a burst — wind, a lorry, a bird — was
+ *      inside the 30-minute window, so it joined the episode and read as
+ *      `elapsed = 1200s`. It raised a Critical on its own. Worse, it also
+ *      moved the quiet-gap boundary, so the 30-minute reset never arrived: one
+ *      stray every 29 minutes holds an episode open indefinitely.
+ *
+ * ---------------------------------------------------------------------------
+ * THE LADDER NOW
+ * ---------------------------------------------------------------------------
+ * Packets are grouped into BURSTS (gaps <= burstGapSec). One burst is one
+ * "somebody shook it". A level is reached on whichever of two grounds arrives
+ * first — because a device interfered with for three minutes straight and a
+ * device bumped four separate times both warrant the same response, and a
+ * coarse reporting interval must not silently disable one of them:
+ *
+ *   SUSTAINED    the LONGEST burst in the episode lasted >= warn1 / warn2 /
+ *                raise seconds. Duration inside a burst is real duration: the
+ *                packets are dense enough to cover it.
+ *
+ *   REPETITION   distinct bursts since the reset boundary:
+ *                1 -> 0   a single shake, however brief: ignore
+ *                2 -> 1   it happened again
+ *                3 -> 2   and again
+ *                4 -> 3   RAISE
+ *
+ * level = max(sustained, repetition), and a level fires ONCE, on the packet
+ * that crosses it. Both grounds are computed over the same episode, so a shake
+ * that is long AND repeated escalates on whichever mark it reaches first.
+ *
+ * ---------------------------------------------------------------------------
+ * THE 30-MINUTE RESET
+ * ---------------------------------------------------------------------------
+ * The episode ends at the LATEST of: 30 minutes with no disturbance packet,
+ * the last time a disturbance alarm was closed (operator re-arm), or a
+ * simulator-restart cutoff. Both the burst count and the longest-burst
+ * duration go back to zero.
+ *
+ * NOTE ON "30 MINUTES OF NO DATA AT ALL": that is a STRICTER condition than
+ * this one and is fully contained by it — a device sending nothing is by
+ * definition sending no disturbance packets, so it resets here too, at the
+ * same 30-minute mark. Keying the reset on total silence INSTEAD would mean a
+ * device that heartbeats on a timer (which these do) could never reset at all,
+ * because the heartbeats themselves would keep the clock alive. This rule is
+ * the one that actually delivers "quiet for half an hour, start again".
+ *
+ * STATELESS BY DESIGN. Nothing about the episode is stored; bursts, counts and
+ * boundaries are all derived from `device_telemetry` on each evaluation. The
+ * ladder survives a restart mid-episode, and every decision can be
+ * reconstructed after the fact from the packets themselves — which is what you
+ * want when someone asks why an alarm did or did not fire.
+ *
+ * @returns {{action:'skip'|'notify'|'raise'|'event', level:number, prevLevel:number,
+ *            elapsedSec:number|null, t0:string|null, existing:boolean,
+ *            bursts:number, longestSec:number, count:number, threshold:number}}
+ *   `count`/`threshold` are kept in the OLD count-rule convention purely so
+ *   notifyDisturbanceEarly renders the same "1/3", "2/3" wording it always has.
+ */
+export async function disturbanceDecision(
+  deviceIdText,
+  alarmType,
+  atIso,
+  thresholds = {},
+  sinceFloorIso = null,
+  memsMg = 1800
+) {
+  const dev = String(deviceIdText || "");
+  const mg = Number(memsMg) || 1800;
+  const DTYPES = ["DISTURBANCE", "DISTURBANCE_TECH"];
+
+  // Accept either the config object or a bare number, so an old caller passing
+  // `disturb_streak` still gets sane marks instead of NaN.
+  const t = typeof thresholds === "object" && thresholds ? thresholds : {};
+  const warn1 = Math.max(1, Number(t.disturb_warn1_sec) || 60);
+  const warn2 = Math.max(warn1 + 1, Number(t.disturb_warn2_sec) || 120);
+  const raise = Math.max(warn2 + 1, Number(t.disturb_raise_sec) || 180);
+
+  // A hole longer than this ends the current shake. Per-device config first,
+  // then env, then 120s. Floored at warn1 so a burst can always reach level 1
+  // before it is split — a gap threshold below the first mark would make the
+  // sustained ladder unreachable, which is the bug this replaced.
+  const burstGapSec = Math.max(
+    warn1,
+    Number(t.disturb_burst_gap_sec) || Number(process.env.DISTURB_BURST_GAP_SEC) || 120
+  );
+
+  const sustainedLevel = (sec) =>
+    sec >= raise ? 3 : sec >= warn2 ? 2 : sec >= warn1 ? 1 : 0;
+  // 1 burst is a bump. 2 is a coincidence. 4 is somebody at the mast.
+  const repeatLevel = (n) => (n >= 4 ? 3 : n >= 3 ? 2 : n >= 2 ? 1 : 0);
+  const levelOf = (sec, n) => Math.max(sustainedLevel(sec), repeatLevel(n));
+
+  const idle = {
+    action: "skip", level: 0, prevLevel: 0, elapsedSec: null, t0: null,
+    existing: false, bursts: 0, longestSec: 0, count: 1, threshold: 4,
+  };
+
+  // An OPEN disturbance alarm means we have already raised and are waiting for
+  // it to be closed. Further reports are events, not new rows. `source <> 'test'`
+  // keeps a technician's visit out of this.
+  let existing = false;
   try {
     const { rows } = await query(
       `SELECT 1 FROM alarms WHERE device_id = $1 AND alarm_type = ANY($2) AND status <> 'Closed' AND source <> 'test' LIMIT 1`,
       [dev, DTYPES]);
     existing = !!rows[0];
   } catch (e) { console.error("[disturbanceDecision existing]", e?.message || e); }
+  if (existing) return { ...idle, action: "event", existing: true };
 
-  // 2) The count is the disturbance streak within the CURRENT 30-MINUTE EPISODE.
-  //    A reset happens only at the LATEST of:
-  //      • a QUIET GAP of >= GAP minutes (default 30) between disturbance packets —
-  //        so a NEW episode (fresh 1/3, 2/3, …) starts ONLY after 30 min of no
-  //        disturbance. A clean packet or brief settle does NOT reset it, so a
-  //        warning level never repeats within the window;
-  //      • the last time a disturbance alarm was CLOSED (operator re-arm);
-  //      • an optional simulator-reset floor.
-  //    NOT day-scoped. The current packet (bit=1, already inserted) is counted.
   const gapMin = Number(process.env.DISTURB_STREAK_GAP_MIN) || 30;
+
+  let t0 = null, bursts = 0, longestSec = 0, prevBursts = 0, prevLongestSec = 0, packets = 0;
   try {
     const { rows } = await query(
-      `SELECT count(*)::int AS n
-         FROM device_telemetry dt
-         JOIN devices d ON d.id = dt.device_id
-        WHERE (d.device_id = $1 OR d.imei = $1)
-          AND (substr(upper(dt.motion_byte), 3, 1) = '1'
-               OR (dt.mems_dynamic IS NOT NULL AND dt.mems_dynamic >= $5))
-          AND dt.received_at > GREATEST(
-                -- packet just BEFORE the current run (most recent >= gap break)
-                COALESCE(
-                  (SELECT prev FROM (
-                     SELECT dt3.received_at AS rs,
-                            lag(dt3.received_at) OVER (ORDER BY dt3.received_at) AS prev
-                       FROM device_telemetry dt3 JOIN devices d3 ON d3.id = dt3.device_id
-                      WHERE (d3.device_id = $1 OR d3.imei = $1)
-                        AND (substr(upper(dt3.motion_byte), 3, 1) = '1'
-                             OR (dt3.mems_dynamic IS NOT NULL AND dt3.mems_dynamic >= $5))
-                   ) q
-                   WHERE prev IS NOT NULL AND (rs - prev) > ($4 * interval '1 minute')
-                   ORDER BY rs DESC LIMIT 1),
-                  '-infinity'::timestamptz),
-                -- last close of a disturbance alarm
-                COALESCE(
-                  (SELECT max(closed_at) FROM alarms
-                     WHERE device_id = $1 AND alarm_type = ANY($2)
-                       AND status = 'Closed' AND closed_at IS NOT NULL),
-                  '-infinity'::timestamptz),
-                COALESCE($3::timestamptz, '-infinity'::timestamptz))`,
-      [dev, DTYPES, sinceFloorIso || null, gapMin, mg]);
-    count = rows[0]?.n || 0;
-  } catch (e) { console.error("[disturbanceDecision count]", e?.message || e); }
+      `WITH d AS (
+         SELECT dt.received_at
+           FROM device_telemetry dt
+           JOIN devices dd ON dd.id = dt.device_id
+          WHERE (dd.device_id = $1 OR dd.imei = $1)
+            AND (substr(upper(dt.motion_byte), 3, 1) = '1'
+                 OR (dt.mems_dynamic IS NOT NULL AND dt.mems_dynamic >= $5))
+            AND ${notATestPacket("dt", "dd")}
+       ),
+       bound AS (
+         SELECT GREATEST(
+           -- THE 30-MINUTE RESET: the packet just BEFORE the current run.
+           COALESCE((
+             SELECT prev FROM (
+               SELECT received_at AS rs,
+                      lag(received_at) OVER (ORDER BY received_at) AS prev
+                 FROM d
+             ) q
+             WHERE prev IS NOT NULL AND (rs - prev) > ($4 * interval '1 minute')
+             ORDER BY rs DESC LIMIT 1), '-infinity'::timestamptz),
+           -- operator re-arm
+           COALESCE((
+             SELECT max(closed_at) FROM alarms
+              WHERE device_id = $1 AND alarm_type = ANY($2)
+                AND status = 'Closed' AND closed_at IS NOT NULL), '-infinity'::timestamptz),
+           COALESCE($3::timestamptz, '-infinity'::timestamptz)
+         ) AS b
+       ),
+       ep AS (SELECT d.received_at FROM d, bound WHERE d.received_at > bound.b),
+       -- Gaps-and-islands: a hole wider than the burst threshold starts a new
+       -- burst. The running sum is a PREFIX function, so the ids it assigns to
+       -- the first n-1 rows are the same ids it would assign if the last row
+       -- had never arrived - which is what lets prv below be a plain filter
+       -- rather than a second pass over the window.
+       eg AS (
+         SELECT received_at,
+                CASE WHEN lag(received_at) OVER (ORDER BY received_at) IS NULL
+                       OR received_at - lag(received_at) OVER (ORDER BY received_at)
+                          > ($6 * interval '1 second')
+                     THEN 1 ELSE 0 END AS nb
+           FROM ep
+       ),
+       bn AS (SELECT received_at, sum(nb) OVER (ORDER BY received_at) AS burst_id FROM eg),
+       last_pkt AS (SELECT max(received_at) AS m FROM ep),
+       cur AS (
+         SELECT burst_id, min(received_at) AS s, max(received_at) AS e
+           FROM bn GROUP BY burst_id
+       ),
+       prv AS (
+         SELECT burst_id, min(received_at) AS s, max(received_at) AS e
+           FROM bn, last_pkt WHERE bn.received_at < last_pkt.m GROUP BY burst_id
+       )
+       SELECT (SELECT min(received_at) FROM ep)                             AS t0,
+              (SELECT count(*) FROM ep)                                     AS packets,
+              (SELECT count(*) FROM cur)                                    AS bursts,
+              COALESCE((SELECT max(EXTRACT(epoch FROM e - s)) FROM cur), 0)  AS longest,
+              (SELECT count(*) FROM prv)                                    AS prev_bursts,
+              COALESCE((SELECT max(EXTRACT(epoch FROM e - s)) FROM prv), 0)  AS prev_longest`,
+      [dev, DTYPES, sinceFloorIso || null, gapMin, mg, burstGapSec]);
+    t0             = rows[0]?.t0 || null;
+    packets        = Number(rows[0]?.packets || 0);
+    bursts         = Number(rows[0]?.bursts || 0);
+    longestSec     = Math.round(Number(rows[0]?.longest || 0));
+    prevBursts     = Number(rows[0]?.prev_bursts || 0);
+    prevLongestSec = Math.round(Number(rows[0]?.prev_longest || 0));
+  } catch (e) {
+    console.error("[disturbanceDecision episode]", e?.message || e);
+    return idle;
+  }
 
-  // Graduated rule: #1 ignore, #2..(thr-1) notify (SMS/email only), #thr raise the
-  // system alarm; while an alarm is open it's event only (until closed → reset).
-  let action = "skip";
-  if (existing) action = "event";
-  else if (count >= thr) action = "raise";
-  else if (count >= 2) action = "notify";
-  return { action, count, existing, threshold: thr };
+  // No disturbance packets in the episode at all — nothing to decide.
+  if (!t0 || packets === 0) return idle;
+
+  const level     = levelOf(longestSec, bursts);
+  const prevLevel = levelOf(prevLongestSec, prevBursts);
+
+  const base = {
+    level, prevLevel, existing: false,
+    // `elapsedSec` now means the longest SINGLE shake, not the span of the
+    // episode. Callers only log it; nothing branches on it.
+    elapsedSec: longestSec,
+    bursts, longestSec,
+    t0: new Date(t0).toISOString(),
+    // Old-convention numbers, for the unchanged warning wording.
+    count: level + 1, threshold: 4,
+  };
+
+  // Only a CROSSING acts. A packet that adds nothing to either ground changes
+  // nothing, which is what makes one shake count as one event.
+  if (level <= prevLevel) return { ...base, action: "skip" };
+  if (level >= 3) return { ...base, action: "raise" };
+  return { ...base, action: "notify" };
 }
 
 // Auto-clear an open alarm of a given type for a device (used by the offline sweep
 // when a device comes back and reports). Closes any Open/Acknowledged matching row.
 export async function clearOpenAlarm(deviceIdText, alarmType) {
   if (!deviceIdText) return 0;
+  // Stamp closed_at (only where it isn't already set) so a system auto-close
+  // carries a real close time, exactly like a supervisor close. Mission
+  // auto-end and any "how long was it closed" logic rely on this timestamp.
   const { rowCount } = await query(
-    `UPDATE alarms SET status = 'Closed'
+    `UPDATE alarms SET status = 'Closed', closed_at = COALESCE(closed_at, now())
       WHERE device_id = $1 AND alarm_type = $2 AND status <> 'Closed'`,
     [deviceIdText, alarmType]
   );

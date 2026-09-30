@@ -3,5 +3,5 @@
 import { redirect } from "next/navigation";
 
 export default function MainAppIndex() {
-  redirect("/mainapp/sites");
+  redirect("/mainapp/alarmmaps");
 }

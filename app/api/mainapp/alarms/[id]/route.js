@@ -13,6 +13,7 @@ import {
   getAlarm, getLinkedAlarms, getAlarmDeviceSnapshot, buildLifecycle,
 } from "../../../apiUtils/dataControl/alarms.js";
 import { listResponses } from "../../../apiUtils/dataControl/response.js";
+import { missionLifecycleEvents, missionsForAlarm } from "../../../apiUtils/dataControl/missions.js";
 
 export async function GET(request, ctx) {
   const me = getAuth(request);
@@ -31,13 +32,24 @@ export async function GET(request, ctx) {
     if (perms.criticalOnly && alarm.priority !== "Critical") {
       return NextResponse.json({ error: "Not permitted" }, { status: 403 });
     }
-    let linked = [], snapshot = null, responses = [];
+    let linked = [], snapshot = null, responses = [], missionEvents = [], missions = [];
     try { linked = await getLinkedAlarms(alarm); } catch (e) { console.error("[alarm detail] linked:", e?.message); }
     try { snapshot = await getAlarmDeviceSnapshot(alarm.device_id); } catch (e) { console.error("[alarm detail] snapshot:", e?.message); }
     try { responses = await listResponses(alarm.id); } catch (e) { console.error("[alarm detail] responses:", e?.message); }
-    const lifecycle = buildLifecycle(alarm, linked, responses);
+    // Field missions — what came of the response. `alarm_responses` records who
+    // said they were going; a mission records what they found and when they
+    // finished. Merged HERE rather than inside buildLifecycle so the alarms data
+    // manager is not touched: missions are a separate module that appends to the
+    // activity log, and a missing table omits the events rather than the page.
+    try { missionEvents = await missionLifecycleEvents(alarm.id); } catch (e) { console.error("[alarm detail] missions:", e?.message); }
+    // The mission ROWS, for the report — who went, what they found, and the
+    // media ids of their evidence. The timeline gets one line per mission from
+    // missionEvents above; the photos belong here, beside the close photos.
+    try { missions = await missionsForAlarm(alarm.id); } catch (e) { console.error("[alarm detail] mission rows:", e?.message); }
+    const lifecycle = [...buildLifecycle(alarm, linked, responses), ...missionEvents]
+      .sort((a, b) => new Date(a.at) - new Date(b.at));
     return NextResponse.json({
-      alarm, snapshot: snapshot || {}, linked, lifecycle,
+      alarm, snapshot: snapshot || {}, linked, lifecycle, missions,
       me: { ...perms, company: org.company || null, findings: ACK_FINDINGS,
             ackedMonitoring: !!alarm.ack_monitoring_at, ackedSecurity: !!alarm.ack_security_at },
     });

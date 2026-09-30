@@ -1,69 +1,63 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+// app/mainapp/login/page.jsx
+// Full-window AssetGuard login. Left brand panel is static (server);
+// the right form panel is the interactive client component.
+// Route: /mainapp/login
 
-export default function Home() {
+import LoginForm from "./mainapp/login/components/LoginForm.jsx";
+import styles from "./mainapp/login/components/login.module.css";
+
+export const metadata = {
+  title: "Log in · AssetGuard",
+};
+
+export default function LoginPage() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.js</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className={styles.screen}>
+      <div className={styles.grid}>
+        {/* ---------------- Left brand panel ---------------- */}
+        <section className={styles.brand}>
+          <div className={styles.orb} aria-hidden="true">
+            <span style={{ inset: 0 }} />
+            <span style={{ inset: "64px" }} />
+            <span style={{ inset: "128px" }} />
+            <i className={styles.ping} />
+          </div>
+
+          <div className={styles.brandInner}>
+            <div className={styles.brandLogoRow}>
+              <img
+                src="/assetguard-logo.svg"
+                alt="AssetGuard"
+                style={{ height: 42, width: "auto", display: "block" }}
+              />
+              <span className={styles.brandName}>
+                <span className={styles.brandNameA}>Asset</span>
+                <span className={styles.brandNameB}>Guard</span>
+              </span>
+            </div>
+
+            <div className={styles.brandHeadline}>
+              Asset monitoring
+              <br />
+              and protection
+            </div>
+            <div className={styles.brandSub}>
+              Real-time visibility, protection, and reporting for your assets,
+              field teams, and operations — from a single platform.
+            </div>
+
+            <div className={styles.brandPills}>
+              <span className={styles.pill}>Live tracking</span>
+              <span className={styles.pill}>Smart alerts</span>
+              <span className={styles.pill}>Reporting</span>
+              <span className={styles.pill}>Field ops</span>
+            </div>
+          </div>
+        </section>
+
+        {/* ---------------- Right form panel ---------------- */}
+        <LoginForm />
+      </div>
+    </main>
   );
 }

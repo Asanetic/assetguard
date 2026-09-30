@@ -9,7 +9,10 @@ import styles from "./deviceLogs.module.css";
 
 const TZ = "Africa/Nairobi";
 const pad = (n) => String(n).padStart(2, "0");
-const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+// The Kenyan (EAT) calendar date of an instant — NOT the viewer's local date.
+// en-CA formats as YYYY-MM-DD; forcing Africa/Nairobi means "today" is Kenya's
+// today for everyone, whatever timezone their computer is set to.
+const isoDate = (d) => d.toLocaleDateString("en-CA", { timeZone: TZ });
 
 function fmtDay(d) {
   // Anchor at UTC noon and render in EAT so the label always equals the EAT date.
@@ -38,13 +41,25 @@ function fmtInterval(sec) {
   return `${Math.round(s / 60)}min`;
 }
 // Device state for the day, from the longest reporting gap + battery.
-function dayHealth(d) {
+// Health of a day is judged against THIS device's own cadence, not a fixed
+// 30min/3h. A device that wakes every 6h and beats every ~6h is HEALTHY — its
+// normal gap is 6h, so flagging that red made every long-interval device look
+// broken. `grace` = wake interval + the tolerance allowance (default 5 min); a
+// gap within one grace is normal, up to two graces is "some gaps" (missed a
+// beat), beyond that is "long gaps". A silent day is missed; far fewer beats than
+// expected is under-reporting.
+function dayHealth(d, dev) {
+  const interval = Number(dev?.interval_sec) || 86400;
+  const tol = Number(dev?.tol_sec) || 300;
+  const grace = interval + tol;
+  const expected = Math.max(1, Math.round(86400 / interval));
   const g = d.max_gap_s || 0;
-  let key = "healthy", label = "Healthy";
-  if (d.beats <= 1) { key = "sparse"; label = "Single report"; }
-  else if (g > 3 * 3600) { key = "offline"; label = "Long gaps"; }
-  else if (g > 30 * 60) { key = "watch"; label = "Some gaps"; }
   const low = d.batt_min != null && d.batt_min <= 20;
+  let key = "healthy", label = "Healthy";
+  if (!d.beats) { key = "missed"; label = "No heartbeats"; }
+  else if (g > 2 * grace) { key = "offline"; label = "Long gaps"; }
+  else if (g > grace) { key = "watch"; label = "Some gaps"; }
+  else if (d.beats < expected * 0.5) { key = "sparse"; label = "Under-reporting"; }
   return { key, label, low };
 }
 
@@ -252,12 +267,12 @@ export default function DeviceLogs({ initialDevice = "" }) {
           <div className={styles.cardHead}>Heartbeats per day<span className={styles.since}>{fmtDay(from)} → {fmtDay(to)}</span></div>
           <div className={styles.spark}>
             {[...days].reverse().map((d) => {
-              const h = dayHealth(d);
+              const h = dayHealth(d, dev);
               return (
                 <div key={d.day} className={styles.sparkCol} title={`${fmtDay(d.day)} · ${d.beats} beats · worst gap ${fmtGap(d.max_gap_s)}`}
                      onClick={() => { setOpen((o) => ({ ...o, [d.day]: true })); toggleDay(d.day); }}>
                   <div className={styles.sparkWrap}>
-                    <div className={`${styles.sparkBar} ${styles["hb_" + h.key]}`} style={{ height: `${Math.round(((d.beats || 0) / maxBeats) * 100)}%` }} />
+                    <div className={`${styles.sparkBar} ${styles["hb_" + h.key]}`} style={{ height: `${d.beats > 0 ? Math.max(8, Math.round((d.beats / maxBeats) * 100)) : 14}%` }} />
                   </div>
                   <div className={styles.sparkLbl}>{d.day.slice(8)}</div>
                 </div>
@@ -276,7 +291,7 @@ export default function DeviceLogs({ initialDevice = "" }) {
         {!loading && !err && days.length === 0 && <div className={styles.muted}>No heartbeats for this device in the selected range.</div>}
 
         {days.map((d) => {
-          const h = dayHealth(d);
+          const h = dayHealth(d, dev);
           const isOpen = !!open[d.day];
           const det = detail[d.day];
           return (

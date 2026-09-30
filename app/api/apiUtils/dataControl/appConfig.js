@@ -202,10 +202,11 @@ export const EMAIL_DEFAULTS = {
 
 export const SMS_DEFAULTS = {
   enabled: true,
-  provider: "Asanetic",
+  provider: "Asanetic",              // "Asanetic" | "Celcom Africa"
   apiUrl: "https://asanetic.com/sms/sendsms",
   apiKey: "",
   senderId: "",
+  partnerID: "",                     // Celcom Africa only (their "partnerID")
 };
 
 /** Full email config (includes the SMTP password) — for the sender. */
@@ -248,6 +249,8 @@ export async function getSmsConfig() {
   if (process.env.SMS_API_URL) env.apiUrl = process.env.SMS_API_URL;
   if (process.env.SMS_API_KEY) env.apiKey = process.env.SMS_API_KEY;
   if (process.env.SMS_SENDER_ID) env.senderId = process.env.SMS_SENDER_ID;
+  if (process.env.SMS_PARTNER_ID) env.partnerID = process.env.SMS_PARTNER_ID;
+  if (process.env.SMS_PROVIDER) env.provider = process.env.SMS_PROVIDER;
   return { ...SMS_DEFAULTS, ...prune(env), ...prune(db) };
 }
 
@@ -255,7 +258,7 @@ export async function getSmsConfig() {
 export async function saveSmsConfig(patch = {}, updatedBy = null) {
   const cur = (await getConfig("sms")) || {};
   const next = { ...SMS_DEFAULTS, ...cur };
-  for (const f of ["enabled", "provider", "apiUrl", "senderId"])
+  for (const f of ["enabled", "provider", "apiUrl", "senderId", "partnerID"])
     if (patch[f] !== undefined) next[f] = patch[f];
   if (typeof patch.apiKey === "string" && patch.apiKey.trim() !== "") next.apiKey = patch.apiKey;
   else next.apiKey = cur.apiKey !== undefined ? cur.apiKey : SMS_DEFAULTS.apiKey;
@@ -290,6 +293,26 @@ export async function saveOrgConfig(patch = {}, updatedBy = null) {
   const next = { ...ORG_DEFAULTS, ...cur, ...patch };
   await setConfig("org", next, updatedBy);
   return next;
+}
+
+// ---- Site visibility scope (global default) -------------------------------
+// Whether users are scoped to sites by REGION (users.regions) or by an explicit
+// imported LIST (user_sites). This is the default; a user may override it via
+// users.site_scope_mode. Stored under the 'siteScope' key.
+export const SITE_SCOPE_MODES = ["region", "list"];
+export const SITE_SCOPE_DEFAULTS = { mode: "region" };
+
+export async function getSiteScopeConfig() {
+  const v = (await getConfig("siteScope").catch(() => null)) || {};
+  const mode = SITE_SCOPE_MODES.includes(v.mode) ? v.mode : SITE_SCOPE_DEFAULTS.mode;
+  return { mode };
+}
+
+export async function saveSiteScopeConfig(patch = {}, updatedBy = null) {
+  const cur = await getSiteScopeConfig();
+  const mode = SITE_SCOPE_MODES.includes(patch.mode) ? patch.mode : cur.mode;
+  await setConfig("siteScope", { mode }, updatedBy);
+  return { mode };
 }
 
 /** Messaging config for the admin page — secrets removed, replaced by *Set flags. */

@@ -11,6 +11,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./viewdevice.module.css";
 import { fetchMapsConfig, loadGoogleMaps, devicePinIcon, deviceStatusColor } from "../../../lib/googleMaps.js";
+import PhotoGallery from "../../../lib/PhotoGallery.jsx";
+import TechActivity from "../../../lib/TechActivity.jsx";
 
 const STATUSES = ["Live", "Offline", "Testing", "Inactive", "Maintenance"];
 const STATUS_PILL = {
@@ -18,7 +20,6 @@ const STATUS_PILL = {
   Testing: ["#FEF3C7", "#92400E", "#F59E0B"], Inactive: ["#EDE9FE", "#5B21B6", "#8B5CF6"],
   Maintenance: ["#E0F2FE", "#075985", "#0EA5E9"],
 };
-const RADII = ["25", "50", "100", "250", "500"];
 // Reporting cadence (GL-28 `update,N`): 3–60 seconds. [value(seconds), label].
 const INTERVALS = [["3", "3 seconds"], ["5", "5 seconds"], ["10", "10 seconds"], ["15", "15 seconds"], ["20", "20 seconds"], ["30", "30 seconds"], ["45", "45 seconds"], ["60", "60 seconds (1 min)"]];
 // Wake (sleep) interval in MINUTES. [value, label]. Default 24 h.
@@ -101,12 +102,18 @@ export default function ViewDevice() {
   const wakeSec = Number(cfg?.wake_interval_sec ?? 86400);
   const wakeMin = Math.round(wakeSec / 60);
   const pendingWakeSec = cfg?.pending_wake_interval_sec != null ? Number(cfg.pending_wake_interval_sec) : null;
+  // Same "pending → confirmed" story as wake, for the other two command-backed values.
+  const pendingMotion = cfg?.pending_motion_sensitivity != null ? Number(cfg.pending_motion_sensitivity) : null;
+  const pendingIntervalSec = cfg?.pending_upload_interval_s != null ? Number(cfg.pending_upload_interval_s) : null;
   const muteActive = device?.mute_until && new Date(device.mute_until) > new Date();
   const usage = device?.data_usage || null;
   const fmtMbC = (mb) => (mb == null ? "—" : mb >= 1024 ? `${Math.round((mb / 1024) * 100) / 100} GB` : `${Math.round(mb)} MB`);
   const notes = cfg?.mounting_notes || "—";
   const firmware = device?.firmware || "v2.3.8";
   const updateAvailable = firmware !== latestFw;
+  // Powered off: the device acked a pwroff (deactivate) command and shut down.
+  const poweredOff = !!cfg?.powered_off;
+  const poweredOffAt = cfg?.powered_off_at ? new Date(cfg.powered_off_at) : null;
 
   useEffect(() => {
     if (!device) return;
@@ -185,15 +192,20 @@ export default function ViewDevice() {
       const d = await r.json().catch(() => ({}));
       if (!r.ok) { flash(d.error || "Update failed"); return false; }
       if (d.device) setDevice(d.device);
-      if (okMsg) flash(okMsg);
+      // If the server couldn't persist part of the change (e.g. a config write
+      // failed), say so instead of falsely reporting success.
+      if (d.warning) { flash(`Not fully saved — ${d.warning}`); }
+      else if (okMsg) flash(okMsg);
       await load();
       return true;
     } catch { flash("Network error"); return false; }
   }
 
   function changeStatus(v) { patch({ status: v }, `Status changed to ${v}`); }
-  // Power off (deactivate): queue *HQ,IMEI,pwroff#. Sends on the device's next wake;
-  // when it acks, the device is set INACTIVE (sticky — reinstate manually later).
+  // Power off (deactivate): queue *HQ,IMEI,pwroff#. Sends on the device's next wake.
+  // If the device ACKS, it's set INACTIVE + "Powered off" immediately; if it powers
+  // down without acking, the 15-min sweep sees it's gone silent and does the same.
+  // Sticky — reinstate manually by setting the status back to Live/etc.
   async function powerOff() {
     if (!device?.id) return;
     if (!pwrArmed) { setPwrArmed(true); setTimeout(() => setPwrArmed(false), 4000); return; }
@@ -203,7 +215,8 @@ export default function ViewDevice() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: [device.id], op: "poweroff" }),
       });
-      flash(r.ok ? "Power-off queued — sends on the device's next wake, then it goes Inactive" : "Could not queue power-off");
+      flash(r.ok ? "Power-off queued — device goes Inactive when it acks, or once it's confirmed silent" : "Could not queue power-off");
+      if (r.ok) load();
     } catch { flash("Could not queue power-off"); }
   }
 
@@ -261,9 +274,13 @@ export default function ViewDevice() {
     if (!/^\d{14,17}$/.test(imei)) { flash("IMEI must be 14–17 digits"); return; }
     const body = {
       sim: dSim.trim() || null,
-      // Canonical flat keys the engine + sync read. Wake interval is NOT written here —
-      // it's queued as a command and only becomes active when the device confirms it.
-      config: { geofence_enabled: true, geofence_radius_m: Number(dGeo), motion_sensitivity: Number(dMot), upload_interval_s: Number(dInt), mounting_notes: dNotes.trim() || null },
+      // Only registry-only fields are written straight to config here. The three
+      // command-backed values — motion sensitivity, upload interval, wake interval —
+      // are NOT written now: they're queued below and become the live value only
+      // when the device confirms, so the details never show a value the device has
+      // not actually taken (and a failed command leaves the last one standing).
+      // Geofence radius: clamp to the allowed 15–500 m range (any value between).
+      config: { geofence_enabled: true, geofence_radius_m: Math.min(500, Math.max(15, Math.round(Number(dGeo) || 15))), mounting_notes: dNotes.trim() || null },
     };
     if (imei !== String(device?.imei || "").trim()) body.imei = imei; // only send when changed
     const ok = await patch(body, "Device details saved");
@@ -272,38 +289,35 @@ export default function ViewDevice() {
       // Only fields that REQUIRE a device command get one queued, and only when they
       // actually changed. (Geofence radius, notes, SIM and IMEI are registry-only — no
       // command.) Commands send on the device's next wake.
-      const queued = [];
-      const prevMot = Number(cfg?.motion_sensitivity ?? 50);
-      if (device?.id && Number(dInt) !== intervalSec) {
+      // Compare against the SAME baseline the slider was initialised from
+      // (`motion`, default 30) — not a different default — so saving without
+      // touching motion never queues a spurious GS command.
+      const prevMot = motion;
+      // Which command-backed values actually changed.
+      const changes = [];
+      if (device?.id && Number(dInt) !== intervalSec) changes.push({ op: "interval", value: Number(dInt), label: `interval ${dInt}s` });
+      if (device?.id && Number(dMot) !== prevMot) changes.push({ op: "sensitivity", value: Number(dMot), label: `sensitivity ${dMot}` });
+      if (device?.id && Number(dWake) !== wakeMin) changes.push({ op: "upt", value: Number(dWake), label: `wake ${dWake} min` });
+
+      const okd = [], errs = [];
+      for (const c of changes) {
         try {
           const r = await fetch("/api/mainapp/devices/commands", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ids: [device.id], op: "interval", value: Number(dInt) }),
+            body: JSON.stringify({ ids: [device.id], op: c.op, value: c.value }),
           });
-          if (r.ok) queued.push(`interval ${dInt}s`);
-        } catch { /* config saved; command best-effort */ }
+          const d = await r.json().catch(() => ({}));
+          // Surface the truth instead of silently succeeding: an HTTP error, or a
+          // 200 that queued to ZERO devices (the device wasn't matched), both mean
+          // the change didn't take — say so.
+          if (!r.ok) errs.push(`${c.label} — ${d.error || `HTTP ${r.status}`}`);
+          else if (!d.queued) errs.push(`${c.label} — queued to 0 devices`);
+          else okd.push(c.label);
+        } catch { errs.push(`${c.label} — network error`); }
       }
-      if (device?.id && Number(dMot) !== prevMot) {
-        try {
-          const r = await fetch("/api/mainapp/devices/commands", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ids: [device.id], op: "sensitivity", value: Number(dMot) }),
-          });
-          if (r.ok) queued.push(`sensitivity ${dMot}`);
-        } catch { /* config saved; command best-effort */ }
-      }
-      // Wake interval → queue UPT. Backend stores it pending; it becomes active only
-      // when the device ACK-confirms (so the interval "resets" only after success).
-      if (device?.id && Number(dWake) !== wakeMin) {
-        try {
-          const r = await fetch("/api/mainapp/devices/commands", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ids: [device.id], op: "upt", value: Number(dWake) }),
-          });
-          if (r.ok) { queued.push(`wake ${dWake} min (pending)`); load(); }
-        } catch { /* config saved; command best-effort */ }
-      }
-      if (queued.length) flash(`Queued to the device on next wake: ${queued.join(", ")}`);
+      if (errs.length) flash(`Command NOT queued: ${errs.join("; ")}`);
+      else if (okd.length) flash(`Queued to the device on next wake: ${okd.join(", ")}`);
+      if (changes.length) load();
     }
   }
   function decommission() {
@@ -359,6 +373,14 @@ export default function ViewDevice() {
               </select>
               <span className={styles.statusChev} style={{ color: pill[1] }}>▾</span>
             </span>
+            {poweredOff ? (
+              <span
+                title={poweredOffAt ? `Powered off ${poweredOffAt.toLocaleString()}` : "Device acked a power-off command"}
+                style={{ display: "inline-flex", alignItems: "center", gap: 5, marginLeft: 8, padding: "3px 9px", borderRadius: 999, background: "#FEE2E2", color: "#991B1B", fontWeight: 700, fontSize: 12 }}
+              >
+                <i className="ti ti-power" /> Powered off
+              </span>
+            ) : null}
           </div>
           <div className={styles.sub}>{device.site || "—"} · {device.site_code || "—"} · change status directly above</div>
         </div>
@@ -419,24 +441,29 @@ export default function ViewDevice() {
               </div>
               <div>
                 <div className={styles.dl}>GEOFENCE RADIUS</div>
-                {editing ? <select className={styles.in} value={dGeo} onChange={(e) => setDGeo(e.target.value)}>{RADII.map((r) => <option key={r} value={r}>{r} m</option>)}</select>
-                  : <div className={styles.dv}>{geoRadius} m</div>}
+                {editing ? (
+                  <div>
+                    <input className={styles.in} type="number" min={15} max={500} step={1} value={dGeo}
+                      onChange={(e) => setDGeo(e.target.value)} placeholder="15–500" />
+                    <div className={styles.hint}>Any value from 15 m to 500 m.</div>
+                  </div>
+                ) : <div className={styles.dv}>{geoRadius} m</div>}
               </div>
               <div>
                 <div className={styles.dl}>MOTION SENSITIVITY</div>
                 {editing ? (
                   <div><input type="range" min="1" max="50" value={dMot} className={styles.slider} onChange={(e) => setDMot(Number(e.target.value))} /><div className={styles.hint}>{dMot} / 50 · 1 = most sensitive · 50 = least sensitive</div></div>
-                ) : <div className={styles.dv}>{motion} / 50</div>}
+                ) : <div className={styles.dv}>{motion} / 50{pendingMotion != null ? <span style={{ color: "#B45309", fontWeight: 700, marginLeft: 5 }}>→ {pendingMotion} pending</span> : null}</div>}
               </div>
               <div>
                 <div className={styles.dl}>MOVING INTERVAL</div>
                 {editing ? <select className={styles.in} value={dInt} onChange={(e) => setDInt(e.target.value)}>{INTERVALS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
-                  : <div className={styles.dv}>{interval}</div>}
+                  : <div className={styles.dv}>{interval}{pendingIntervalSec != null ? <span style={{ color: "#B45309", fontWeight: 700, marginLeft: 5 }}>→ {pendingIntervalSec}s pending</span> : null}</div>}
               </div>
               <div>
                 <div className={styles.dl}>WAKE-UP INTERVAL</div>
                 {editing ? <select className={styles.in} value={dWake} onChange={(e) => setDWake(e.target.value)}>{WAKE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
-                  : <div className={styles.dv}>{fmtWake(wakeSec)}{pendingWakeSec != null && pendingWakeSec !== wakeSec ? <span style={{ color: "#B45309", fontWeight: 700, marginLeft: 5 }}>→ {fmtWake(pendingWakeSec)} pending</span> : null}</div>}
+                  : <div className={styles.dv}>{fmtWake(wakeSec)}{pendingWakeSec != null ? <span style={{ color: "#B45309", fontWeight: 700, marginLeft: 5 }}>→ {fmtWake(pendingWakeSec)} pending</span> : null}</div>}
               </div>
               <div><div className={styles.dl}>FIRMWARE</div><div className={styles.dv}>{firmware}{updateAvailable ? <span className={styles.fwUpd}>UPDATE AVAILABLE</span> : null}</div></div>
               <div><div className={styles.dl}>LAST SEEN</div><div className={styles.dv}>{relTime(device.last_seen)}</div></div>
@@ -458,13 +485,10 @@ export default function ViewDevice() {
             </div>
           </div>
 
-          {/* installation photo */}
+          {/* device photos — real technician uploads (installation first) */}
           <div className={styles.sec}>
-            <div className={styles.secH}><span className={styles.chip} style={{ background: "#EDE9FE", color: "#7C3AED" }}><i className="ti ti-camera" /></span>Installation photo</div>
-            <div className={styles.photoWrap}>
-              <svg viewBox="0 0 700 190"><rect width="700" height="190" fill="#BFDBFE" /><rect y="145" width="700" height="45" fill="#A8B8A0" /><rect x="320" y="20" width="16" height="150" fill="#64748B" /><rect x="260" y="35" width="130" height="24" rx="3" fill="#334155" /></svg>
-              <div className={styles.photoCap}><i className="ti ti-camera" style={{ fontSize: 13 }} />{cfg?.install_photo ? `Installation photo · ${cfg.install_photo}` : "Installation photo on file"}</div>
-            </div>
+            <div className={styles.secH}><span className={styles.chip} style={{ background: "#EDE9FE", color: "#7C3AED" }}><i className="ti ti-camera" /></span>Device photos</div>
+            <PhotoGallery deviceId={device.device_id} />
           </div>
 
           {/* tracker log history — parsed telemetry from the device */}
@@ -527,6 +551,12 @@ export default function ViewDevice() {
                 <span className={styles.actDate}>{a.date}</span>
               </div>
             )) : <div className={styles.actEmpty}>No activity recorded yet — status changes, firmware updates and edits will appear here.</div>}
+          </div>
+
+          {/* technician service history — what technicians did on THIS device (worklog) */}
+          <div className={styles.sec}>
+            <div className={styles.secH}><span className={styles.chip} style={{ background: "#DBE7FE", color: "#2E6CF5" }}><i className="ti ti-clipboard-check" /></span>Service history</div>
+            <TechActivity deviceId={device.device_id} />
           </div>
         </div>
 

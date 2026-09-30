@@ -78,8 +78,14 @@ export async function POST(request) {
     catch { return NextResponse.json({ error: "meta is not valid JSON" }, { status: 400 }); }
   }
 
-  if (!meta.site_id && !meta.site_code)
-    return NextResponse.json({ error: "A site is required" }, { status: 422 });
+  // A site OR a device. The site requirement was written for site photography,
+  // where every shot belongs somewhere on the estate. Field-mission evidence
+  // does not: a chase ends wherever the vehicle stopped, which is routinely
+  // nowhere near the site the device is registered to, and demanding a site
+  // there would either block the upload or attach the photo to a place the
+  // responder never went. `site_photos.site_id` is already nullable.
+  if (!meta.site_id && !meta.site_code && !meta.device_id)
+    return NextResponse.json({ error: "A site or a device is required" }, { status: 422 });
 
   try {
     const photo = await insertPhoto(
@@ -93,9 +99,9 @@ export async function POST(request) {
       buffer
     );
     logAudit(request, {
-      action: "Site photo captured",
+      action: photo.site_id || photo.site_code ? "Site photo captured" : "Device photo captured",
       category: "Sites",
-      detail: `${photo.photo_type} at ${photo.site_code || photo.site_name || "a site"}` +
+      detail: `${photo.photo_type} at ${photo.site_code || photo.site_name || photo.device_id || "a site"}` +
         `${photo.technician ? ` by ${photo.technician}` : ""}`,
     });
     return NextResponse.json({ photo }, { status: 201 });

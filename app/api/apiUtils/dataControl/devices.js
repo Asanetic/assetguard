@@ -127,9 +127,20 @@ export async function setDeviceStatus(deviceId, status) {
   } catch {}
 }
 
-export async function listDevices({ q, site_id, status, orientation } = {}) {
+export async function listDevices({ q, site_id, status, orientation, regions, siteIds } = {}) {
   const where = [];
   const params = [];
+  // Region scope: only devices whose SITE security_region is in `regions` (array).
+  // Case-insensitive so "WESTERN"/"Western"/"western" all match (see sites.js).
+  if (Array.isArray(regions)) {
+    params.push(regions.map((r) => String(r).toLowerCase()));
+    where.push(`lower(s.security_region) = ANY($${params.length}::text[])`);
+  }
+  // List scope: only devices whose site is in the user's assigned list.
+  if (Array.isArray(siteIds)) {
+    params.push(siteIds);
+    where.push(`d.site_id = ANY($${params.length}::bigint[])`);
+  }
   if (q && q.trim()) {
     params.push(`%${q.trim().toLowerCase()}%`);
     const i = params.length;
@@ -374,16 +385,70 @@ export async function batchUpdateDevices(ids = [], patch = {}) {
   return rowCount;
 }
 
-/** Reassign many devices to another site (by Site ID or code). Rows affected. */
-export async function reassignDevices(ids = [], siteRef) {
+/** Reassign many devices to another site (by Site ID or code). Rows affected.
+ *
+ * A device's display id (its NAME) encodes the site it belongs to —
+ *   <site-number>_<SiteNamePascal>_<V|H>   e.g. 001_NairobiHeadquarters_V
+ * so moving a device to another site must RENAME it into that site's
+ * nomenclature, otherwise its name would keep pointing at the old site. Each
+ * moved device is renamed here, preserving its own orientation (V/H) and staying
+ * unique across all devices (the suffix bumps on a clash, exactly like a new
+ * registration). Devices already at the target site are left untouched.
+ *
+ * Only the display id changes. Telemetry and the command queue key on the
+ * numeric devices.id (not the text name), so they follow the device
+ * automatically; historical alarms keep the name the device had when they were
+ * raised, which is the correct record of what happened at the old site.
+ */
+export async function reassignDevices(ids = [], siteRef, orientation = null) {
   if (!ids.length) return 0;
   const site = await getSiteByRef(siteRef);
   if (!site) throw new Error(`Unknown Site ID: ${siteRef}`);
-  const { rowCount } = await query(
-    `UPDATE devices SET site_id = $1 WHERE id = ANY($2::bigint[])`,
-    [site.id, ids]
+
+  // Optional: force a Vertical/Horizontal orientation for every device being
+  // moved (chosen at reassignment time). Invalid/blank => keep each device's own.
+  const forced = normOrientation(orientation); // 'Vertical' | 'Horizontal' | null
+
+  const { rows } = await query(
+    `SELECT id, device_id, orientation, site_id FROM devices WHERE id = ANY($1::bigint[])`,
+    [ids]
   );
-  return rowCount;
+
+  let affected = 0;
+  for (const d of rows) {
+    // Nothing to do only when the device is ALREADY at this site AND no new
+    // orientation was chosen (a forced V/H still means rename, even in place).
+    if (String(d.site_id ?? "") === String(site.id) && !forced) continue;
+    const useOrientation = forced || normOrientation(d.orientation) || "Vertical";
+    // Rebuild the name in the DESTINATION site's nomenclature, unique across all
+    // devices. Sequential so each rename is visible to the next uniqueness check.
+    // eslint-disable-next-line no-await-in-loop
+    const newDeviceId = await uniqueDeviceId(site, useOrientation);
+    // eslint-disable-next-line no-await-in-loop
+    const { rowCount } = await query(
+      `UPDATE devices SET site_id = $1, device_id = $2, orientation = $3 WHERE id = $4`,
+      [site.id, newDeviceId, useOrientation, d.id]
+    );
+    affected += rowCount;
+  }
+  return affected;
+}
+
+/**
+ * The distinct sites a set of devices currently belong to.
+ *
+ * Called BEFORE a transfer or a delete so the emptied source site(s) can be
+ * recomputed afterwards (a device that has moved or been deleted no longer
+ * points back to where it was). See sites.recomputeSites.
+ */
+export async function siteIdsForDevices(ids = []) {
+  if (!ids.length) return [];
+  const { rows } = await query(
+    `SELECT DISTINCT site_id FROM devices
+      WHERE id = ANY($1::bigint[]) AND site_id IS NOT NULL`,
+    [ids]
+  );
+  return rows.map((r) => r.site_id);
 }
 
 export async function batchDeleteDevices(ids = []) {

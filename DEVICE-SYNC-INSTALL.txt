@@ -1,0 +1,38 @@
+AssetGuard — Device details reflect the CONFIRMED command (on refresh)
+======================================================================
+
+You confirmed: motion / moving interval / wake-up ARE queued and DO reach
+"confirmed" in the command queue, but the live value in Device details never
+flips. The broken link was the confirmed-command -> live-value promotion.
+
+FIX (this is the only change):
+  reconcileDevicePending now sets the LIVE value straight from the CONFIRMED
+  command in the queue, not from the pending marker. On each device read, for
+  motion / moving interval / wake:
+    - a command still in flight (pending/sent/acked) -> leave it ("-> pending").
+    - the newest CONFIRMED command -> set the live value to that command's number
+      (e.g. GS,40 -> motion 40; update,10 -> interval 10s; UPT,720 -> wake 12h)
+      and clear the pending marker.
+    - nothing confirmed/active but a stale marker -> drop the marker.
+  So when a command shows "confirmed", REFRESH the device page and the value
+  (and the slider baseline) now shows it. Independent of the pending marker and
+  of whether the ingest's own promotion fired.
+
+(No auto-refresh — it updates on the next load of the page, as you asked.)
+
+FILES
+  app/api/apiUtils/dataControl/deviceCommands.js   (the fix)
+  app/api/mainapp/devices/[id]/route.js            (calls reconcile on GET; force-dynamic)
+  app/mainapp/devices/view/components/ViewDevice.jsx (geofence 15–500, pending marker, command errors surfaced)
+
+DEPLOY (no migration) — restart BOTH so the web GET runs the new reconcile:
+  cd /var/www/html/baseapps/assetguard
+  python3 -c "import zipfile; zipfile.ZipFile('device-sync-web.zip').extractall('.')"
+  npm run build && pm2 restart gps-3000 assetguard-3010
+
+TEST: change motion, Save, wait for the queue row to show "confirmed", then
+refresh the device page — the motion value/slider should now read the new number.
+If it still doesn't, the confirmed command's number and the live config value are
+out of step; paste:
+  psql "$DB" -c "SELECT command,status FROM device_command_queue WHERE device_id=<id> AND command LIKE 'GS%' ORDER BY created_at DESC LIMIT 3;"
+  psql "$DB" -c "SELECT config->>'motion_sensitivity' live FROM devices WHERE id=<id>;"

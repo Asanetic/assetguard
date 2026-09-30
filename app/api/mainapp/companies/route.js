@@ -31,7 +31,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const { name, purposes = [], contactEmail, phone } = body || {};
+  const { name, purposes = [], contactEmail, phone, contacts } = body || {};
   if (!name || !name.trim())
     return NextResponse.json({ error: "Company name is required" }, { status: 400 });
   if (!Array.isArray(purposes) || purposes.length === 0)
@@ -40,7 +40,7 @@ export async function POST(request) {
   try {
     if (await findCompanyByName(name))
       return NextResponse.json({ error: "That company already exists" }, { status: 409 });
-    const company = await createCompany({ name, purposes, contactEmail, phone });
+    const company = await createCompany({ name, purposes, contactEmail, phone, contacts });
     logAudit(request, {
       action: "Company registered", category: "Companies",
       detail: `Registered ${company.name} (${(company.purposes || purposes).join(", ")})`,

@@ -120,7 +120,7 @@ export async function POST(request) {
               const row = await insertLiveAlarm({
                 alarmType: ty, value: TEST_TYPES[ty] ?? "",
                 deviceIdText: d.device_id || d.imei, site: d.site || null, serial: d.imei || null,
-                lat: d.site_lat ?? null, lng: d.site_lng ?? null,
+                lat: d.site_lat ?? null, lng: d.site_lng ?? null, test: true,
               });
               if (row) { await notifyAlarmRaised(row, { siteId, forceTest: true }); raised++; }
             } catch (e) { console.error("[testalarm] raise error:", e?.message || e); }

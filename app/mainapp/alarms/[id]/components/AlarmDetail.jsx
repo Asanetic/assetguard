@@ -81,7 +81,7 @@ export default function AlarmDetail({ id }) {
   if (err) return <div className={styles.page}><a className={styles.back} href="/mainapp/alarms">← All alarms</a><div className={styles.err}>{err}</div></div>;
   if (!data) return <div className={styles.page}><div className={styles.muted}>Loading…</div></div>;
 
-  const { alarm, snapshot = {}, lifecycle = [], me = {} } = data;
+  const { alarm, snapshot = {}, lifecycle = [], missions = [], me = {} } = data;
   const prio = PRIO[alarm.priority] || PRIO.Low;
   const statusLabel = alarm.status === "Open" ? "OPEN" : alarm.status === "Acknowledged" ? "ACKNOWLEDGED" : "CLOSED";
   // Disable the Acknowledge button only when every side THIS user may ack is done
@@ -200,6 +200,16 @@ export default function AlarmDetail({ id }) {
             {isClosed ? (
               // A closed alarm has no live actions — only its report.
               <div className={styles.hint} style={{ marginTop: 0 }}>This alarm is closed. Open the report for the full record.</div>
+            ) : me.responderOnly ? (
+              // FIELD RESPONDER: details + Track and respond only. No acknowledge,
+              // no close, no track-device, no view-on-map — they view and respond,
+              // nothing else.
+              <>
+                {canTrack && me.canRespond
+                  ? <button className={`${styles.act} ${styles.aRespond}`} onClick={startRespond}><i className="ti ti-run" /> Track and respond</button>
+                  : <button className={`${styles.act} ${styles.aRespond}`} disabled title={canTrack ? "Only the response team can start a response" : "Tracking is available for Critical alarms only"}><i className="ti ti-run" /> Track and respond</button>}
+                {!canTrack && <div className={styles.hint}>Track &amp; respond is available for Critical alarms only.</div>}
+              </>
             ) : (
               <>
                 <button className={`${styles.act} ${styles.aAck}`} disabled={!me.canAck || mySideAcked} onClick={() => setAckOpen(true)}>
@@ -231,7 +241,7 @@ export default function AlarmDetail({ id }) {
 
       {ackOpen && <AckModal alarmId={id} onClose={() => setAckOpen(false)} onDone={() => { setAckOpen(false); load(); }} />}
       {closeOpen && <CloseModal id={id} onClose={() => setCloseOpen(false)} onDone={() => { setCloseOpen(false); load(); }} />}
-      {summaryOpen && <SummaryModal alarm={alarm} lifecycle={lifecycle} photos={photos} onPhoto={setLightbox} onClose={() => setSummaryOpen(false)} />}
+      {summaryOpen && <SummaryModal alarm={alarm} lifecycle={lifecycle} photos={photos} missions={missions} onPhoto={setLightbox} onClose={() => setSummaryOpen(false)} />}
       {dispatchOpen && <DispatchModal alarmId={id} onClose={() => setDispatchOpen(false)} />}
       {lightbox && (
         <div className={styles.overlay} onClick={() => setLightbox(null)}>
@@ -299,7 +309,7 @@ function CloseModal({ id, onClose, onDone }) {
   );
 }
 
-function SummaryModal({ alarm, lifecycle = [], photos = [], onPhoto, onClose }) {
+function SummaryModal({ alarm, lifecycle = [], photos = [], missions = [], onPhoto, onClose }) {
   const responders = lifecycle.filter((e) => e.kind === "response");
   const acks = lifecycle.filter((e) => e.kind === "ack");
   const created = alarm.created_at ? new Date(alarm.created_at) : null;
@@ -307,6 +317,14 @@ function SummaryModal({ alarm, lifecycle = [], photos = [], onPhoto, onClose }) 
   let duration = "—";
   if (created && closed) { const m = Math.max(0, Math.round((closed - created) / 60000)); duration = m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`; }
   const outcome = alarm.status === "Closed" ? (alarm.close_outcome === "false" ? "FALSE ALARM" : "RESOLVED") : (alarm.status || "").toUpperCase();
+  // Field-mission evidence: media IDS, fetched from /api/mainapp/media/:id —
+  // unlike close_photos, which are data URLs stored on the alarm row itself.
+  const missionPhotos = missions.flatMap((m) => (Array.isArray(m.photos) ? m.photos : []));
+  const mDuration = (m) => {
+    if (!m.started_at || !m.ended_at) return null;
+    const mins = Math.max(0, Math.round((new Date(m.ended_at) - new Date(m.started_at)) / 60000));
+    return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+  };
 
   return (
     <Overlay onClose={onClose}>
@@ -320,7 +338,7 @@ function SummaryModal({ alarm, lifecycle = [], photos = [], onPhoto, onClose }) 
       <div className={styles.repStats}>
         <div className={styles.repTile}><div className={styles.repN}>{responders.length}</div><div className={styles.repK}>Responders</div></div>
         <div className={styles.repTile}><div className={styles.repN}>{duration}</div><div className={styles.repK}>Duration</div></div>
-        <div className={styles.repTile}><div className={styles.repN}>{photos.length}</div><div className={styles.repK}>Photos</div></div>
+        <div className={styles.repTile}><div className={styles.repN}>{photos.length + missionPhotos.length}</div><div className={styles.repK}>Photos</div></div>
       </div>
 
       {responders.length > 0 && (<>
@@ -340,6 +358,37 @@ function SummaryModal({ alarm, lifecycle = [], photos = [], onPhoto, onClose }) 
           </div>
         ))}
       </div>
+
+      {missions.length > 0 && (<>
+        <div className={styles.mLabel}>Field response</div>
+        {missions.map((m) => {
+          const shots = Array.isArray(m.photos) ? m.photos : [];
+          const took = mDuration(m);
+          return (
+            <div key={m.id} className={styles.missionBlock}>
+              <div className={styles.repRow}>
+                <span><i className="ti ti-run" /> {m.responder_by || "Responder"}{m.team_name ? ` · ${m.team_name}` : ""}</span>
+                <span className={styles.repTime}>
+                  {m.ended_at ? `${fmt(m.ended_at)}${took ? ` · ${took}` : ""}` : "in progress"}
+                </span>
+              </div>
+              {m.outcome && <div className={styles.missionOutcome}>{m.outcome}</div>}
+              {m.remarks && <div className={styles.missionRemark}>“{m.remarks}”</div>}
+              {shots.length > 0 && (
+                <div className={styles.gallery}>
+                  {shots.map((pid, i) => (
+                    <button key={pid} type="button" className={styles.galItem}
+                            onClick={() => onPhoto && onPhoto(`/api/mainapp/media/${pid}`)}>
+                      <img src={`/api/mainapp/media/${pid}`} alt={`Mission evidence ${i + 1}`} loading="lazy" />
+                      <div className={styles.galCap}>Photo {i + 1}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </>)}
 
       {photos.length > 0 && (<>
         <div className={styles.mLabel}>Photos of completed work</div>

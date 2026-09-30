@@ -140,7 +140,15 @@ export default function Dashboard() {
           <div className={styles.title}>Dashboard</div>
           <div className={styles.sub}>Platform overview{d.company ? ` · ${d.company}` : ""}{d.viewer?.criticalOnly ? " · Critical alarms only" : ""}</div>
         </div>
-        <span className={styles.ok}><span className={styles.okDot} />All systems operational</span>
+        {(() => {
+          const sys = d.system || { level: "green", label: "All systems operational" };
+          const col = sys.level === "red" ? "#EF4444" : sys.level === "amber" ? "#F59E0B" : "#10B981";
+          return (
+            <span className={styles.ok} style={{ background: `${col}1a`, color: col }}>
+              <span className={styles.okDot} style={{ background: col }} />{sys.label}
+            </span>
+          );
+        })()}
       </div>
 
       {/* KPIs */}

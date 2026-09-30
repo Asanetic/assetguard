@@ -14,15 +14,19 @@ import { getFirmwareConfig, getOrgConfig } from "./appConfig.js";
 
 // Small fallbacks so an empty DB still offers sensible options. Folded into the
 // union — never override live data.
+// NO hardcoded companies / vendors / security-regions / clusters here — those must
+// come only from what's registered (companies, response_regions/clusters tables) or
+// already in use on records, so deleting a registration removes it from the pickers.
+// Only genuinely-fixed reference geography / device enums keep a small fallback.
 const DEF = {
   regions: ["Nairobi Metro", "Central", "Coast", "Rift Valley", "Western", "Eastern", "North Eastern", "Nyanza"],
-  securityRegions: ["Nairobi North", "Nairobi South", "Coast", "Rift Valley", "Western", "Upper Eastern", "North Eastern"],
-  clusters: ["Cluster A — Nairobi North", "Cluster B — Nairobi South", "Cluster C — Coast", "Cluster D — Rift", "Cluster E — Western", "Cluster F — Eastern", "Cluster G — North Eastern"],
-  vendors: ["SMPMS East Africa", "SMPMS Coast Ltd", "SMPMS Rift Ltd", "SMPMS Nairobi"],
+  securityRegions: [],
+  clusters: [],
+  vendors: [],
   counties: [],
   clientCompanies: [],
-  securityCompanies: ["Falcon Guard Ltd", "Shield Response Co.", "Simba Security Group"],
-  monitoringCompanies: ["Sentinel Monitoring Ltd", "Watchtower Control Services", "Rift Control Centre"],
+  securityCompanies: [],
+  monitoringCompanies: [],
   nocTeams: [],
   responseTeams: [],
   firmwares: ["v2.4.1", "v2.3.8", "v2.2.5"],
@@ -42,12 +46,13 @@ async function col(sql, params = []) {
 /** All entity option lists, live + in sync. */
 export async function getFacets() {
   const [
-    regionA, regionB, secRegions, clusterReg, clusterSite, vendors, counties,
-    clientCo, secCo, monCo, teamNames, siteDetails, deviceFw, simProv, dataPlan,
+    regionA, regionB, secRegions, secRegionReg, clusterReg, clusterSite, vendors, counties,
+    clientCo, secCo, monCo, teamNames, nocReg, respReg, siteDetails, deviceFw, simProv, dataPlan,
   ] = await Promise.all([
     col(`SELECT region AS v FROM sites WHERE region IS NOT NULL AND btrim(region) <> ''`),
     col(`SELECT dist_region AS v FROM sites WHERE dist_region IS NOT NULL AND btrim(dist_region) <> ''`),
     col(`SELECT security_region AS v FROM sites WHERE security_region IS NOT NULL AND btrim(security_region) <> ''`),
+    col(`SELECT name AS v FROM response_regions WHERE name IS NOT NULL AND btrim(name) <> ''`),
     col(`SELECT name AS v FROM response_clusters WHERE name IS NOT NULL AND btrim(name) <> ''`),
     col(`SELECT response_cluster AS v FROM sites WHERE response_cluster IS NOT NULL AND btrim(response_cluster) <> ''`),
     col(`SELECT smpms_vendor AS v FROM sites WHERE smpms_vendor IS NOT NULL AND btrim(smpms_vendor) <> ''`),
@@ -58,6 +63,8 @@ export async function getFacets() {
     col(`SELECT name AS v FROM companies WHERE 'NOC' = ANY(purposes)`),
     // team registry
     col(`SELECT DISTINCT team_name AS v FROM team_members WHERE team_name IS NOT NULL AND btrim(team_name) <> ''`),
+    col(`SELECT code AS v FROM noc_teams WHERE code IS NOT NULL AND btrim(code) <> ''`),
+    col(`SELECT code AS v FROM response_teams WHERE code IS NOT NULL AND btrim(code) <> ''`),
     // company/team + vendor values stored on sites (columns already covered) + details JSONB
     (async () => { try { const { rows } = await query(`SELECT details FROM sites WHERE details IS NOT NULL`); return rows.map((r) => r.details); } catch { return []; } })(),
     col(`SELECT DISTINCT firmware AS v FROM devices WHERE firmware IS NOT NULL AND btrim(firmware) <> ''`),
@@ -65,21 +72,14 @@ export async function getFacets() {
     col(`SELECT DISTINCT config->>'data_plan' AS v FROM devices WHERE COALESCE(config->>'data_plan','') <> ''`),
   ]);
 
-  // site column values for companies (kept even if not in the companies registry)
-  const [secCoCol, monCoCol] = await Promise.all([
-    col(`SELECT security_company AS v FROM sites WHERE security_company IS NOT NULL AND btrim(security_company) <> ''`),
-    col(`SELECT monitoring_company AS v FROM sites WHERE monitoring_company IS NOT NULL AND btrim(monitoring_company) <> ''`),
-  ]);
-
-  // Pull company + team names out of the site `details` JSONB (contacts block).
-  const jClient = [], jSec = [], jMon = [], jNoc = [], jResp = [];
+  // Security / monitoring COMPANIES come only from the companies registry (below),
+  // NOT from stale values on sites — so deleting a company removes it from every
+  // company picker. Client company + team names are still gathered from site details.
+  const jClient = [], jNoc = [], jResp = [];
   const teamName = (t) => (t && typeof t === "object" ? (t.name || t.code) : t);
   for (const d of siteDetails) {
     if (!d || typeof d !== "object") continue;
     if (d.company?.name) jClient.push(d.company.name);
-    if (d.securityCompany?.company) jSec.push(d.securityCompany.company);
-    if (d.securityCompany?.name) jSec.push(d.securityCompany.name);
-    if (d.noc?.monitoringCompany) jMon.push(d.noc.monitoringCompany);
     for (const t of d.securityCompany?.nocTeams || []) jNoc.push(teamName(t));
     for (const t of d.noc?.nocTeams || []) jNoc.push(teamName(t));
     for (const t of d.securityCompany?.responseTeams || []) jResp.push(teamName(t));
@@ -92,15 +92,15 @@ export async function getFacets() {
 
   return {
     regions: clean([...regionA, ...regionB, ...DEF.regions]),
-    securityRegions: clean([...secRegions, ...DEF.securityRegions]),
+    securityRegions: clean([...secRegionReg, ...secRegions, ...DEF.securityRegions]),
     clusters: clean([...clusterReg, ...clusterSite, ...DEF.clusters]),
     vendors: clean([...vendors, ...DEF.vendors]),
     counties: clean([...counties, ...DEF.counties]),
     clientCompanies: clean([...clientCo, ...jClient, ...orgName, ...DEF.clientCompanies]),
-    securityCompanies: clean([...secCo, ...secCoCol, ...jSec, ...DEF.securityCompanies]),
-    monitoringCompanies: clean([...monCo, ...monCoCol, ...jMon, ...DEF.monitoringCompanies]),
-    nocTeams: clean([...teamNames, ...jNoc, ...DEF.nocTeams]),
-    responseTeams: clean([...teamNames, ...jResp, ...DEF.responseTeams]),
+    securityCompanies: clean([...secCo, ...DEF.securityCompanies]),
+    monitoringCompanies: clean([...monCo, ...DEF.monitoringCompanies]),
+    nocTeams: clean([...teamNames, ...nocReg, ...jNoc, ...DEF.nocTeams]),
+    responseTeams: clean([...teamNames, ...respReg, ...jResp, ...DEF.responseTeams]),
     firmwares: clean([...deviceFw, ...fwLatest, ...DEF.firmwares]),
     simProviders: clean([...simProv, ...DEF.simProviders]),
     dataPlans: clean([...dataPlan, ...DEF.dataPlans]),

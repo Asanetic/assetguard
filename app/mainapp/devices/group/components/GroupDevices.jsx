@@ -109,10 +109,12 @@ function csvCell(v) { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s
 
 export default function GroupDevices() {
   const [devices, setDevices] = useState([]);
+  const [dataSummary, setDataSummary] = useState(null); // fleet data-bundle roll-up (all devices in scope)
   const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState("site");
   const [val, setVal] = useState("");
+  const [q, setQ] = useState("");   // free-text search over the device list
   const [selected, setSelected] = useState(() => new Set());
   const [opsOpen, setOpsOpen] = useState(false);
   const [panel, setPanel] = useState(null); // { op, value }
@@ -154,6 +156,7 @@ export default function GroupDevices() {
       const dd = dr.ok ? await dr.json() : { devices: [] };
       const sd = sr.ok ? await sr.json() : { sites: [] };
       setDevices(Array.isArray(dd.devices) ? dd.devices : []);
+      setDataSummary(dd.data_summary || null);
       setSites(Array.isArray(sd.sites) ? sd.sites : []);
     } catch { /* keep */ }
     finally { setLoading(false); }
@@ -172,6 +175,27 @@ export default function GroupDevices() {
     const m = {}; devices.forEach((d) => { if (d.site_code) m[d.site_code] = d.site; }); return m;
   }, [devices]);
 
+  // Data-bundle roll-up card. Across the SELECTION when devices are ticked,
+  // otherwise the whole fleet (the server's authoritative data_summary).
+  const bundle = useMemo(() => {
+    const r2 = (n) => Math.round(n * 100) / 100;
+    if (selected.size > 0) {
+      const set = devices.filter((d) => selected.has(Number(d.id)) && d.data_usage);
+      if (!set.length) return null;
+      let asg = 0, used = 0, rem = 0, withB = 0, any = false;
+      for (const d of set) {
+        const u = d.data_usage || {};
+        used += Number(u.used_mb || 0);
+        if (u.assigned_mb != null) { asg += Number(u.assigned_mb); rem += Number(u.remaining_mb || 0); withB += 1; any = true; }
+      }
+      return { scope: "SELECTION", devices: set.length, with_bundle: withB,
+               assigned_mb: any ? r2(asg) : null, used_mb: r2(used), remaining_mb: any ? r2(rem) : null,
+               pct: asg > 0 ? Math.min(100, Math.round((used / asg) * 1000) / 10) : null };
+    }
+    return dataSummary ? { scope: "ALL DEVICES", ...dataSummary } : null;
+  }, [devices, selected, dataSummary]);
+  const fmtMb = (mb) => (mb == null ? "—" : mb >= 1024 ? `${Math.round((mb / 1024) * 100) / 100} GB` : `${Math.round(mb)} MB`);
+
   const values = useMemo(() => {
     const set = new Set();
     devices.forEach((d) => set.add(catValue(d)));
@@ -179,9 +203,16 @@ export default function GroupDevices() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [devices, cat]);
 
-  const filtered = useMemo(() => devices.filter((d) => !val || catValue(d) === val),
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    return devices.filter((d) => {
+      if (val && catValue(d) !== val) return false;
+      if (!term) return true;
+      return `${d.device_id || ""} ${d.imei || ""} ${d.sim || ""} ${d.site || ""} ${d.site_code || ""} ${d.status || ""} ${d.firmware || ""}`
+        .toLowerCase().includes(term);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [devices, cat, val]);
+  }, [devices, cat, val, q]);
 
   const shownIds = filtered.map((d) => d.id);
   const allShownSelected = shownIds.length > 0 && shownIds.every((id) => selected.has(id));
@@ -217,7 +248,7 @@ export default function GroupDevices() {
     if (def.kind === "databundle") { setPanel({ op: def, bundle: { amount: 50, unit: "MB", period: "annually" } }); return; }
     if (def.kind === "ping") { doPing(); return; }
     if (def.kind === "simulate") { flash(`${def.label} queued for ${selCount} device${selCount === 1 ? "" : "s"}`); return; }
-    if (def.kind === "resite") { setPanel({ op: def, value: sites[0]?.code || "" }); return; }
+    if (def.kind === "resite") { setPanel({ op: def, value: sites[0]?.code || "", orientation: "", siteSearch: "" }); return; }
     // Parameterless HQ command (RESET / RFS / pwroff) — confirm, then queue.
     if (def.kind === "cmd") {
       if (typeof window !== "undefined" && !window.confirm(
@@ -498,7 +529,7 @@ export default function GroupDevices() {
     try {
       const res = await fetch("/api/mainapp/devices/batch", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: [...selected], op: realOp, value }),
+        body: JSON.stringify({ ids: [...selected], op: realOp, value, ...(realOp === "resite" ? { orientation: panel.orientation || undefined } : {}) }),
       });
       const d = await res.json();
       if (!res.ok) { flash(d.error || "Operation failed", true); setBusy(false); return; }
@@ -538,9 +569,16 @@ export default function GroupDevices() {
     flash(`Exported ${selCount} device${selCount === 1 ? "" : "s"} to CSV`);
   }
 
+  // For reassign-to-site, the site list is filtered by the panel's search box
+  // (match on site name OR site code), so a long site list stays usable.
+  const siteMatches = (s, q) => {
+    const t = (q || "").trim().toLowerCase();
+    return !t || `${s.name} ${s.code}`.toLowerCase().includes(t);
+  };
   const panelOptions = panel
-    ? (panel.op.kind === "resite" ? sites.map((s) => [s.code, `${s.name}`])
-       : (panel.op.options || []).map((o) => (Array.isArray(o) ? o : [o, o])))
+    ? (panel.op.kind === "resite"
+        ? sites.filter((s) => siteMatches(s, panel.siteSearch)).map((s) => [s.code, `${s.name}`])
+        : (panel.op.options || []).map((o) => (Array.isArray(o) ? o : [o, o])))
     : [];
 
   return (
@@ -582,6 +620,51 @@ export default function GroupDevices() {
         </div>
       </div>
 
+      {/* Free-text search over the device list — same as the Group Sites search. */}
+      <div className={styles.filters}>
+        <div className={styles.search}>
+          <i className="ti ti-search" />
+          <input
+            className={styles.searchInput}
+            placeholder="Search devices by ID, IMEI, SIM or site…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Data-bundle roll-up: total across all devices (or the current selection) */}
+      {bundle ? (() => {
+        const asg = Number(bundle.assigned_mb) || 0;
+        const rem = bundle.remaining_mb;
+        const pct = bundle.pct != null ? Math.max(0, Math.min(100, Number(bundle.pct))) : 0;
+        const barColor = pct >= 90 ? "#DC2626" : pct >= 70 ? "#F59E0B" : "#0284C7";
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
+                        border: "1px solid #E2E8F0", background: "#F8FAFC", borderRadius: 12, padding: "12px 16px", margin: "0 0 12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 150 }}>
+              <span style={{ display: "inline-flex", width: 30, height: 30, alignItems: "center", justifyContent: "center", borderRadius: 8, background: "#E0F2FE", color: "#0284C7" }}>
+                <i className="ti ti-antenna-bars-5" style={{ fontSize: 16 }} />
+              </span>
+              <div>
+                <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.4, color: "#94A3B8" }}>DATA BUNDLE · {bundle.scope}</div>
+                <div style={{ fontSize: 11.5, color: "#64748b" }}>{bundle.devices} device{bundle.devices === 1 ? "" : "s"}{bundle.with_bundle != null ? ` · ${bundle.with_bundle} with a plan` : ""}</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, minWidth: 200 }}>
+              <span style={{ fontSize: 20, fontWeight: 800, color: (rem != null && rem < 0) ? "#DC2626" : "#0F172A" }}>{fmtMb(rem)}</span>
+              <span style={{ fontSize: 12, color: "#64748b" }}>left of {fmtMb(bundle.assigned_mb)} · used {fmtMb(bundle.used_mb)} · (est.)</span>
+            </div>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <div style={{ height: 8, borderRadius: 999, background: "#E2E8F0", overflow: "hidden" }}>
+                <div style={{ width: `${asg > 0 ? pct : 0}%`, height: "100%", background: barColor, borderRadius: 999 }} />
+              </div>
+              <div style={{ fontSize: 10.5, color: "#94A3B8", marginTop: 3 }}>{asg > 0 ? `${pct}% used` : "No bundle assigned"}</div>
+            </div>
+          </div>
+        );
+      })() : null}
+
       <div className={styles.card}>
         <div className={styles.selBar}>
           <input type="checkbox" className={styles.chk} checked={allShownSelected} onChange={toggleAll} aria-label="Select all" />
@@ -593,11 +676,11 @@ export default function GroupDevices() {
             <thead>
               <tr>
                 <th className={styles.chkCell}></th>
-                <th>DEVICE</th><th>SITE</th><th>BATTERY</th><th>FIRMWARE</th><th>STATUS</th>
+                <th>DEVICE</th><th>IMEI</th><th>SITE</th><th>BATTERY</th><th>FIRMWARE</th><th>STATUS</th>
               </tr>
             </thead>
             <tbody>
-              {loading ? <tr><td className={styles.emptyRow} colSpan={6}>Loading…</td></tr>
+              {loading ? <tr><td className={styles.emptyRow} colSpan={7}>Loading…</td></tr>
                 : filtered.length ? filtered.map((d) => (
                   <tr key={d.id} className={selected.has(d.id) ? styles.on : ""}>
                     <td className={styles.chkCell}>
@@ -607,6 +690,7 @@ export default function GroupDevices() {
                       <span className={styles.siteName}>{d.device_id}</span>
                       <span className={styles.oriTag}>{String(d.orientation || "").charAt(0).toUpperCase() || "—"}</span>
                     </td>
+                    <td style={{ color: "#475569", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }} title={d.imei || ""}>{d.imei || "—"}</td>
                     <td>{d.site || "—"}</td>
                     <td className={styles.batt} style={{ color: battColor(d.battery) }}>{d.battery != null ? `${d.battery}%` : "—"}</td>
                     <td className={styles.fw}>{d.firmware || "—"}</td>
@@ -620,7 +704,7 @@ export default function GroupDevices() {
                       )}
                     </td>
                   </tr>
-                )) : <tr><td className={styles.emptyRow} colSpan={6}>No devices in this category</td></tr>}
+                )) : <tr><td className={styles.emptyRow} colSpan={7}>No devices in this category</td></tr>}
             </tbody>
           </table>
         </div>
@@ -715,13 +799,43 @@ export default function GroupDevices() {
             ) : (
               <>
                 <label className={styles.lab}>{panel.op.kind === "resite" ? "REASSIGN TO" : panel.op.kind === "upt" ? "WAKE INTERVAL" : "NEW VALUE"}</label>
+                {panel.op.kind === "resite" && (
+                  <input className={styles.panelSelect} type="text" placeholder="Search site by name or ID…"
+                    value={panel.siteSearch || ""} autoComplete="off" style={{ marginBottom: 8 }}
+                    onChange={(e) => {
+                      const q = e.target.value;
+                      setPanel((p) => {
+                        // Keep the selected value valid within the filtered list —
+                        // if the current pick is filtered out, jump to the first match.
+                        const filtered = sites.filter((s) => siteMatches(s, q));
+                        const stillValid = filtered.some((s) => s.code === p.value);
+                        return { ...p, siteSearch: q, value: stillValid ? p.value : (filtered[0]?.code || "") };
+                      });
+                    }} />
+                )}
                 {panel.op.kind === "text" ? (
                   <input className={styles.panelSelect} type="text" value={panel.value} placeholder={panel.op.ph || ""}
                          onChange={(e) => setPanel((p) => ({ ...p, value: e.target.value }))} autoComplete="off" />
                 ) : (
                   <select className={styles.panelSelect} value={panel.value} onChange={(e) => setPanel((p) => ({ ...p, value: e.target.value }))}>
-                    {panelOptions.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                    {panelOptions.length
+                      ? panelOptions.map(([v, l]) => <option key={v} value={v}>{l}</option>)
+                      : <option value="">No matching site</option>}
                   </select>
+                )}
+                {panel.op.kind === "resite" && (
+                  <>
+                    <label className={styles.lab} style={{ marginTop: 10 }}>ORIENTATION</label>
+                    <select className={styles.panelSelect} value={panel.orientation || ""}
+                      onChange={(e) => setPanel((p) => ({ ...p, orientation: e.target.value }))}>
+                      <option value="">Keep current</option>
+                      <option value="Vertical">Vertical (V)</option>
+                      <option value="Horizontal">Horizontal (H)</option>
+                    </select>
+                    <div className={styles.panelSub} style={{ marginTop: 8 }}>
+                      Each device is renamed to the new site’s format — the V/H here sets the name suffix. “Keep current” leaves each device’s orientation unchanged.
+                    </div>
+                  </>
                 )}
               </>
             )}

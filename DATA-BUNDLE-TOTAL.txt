@@ -1,0 +1,43 @@
+AssetGuard — Total data bundle across all devices (backend + web + mobile)
+==========================================================================
+
+WHAT
+  A fleet-wide data-bundle roll-up: total assigned / used / remaining across
+  every device in the caller's scope (respects region/list scope + any q/site/
+  status filter). Shown on the Group Devices screen in BOTH the web app and the
+  mobile app.
+
+BACKEND (the wiring)
+  GET /api/mainapp/devices now also returns `data_summary`:
+    { devices, with_bundle, assigned_mb, used_mb, remaining_mb, pct, estimate }
+  It's summed from each device's own data_usage, so the total always reconciles
+  with the rows. (Per-device data_usage was already returned; this adds the
+  authoritative total so clients don't have to sum, and it covers ALL devices in
+  scope regardless of what's paged/filtered on screen.)
+
+WEB  (app/mainapp/devices/group/components/GroupDevices.jsx)
+  New bundle card above the list: "DATA BUNDLE · ALL DEVICES" with remaining /
+  assigned / used, a % bar (blue < 70%, amber ≥ 70%, red ≥ 90%), and device
+  counts. When devices are ticked it switches to "· SELECTION" and totals just
+  those. Reads data_summary for the all-devices figure.
+
+MOBILE (Assetguard app)
+  - models/Device.kt: DevicesResponse gains `data_summary` (new DataSummary DTO).
+  - GroupDevicesViewModel: stores dataSummary; the bundle card now shows the
+    server's authoritative ALL-DEVICES total when nothing is selected (was the
+    on-screen subset), and still rolls up the SELECTION when devices are ticked.
+  - GroupDevicesScreen: card label "· ALL DEVICES".
+
+DEPLOY (web)
+  cd /var/www/html/baseapps/assetguard
+  python3 -c "import zipfile; zipfile.ZipFile('data-bundle-web.zip').extractall('.')"
+  npm run build && pm2 restart gps-3000 assetguard-3010 --update-env
+
+MOBILE
+  Drop the three files from data-bundle-mobile.zip into the Assetguard project
+  (same paths) and rebuild the app. (Couldn't compile here — no Gradle network in
+  the sandbox — but the changes mirror the existing DataUsage/BundleRollup code.)
+
+NOTE: figures are the same ESTIMATE the app already uses (traffic recorded in the
+DB; no carrier API), clearly labelled "(est.)". A device with no plan assigned
+contributes to "used" but not to assigned/remaining.

@@ -54,6 +54,7 @@
 .hb_watch { background: #F59E0B; }
 .hb_offline { background: #EF4444; }
 .hb_sparse { background: #94A3B8; }
+.hb_missed { background: #EF4444; opacity: .55; }
 
 /* per-day rows */
 .dayBlock { border-bottom: 1px solid #F1F5F9; }
@@ -72,6 +73,7 @@
 .hpill_watch  { background: #FFFBEB; color: #B45309; } .hpill_watch .hdot  { background: #F59E0B; }
 .hpill_offline{ background: #FEF2F2; color: #B91C1C; } .hpill_offline .hdot{ background: #EF4444; }
 .hpill_sparse { background: #F1F5F9; color: #475569; } .hpill_sparse .hdot { background: #94A3B8; }
+.hpill_missed { background: #FEF2F2; color: #B91C1C; } .hpill_missed .hdot { background: #EF4444; }
 
 .metric { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .metric b { font-size: 13px; font-weight: 800; color: #0F274A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

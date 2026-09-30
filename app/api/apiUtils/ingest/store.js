@@ -15,8 +15,9 @@ import { insertLiveAlarm, clearOpenAlarm, disturbanceDecision } from "../dataCon
 import { toTelemetry } from "./parse.js";
 import { evaluate, resolveConfig, ALARM_TYPES } from "./alarmEngine.js";
 import { notifyAlarmRaised, notifyDisturbanceEarly } from "../notify/alarmNotify.js";
+import { notifyTestAlarmPush } from "../notify/testAlarmPush.js";
 import { geolocate, reverseGeocodeRoad } from "./geolocate.js";
-import { isTechOnSite } from "./techOnSite.js";
+import { isSiteUnderTest } from "./siteUnderTest.js";
 import { ensureOfflineSweep } from "./offlineSweep.js";
 
 // Per-device motion/geofence state (keyed by device id, or imei when unregistered).
@@ -54,7 +55,17 @@ function getIncidentCutoff(key) {
   return m.get(String(key)) ?? null;
 }
 
-export async function resolveAndStore(rec, ip, port) {
+/**
+ * @param opts.source "test" forces everything this packet raises to be recorded
+ *   as a TEST alarm. Used by the batch "send test alarms" drill. A site with an
+ *   open technician job does the same thing on its own — see `underTest` below.
+ */
+export async function resolveAndStore(rec, ip, port, opts = {}) {
+  const forcedTest = opts.source === "test";
+  // Who to push a DRILL to. A drill has no technician session, so without an
+  // explicit recipient the alarm lands in the Tests tab and nobody's phone ever
+  // hears about it. batch-ops passes the admin who fired it.
+  const pushTo = opts.pushTo ?? null;
   ensureOfflineSweep(); // idempotent — starts the Device Offline sweep once per process
   const view = {
     receivedAt: new Date().toISOString(),
@@ -176,12 +187,33 @@ export async function resolveAndStore(rec, ip, port) {
   const devForEngine = device || { imei: rec.imei, device_id: null, config: {} };
   let site = null;
   if (known) { try { site = await getSiteLatLng(device.site_id); } catch {} }
-  // Tech-on-site check (inert until the access-control integration lands) — only
-  // matters for a disturbance, which it downgrades to the Low "tech on site" tier.
-  let techOnSite = false;
-  if (known) { try { techOnSite = await isTechOnSite(device.site_id); } catch {} }
+  // IS THIS DEVICE UNDER TEST?
+  //
+  // True when a technician has an open job covering it — matched by the device's
+  // SITE, or by the device being named in the session's device list. The second
+  // matters: a tracker being installed usually has no site_id yet.
+  //
+  // While true, NOTHING this device reports is a real alarm — not the
+  // disturbance the technician meant to cause, not the geofence trip from
+  // carrying it to the van, not the offline blip from cutting its power. It is
+  // all testing, and it is all recorded as such.
+  //
+  // Note what this does NOT do: it does not touch the engine. The rules below
+  // decide what happened exactly as they always have. This decides only whether
+  // what happened was real.
+  let testWhy = { underTest: forcedTest, sessionId: null, via: forcedTest ? "drill" : "" };
+  if (!forcedTest && known) {
+    testWhy = await isSiteUnderTest({
+      siteId: device.site_id,
+      deviceIdText: device.device_id || device.imei,
+      deviceStatus: device.status,
+    });
+  }
+  const underTest = !!testWhy.underTest;
+  const alarmSource = underTest ? "test" : "device";
+
   let alarms = [];
-  try { alarms = evaluate(t, devForEngine, site, motionState(known ? device.id : `imei:${rec.imei}`), { techOnSite }) || []; } catch (e) { console.error("[ingest] engine error:", e.message); }
+  try { alarms = evaluate(t, devForEngine, site, motionState(known ? device.id : `imei:${rec.imei}`)) || []; } catch (e) { console.error("[ingest] engine error:", e.message); }
   const alarmTypes = alarms.map((a) => a.type);
   view.alarms = alarms;
 
@@ -206,7 +238,8 @@ export async function resolveAndStore(rec, ip, port) {
 
     const deviceIdText = device.device_id || device.imei;
     const at = t.deviceTime || rec.deviceTime || null;
-    const disturbThreshold = resolveConfig(device).disturb_streak; // default 4
+    // The time marks, not a count. See alarmEngine DEFAULTS.
+    const disturbMarks = resolveConfig(device);
     const disturbMemsMg = resolveConfig(device).disturb_mems_mg;   // net-vector disturbance floor
 
     // Two DIFFERENT day-scoped anchors — they must not be conflated:
@@ -228,7 +261,13 @@ export async function resolveAndStore(rec, ip, port) {
     const simCutIso = simCut ? new Date(simCut).toISOString() : null;
 
     // Raise a (non-disturbance) alarm + notify its site contacts. Returns the row
-    // (null when de-duped within today's incident).
+    // (null when de-duped within today's incident, or when a test alarm of this
+    // kind is already open for this device).
+    //
+    // While the site is under test the row is still written — a geofence trip
+    // from carrying a tracker to the van is worth recording, and the technician
+    // can see and close it — but NOBODY IS NOTIFIED. Sending a response team to
+    // a site somebody is booked to be working on is the failure this prevents.
     async function raiseAndNotify(a) {
       try {
         const row = await insertLiveAlarm({
@@ -239,13 +278,19 @@ export async function resolveAndStore(rec, ip, port) {
           lat: site?.lat ?? a.lat, lng: site?.lng ?? a.lng,
           road: a.type === ALARM_TYPES.CRITICAL_MOTION ? road : undefined,
           at, incidentSince: dayStartIso,
+          source: alarmSource,
         });
-        if (row) {
+        if (row && underTest) {
+          notifyTestAlarmPush(row, { siteId: device.site_id, deviceIdText, pushTo, drill: forcedTest });
+          console.log(`[alarm] ${a.type} → TEST ALARM ${row.id} (site under test — no escalation)`);
+        } else if (row) {
           console.log(`[NOTIFY] firing for ${row.id} (${row.name}, ${row.priority}) site_id=${device.site_id}`);
-          try { await notifyAlarmRaised(row, { siteId: device.site_id, deviceStatus: device.status, deviceArmed: device.armed, deviceMuteUntil: device.mute_until }); }
-          catch (e) { console.error("[NOTIFY] hook error:", e?.message || e); }
+          // Fire-and-forget: alarm ingestion must NEVER wait on send round-trips.
+          // notifyAlarmRaised dispatches the SMS first-thing and handles its own errors.
+          notifyAlarmRaised(row, { siteId: device.site_id, deviceStatus: device.status, deviceArmed: device.armed, deviceMuteUntil: device.mute_until })
+            .catch((e) => console.error("[NOTIFY] hook error:", e?.message || e));
         } else {
-          console.log(`[alarm] ${a.type} not raised (already open in today's incident) — no notification`);
+          console.log(`[alarm] ${a.type} not raised (already open) — no notification`);
         }
         return row;
       } catch (e) { console.error("[alarm] insert error:", e?.message || e); return null; }
@@ -283,33 +328,102 @@ export async function resolveAndStore(rec, ip, port) {
     const otherAlarms = alarms.filter((a) =>
       !isDisturbType(a.type) && a.type !== ALARM_TYPES.GEOFENCE_EXIT && a.type !== ALARM_TYPES.CRITICAL_MOTION);
 
-    // --- 1) DISTURBANCE first (graduated: #1 ignore, #2/#3 SMS+email only, #4 raise) ---
+    // --- 1) DISTURBANCE ---
+    //
+    // REAL: the graduated rule, untouched. #1 ignore, #2/#3 early warning by SMS
+    // and email, #4 raise. One bump is wind, a lorry, a gate; four in a window
+    // means something is really happening.
+    //
+    // TEST: raises on the FIRST disturbance, and notifies nobody.
+    //
+    // The two never mix. `alarmSource` already decided which this is — the site
+    // has an open technician job, or a drill was fired — and that decision is
+    // about whether the alarm is REAL, not about how severe it is. So a test
+    // does not get a lower threshold; it skips the threshold, because the
+    // threshold exists to answer "is somebody interfering with this asset?" and
+    // we already know the answer is no.
+    //
+    // Raising on the first packet is the whole point: a technician shakes a
+    // tracker once and needs THAT shake to produce a row, because the row is the
+    // proof the device works and the thing their app polls for. Under the
+    // graduated rule their first three shakes produced nothing at all, so a
+    // perfectly good tracker failed its own test.
+    if (disturbAlarms.length) {
+      // ONE LINE THAT ANSWERS THE QUESTION.
+      //
+      // "The device isn't raising test alarms" was impossible to diagnose from
+      // the log, because a skipped test and a skipped real disturbance printed
+      // the same thing. This says which path the packet took and why, every
+      // time, before anything is decided.
+      console.log(
+        `[underTest] ${deviceIdText} site=${device.site_id ?? "(none)"} → ` +
+        (underTest
+          ? `TEST (session ${testWhy.sessionId ?? "?"}, matched by ${testWhy.via})`
+          : `REAL (${testWhy.via})`)
+      );
+    }
+
     for (const a of disturbAlarms) {
       try {
-        const dec = await disturbanceDecision(deviceIdText, a.type, at, disturbThreshold, simCutIso, disturbMemsMg);
+        if (alarmSource === "test") {
+          const row = await insertLiveAlarm({
+            alarmType: a.type, value: a.value, deviceIdText,
+            site: device.site || null, serial: device.imei || rec.imei,
+            lat: site?.lat ?? a.lat, lng: site?.lng ?? a.lng, at,
+            incidentSince: dayStartIso, source: "test",
+          });
+          // No notifyAlarmRaised, ever. Waking the escalation chain for a
+          // technician testing their own work is the thing this exists to stop.
+          //
+          // A PUSH is different: it goes only to the technician who opened the
+          // job, and it is the whole reason they can put the phone in a pocket.
+          // The app's own poll dies with its process; this does not.
+          notifyTestAlarmPush(row, { siteId: device.site_id, deviceIdText, pushTo, drill: forcedTest });
+          console.log(`[disturbance] ${deviceIdText} → TEST ALARM ${row?.id || "(none)"}`);
+          continue;
+        }
+
+        // Everything below this line is the real path, exactly as it was.
+        const dec = await disturbanceDecision(deviceIdText, a.type, at, disturbMarks, simCutIso, disturbMemsMg);
         if (dec.action === "notify") {
-          try {
-            await notifyDisturbanceEarly({
-              deviceIdText, serial: device.imei || rec.imei,
-              site: device.site || null, siteId: device.site_id, at,
-              count: dec.count, threshold: dec.threshold, deviceStatus: device.status, deviceArmed: device.armed, deviceMuteUntil: device.mute_until,
-            });
-          } catch (e) { console.error("[disturbance] early-notify error:", e?.message || e); }
-          console.log(`[disturbance] ${deviceIdText} count=${dec.count}/${dec.threshold} → EARLY WARNING (sms/email, no alarm)`);
+          // Fire-and-forget: the SMS/email early warning goes out immediately;
+          // ingestion does not wait for the send round-trips to finish.
+          notifyDisturbanceEarly({
+            deviceIdText, serial: device.imei || rec.imei,
+            site: device.site || null, siteId: device.site_id, at,
+            count: dec.count, threshold: dec.threshold, deviceStatus: device.status,
+            deviceArmed: device.armed, deviceMuteUntil: device.mute_until,
+          }).catch((e) => console.error("[disturbance] early-notify error:", e?.message || e));
+          console.log(
+            `[disturbance] ${deviceIdText} ${dec.bursts} burst(s), longest ${dec.longestSec}s (level ${dec.prevLevel}→${dec.level}) ` +
+            `→ EARLY WARNING ${dec.level}/2 (sms/email, no alarm)`
+          );
         } else if (dec.action === "raise") {
           const row = await insertLiveAlarm({
             alarmType: a.type, value: a.value, deviceIdText,
             site: device.site || null, serial: device.imei || rec.imei,
-            lat: site?.lat ?? a.lat, lng: site?.lng ?? a.lng, at, incidentSince: dayStartIso,
+            lat: site?.lat ?? a.lat, lng: site?.lng ?? a.lng, at,
+            incidentSince: dayStartIso, source: "device",
           });
           if (row) {
             console.log(`[NOTIFY] firing for ${row.id} (${row.name}, ${row.priority}) site_id=${device.site_id}`);
             try { await notifyAlarmRaised(row, { siteId: device.site_id, deviceStatus: device.status, deviceArmed: device.armed, deviceMuteUntil: device.mute_until }); }
             catch (e) { console.error("[NOTIFY] hook error:", e?.message || e); }
           }
-          console.log(`[disturbance] ${deviceIdText} count=${dec.count}/${dec.threshold} → RAISED ${row?.id || "(none)"}`);
+          console.log(
+            `[disturbance] ${deviceIdText} ${dec.bursts} burst(s), longest ${dec.longestSec}s (episode since ${dec.t0}) ` +
+            `→ RAISED ${row?.id || "(none)"}`
+          );
         } else {
-          console.log(`[disturbance] ${deviceIdText} count=${dec.count}/${dec.threshold} → ${dec.action}`);
+          console.log(
+            `[disturbance] ${deviceIdText} ${dec.bursts ?? 0} burst(s), longest ${dec.longestSec ?? 0}s (level ${dec.level}) → ${dec.action}` +
+            (dec.action === "skip"
+              ? ` — nothing due yet; next mark at ${disturbMarks.disturb_warn1_sec}s/` +
+                `${disturbMarks.disturb_warn2_sec}s/${disturbMarks.disturb_raise_sec}s. ` +
+                `If you expected a TEST alarm, this device is not covered by an ` +
+                `open technician session or a Testing/Maintenance status`
+              : "")
+          );
         }
       } catch (e) { console.error("[disturbance] gate error:", e?.message || e); }
     }

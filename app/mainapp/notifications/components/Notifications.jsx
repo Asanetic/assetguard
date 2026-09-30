@@ -24,20 +24,27 @@ function fmtEAT(v) {
   catch { return ""; }
 }
 
-// The four channels — email + sms live; push + whatsapp are planned.
+// The four channels — SMS, Email and Push are live; WhatsApp is planned.
 const CHANNELS = [
   { key: "sms",      label: "SMS",      icon: "ti-message-2",     color: "#059669", live: true },
   { key: "email",    label: "Email",    icon: "ti-mail",          color: "#2E6CF5", live: true },
   { key: "whatsapp", label: "WhatsApp", icon: "ti-brand-whatsapp", color: "#25D366", live: false },
-  { key: "push",     label: "Push",     icon: "ti-bell",          color: "#7C3AED", live: false },
+  { key: "push",     label: "Push",     icon: "ti-bell",          color: "#7C3AED", live: true },
 ];
-// Status → pill. We don't have carrier delivery receipts, so a provider-accepted
-// message is "Sent"; a provider rejection is "Not sent"; and when a site has no
-// registered contacts we still log the event as "No contacts".
-function statusPill(status) {
-  if (status === "failed")     return { cls: "pFail", icon: "ti-alert-triangle", label: "Not sent" };
-  if (status === "no_contact") return { cls: "pNone", icon: "ti-user-off",       label: "No contacts" };
-  if (status === "pending")    return { cls: "pPend", icon: "ti-clock",          label: "Pending" };
+// Status → pill (four-state model). "Not sent" (failed) never left us; "Sent"
+// was accepted, outcome unknown; "Undelivered" was sent but the Celcom DLR says
+// it didn't arrive; "Delivered" was confirmed. "No contacts" = nobody to notify.
+function statusPill(status, channel) {
+  if (status === "failed")      return { cls: "pFail",  icon: "ti-alert-triangle", label: "Not sent" };
+  if (status === "undelivered") return { cls: "pUndel", icon: "ti-message-off",    label: "Undelivered" };
+  if (status === "no_contact")  return { cls: "pNone",  icon: "ti-user-off",       label: "No contacts" };
+  if (status === "pending")     return { cls: "pPend",  icon: "ti-clock",          label: "Pending" };
+  if (status === "delivered")   return { cls: "pSent",  icon: "ti-circle-check",   label: "Delivered" };
+  // Email and Push have no async delivery receipt, so a successful accept counts
+  // as Delivered for them. SMS stays "Sent" until a real Celcom DLR promotes it to
+  // 'delivered' / 'undelivered' — so Asanetic SMS (no DLR) correctly stays "Sent".
+  if (status === "sent" && (channel === "email" || channel === "push"))
+    return { cls: "pSent", icon: "ti-circle-check", label: "Delivered" };
   return { cls: "pSent", icon: "ti-check", label: "Sent" };
 }
 const NONE_CH = { label: "—", icon: "ti-user-off", color: "#94A3B8" };
@@ -124,7 +131,7 @@ export default function Notifications() {
       <div className={styles.card}>
         <div className={styles.cardHead}>By channel</div>
         {CHANNELS.map((c, i) => {
-          const d = chData[c.key] || { sent: 0, delivered: 0, failed: 0, pending: 0 };
+          const d = chData[c.key] || { sent: 0, delivered: 0, confirmed: 0, undelivered: 0, failed: 0, pending: 0 };
           const pct = d.sent ? ((d.delivered / d.sent) * 100).toFixed(0) : 0;
           return (
             <div key={c.key} className={`${styles.chRow} ${i === CHANNELS.length - 1 ? styles.chLast : ""}`}>
@@ -137,7 +144,9 @@ export default function Notifications() {
                 {c.live ? (
                   <>
                     <b>{(d.sent || 0).toLocaleString()}</b> sent · <span className={styles.ok}>{(d.delivered || 0).toLocaleString()}</span> ok · <span className={styles.bad}>{d.failed || 0}</span> failed
-                    <div className={styles.chPct}>{pct}% delivered</div>
+                    {d.confirmed > 0 ? <> · <span className={styles.ok}>{d.confirmed.toLocaleString()}</span> delivered</> : null}
+                    {d.undelivered > 0 ? <> · <span className={styles.warn}>{d.undelivered.toLocaleString()}</span> undelivered</> : null}
+                    <div className={styles.chPct}>{pct}% ok{d.confirmed > 0 ? ` · ${d.confirmed} confirmed` : ""}{d.undelivered > 0 ? ` · ${d.undelivered} undelivered` : ""}</div>
                   </>
                 ) : <span className={styles.chPlanned}>Planned — not yet sending</span>}
               </div>
@@ -155,7 +164,7 @@ export default function Notifications() {
             <tbody>
               {providers.map((p) => (
                 <tr key={p.channel}>
-                  <td className={styles.provName}>{p.name}</td>
+                  <td className={styles.provName}>{p.name}{p.balance ? <div className={styles.muted2}>Balance: {p.balance}</div> : null}</td>
                   <td>{p.channel}</td>
                   <td className={styles.muted2}>{p.from || "—"}</td>
                   <td><b>{(p.sentToday || 0).toLocaleString()}</b></td>
@@ -167,7 +176,7 @@ export default function Notifications() {
                   </td>
                 </tr>
               ))}
-              <tr><td className={styles.provName}>WhatsApp / Push</td><td>WhatsApp · Push</td><td className={styles.muted2}>—</td><td>—</td><td><span className={`${styles.pill} ${styles.pOff}`}>Coming soon</span></td></tr>
+              <tr><td className={styles.provName}>WhatsApp</td><td>WhatsApp</td><td className={styles.muted2}>—</td><td>—</td><td><span className={`${styles.pill} ${styles.pOff}`}>Coming soon</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -182,10 +191,10 @@ export default function Notifications() {
             <input className={styles.search} placeholder="Search recipient, name, site, device, alarm…" value={q}
                    onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load()} />
             <div className={styles.seg}>
-              {["", "email", "sms"].map((c) => <button key={c || "all"} className={channel === c ? styles.segOn : ""} onClick={() => setChannel(c)}>{c ? (c === "sms" ? "SMS" : "Email") : "All"}</button>)}
+              {[["", "All"], ["sms", "SMS"], ["email", "Email"], ["push", "Push"]].map(([c, lbl]) => <button key={c || "all"} className={channel === c ? styles.segOn : ""} onClick={() => setChannel(c)}>{lbl}</button>)}
             </div>
             <div className={styles.seg}>
-              {[["", "All"], ["sent", "Sent"], ["failed", "Not sent"], ["no_contact", "No contacts"]].map(([s, lbl]) => <button key={s || "all"} className={status === s ? styles.segOn : ""} onClick={() => setStatus(s)}>{lbl}</button>)}
+              {[["", "All"], ["sent", "Sent"], ["delivered", "Delivered"], ["undelivered", "Undelivered"], ["failed", "Not sent"], ["no_contact", "No contacts"]].map(([s, lbl]) => <button key={s || "all"} className={status === s ? styles.segOn : ""} onClick={() => setStatus(s)}>{lbl}</button>)}
             </div>
           </div>
         </div>
@@ -201,7 +210,7 @@ export default function Notifications() {
               <tbody>
                 {rows.map((n) => {
                   const c = n.channel === "none" ? NONE_CH : (CHANNELS.find((x) => x.key === n.channel) || { label: n.channel, icon: "ti-send", color: "#94A3B8" });
-                  const sp = statusPill(n.status);
+                  const sp = statusPill(n.status, n.channel);
                   return (
                     <tr key={n.id}>
                       <td className={styles.when} title={fmtEAT(n.created_at)}>{relTime(n.created_at)}</td>

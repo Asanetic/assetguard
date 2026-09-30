@@ -14,6 +14,12 @@ CREATE TABLE IF NOT EXISTS response_clusters (
   region TEXT,
   sort   INT NOT NULL DEFAULT 0
 );
+-- Contact columns for the Settings cluster editor (company + regional manager).
+-- Idempotent; also self-healed by ensureGeo() in dataControl/response.js.
+ALTER TABLE response_clusters ADD COLUMN IF NOT EXISTS company   TEXT;
+ALTER TABLE response_clusters ADD COLUMN IF NOT EXISTS rm        TEXT;
+ALTER TABLE response_clusters ADD COLUMN IF NOT EXISTS rm_phones TEXT[];
+ALTER TABLE response_clusters ADD COLUMN IF NOT EXISTS rm_emails TEXT[];
 
 INSERT INTO response_regions (name, sort) VALUES
   ('Nairobi North', 1), ('Nairobi South', 2), ('Coast', 3), ('Rift Valley', 4),

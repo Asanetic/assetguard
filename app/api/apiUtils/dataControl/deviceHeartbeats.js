@@ -69,38 +69,65 @@ export async function heartbeatDevice(deviceIdText) {
  * carried an alarm. Newest day first.
  */
 export async function dailyHeartbeats(deviceIdText, fromIso, toIso) {
+  // Bucketed by `received_at` (when the PLATFORM got the beat), NOT device_time:
+  // a tracker's own clock is often wrong, which files beats under the wrong day and
+  // makes the per-day chart lie. And EVERY day in the range is returned — a day with
+  // no beats comes back with beats=0 rather than vanishing, so the chart shows the
+  // real gaps (a silent day is a down day, not a missing bar). `gs` generates the
+  // EAT calendar days across the window and LEFT JOINs the aggregates onto them.
   const { rows } = await query(
     `WITH t AS (
-        SELECT COALESCE(dt.device_time, dt.received_at) AS ts,
+        SELECT dt.received_at AS ts,
                dt.battery, dt.signal, dt.lat, dt.lng, dt.alarms
           FROM device_telemetry dt
           JOIN devices d ON d.id = dt.device_id
          WHERE (d.device_id = $1 OR d.imei = $1)
-           AND COALESCE(dt.device_time, dt.received_at) >= $2::timestamptz
-           AND COALESCE(dt.device_time, dt.received_at) <  $3::timestamptz
+           AND dt.received_at >= $2::timestamptz
+           AND dt.received_at <  $3::timestamptz
       ),
       w AS (
         SELECT (ts AT TIME ZONE $4)::date AS day, ts, battery, signal, lat, lng, alarms,
                EXTRACT(EPOCH FROM (ts - LAG(ts) OVER (
                   PARTITION BY (ts AT TIME ZONE $4)::date ORDER BY ts)))::int AS gap_s
           FROM t
+      ),
+      agg AS (
+        SELECT day,
+               count(*)::int AS beats,
+               min(ts) AS first_at,
+               max(ts) AS last_at,
+               COALESCE(max(gap_s), 0)::int AS max_gap_s,
+               count(DISTINCT EXTRACT(HOUR FROM (ts AT TIME ZONE $4)))::int AS active_hours,
+               (array_agg(battery ORDER BY ts)      FILTER (WHERE battery IS NOT NULL))[1] AS batt_start,
+               (array_agg(battery ORDER BY ts DESC) FILTER (WHERE battery IS NOT NULL))[1] AS batt_end,
+               min(battery)::int AS batt_min,
+               round(avg(signal))::int AS avg_signal,
+               count(*) FILTER (WHERE lat IS NOT NULL AND lng IS NOT NULL)::int AS fixes,
+               COALESCE(sum(CASE WHEN jsonb_typeof(alarms) = 'array' AND jsonb_array_length(alarms) > 0
+                                 THEN 1 ELSE 0 END), 0)::int AS alarm_beats
+          FROM w
+         GROUP BY day
+      ),
+      gs AS (
+        -- Every EAT calendar day from the start bound through the end bound
+        -- INCLUSIVE. $3 is end-of-day (…T23:59:59+03), so its EAT date IS the last
+        -- day to show (today) — do not subtract a day, or today drops off.
+        SELECT generate_series(
+                 ($2::timestamptz AT TIME ZONE $4)::date,
+                 ($3::timestamptz AT TIME ZONE $4)::date,
+                 interval '1 day')::date AS day
       )
-      SELECT day::text AS day,
-             count(*)::int AS beats,
-             min(ts) AS first_at,
-             max(ts) AS last_at,
-             COALESCE(max(gap_s), 0)::int AS max_gap_s,
-             count(DISTINCT EXTRACT(HOUR FROM (ts AT TIME ZONE $4)))::int AS active_hours,
-             (array_agg(battery ORDER BY ts)      FILTER (WHERE battery IS NOT NULL))[1] AS batt_start,
-             (array_agg(battery ORDER BY ts DESC) FILTER (WHERE battery IS NOT NULL))[1] AS batt_end,
-             min(battery)::int AS batt_min,
-             round(avg(signal))::int AS avg_signal,
-             count(*) FILTER (WHERE lat IS NOT NULL AND lng IS NOT NULL)::int AS fixes,
-             COALESCE(sum(CASE WHEN jsonb_typeof(alarms) = 'array' AND jsonb_array_length(alarms) > 0
-                               THEN 1 ELSE 0 END), 0)::int AS alarm_beats
-        FROM w
-       GROUP BY day
-       ORDER BY day DESC`,
+      SELECT gs.day::text AS day,
+             COALESCE(agg.beats, 0) AS beats,
+             agg.first_at, agg.last_at,
+             COALESCE(agg.max_gap_s, 0) AS max_gap_s,
+             COALESCE(agg.active_hours, 0) AS active_hours,
+             agg.batt_start, agg.batt_end, agg.batt_min, agg.avg_signal,
+             COALESCE(agg.fixes, 0) AS fixes,
+             COALESCE(agg.alarm_beats, 0) AS alarm_beats
+        FROM gs
+        LEFT JOIN agg ON agg.day = gs.day
+       ORDER BY gs.day DESC`,
     [String(deviceIdText || ""), fromIso, toIso, TZ]
   );
   return rows.map((r) => ({
@@ -122,19 +149,18 @@ export async function dailyHeartbeats(deviceIdText, fromIso, toIso) {
 /** Every heartbeat within one EAT day, oldest first, with the gap since the prev. */
 export async function dayHeartbeats(deviceIdText, dateStr, limit = 5000) {
   const { rows } = await query(
-    `SELECT COALESCE(dt.device_time, dt.received_at) AS at,
+    `SELECT dt.received_at AS at,
             dt.battery, dt.signal, dt.fix, dt.speed, dt.lat, dt.lng,
             dt.temperature, dt.motion_byte, dt.satellites,
             (jsonb_typeof(dt.alarms) = 'array' AND jsonb_array_length(dt.alarms) > 0) AS has_alarm,
             dt.alarms,
-            EXTRACT(EPOCH FROM (COALESCE(dt.device_time, dt.received_at)
-              - LAG(COALESCE(dt.device_time, dt.received_at)) OVER (
-                  ORDER BY COALESCE(dt.device_time, dt.received_at))))::int AS gap_s
+            EXTRACT(EPOCH FROM (dt.received_at
+              - LAG(dt.received_at) OVER (ORDER BY dt.received_at)))::int AS gap_s
        FROM device_telemetry dt
        JOIN devices d ON d.id = dt.device_id
       WHERE (d.device_id = $1 OR d.imei = $1)
-        AND (COALESCE(dt.device_time, dt.received_at) AT TIME ZONE $3)::date = $2::date
-      ORDER BY at ASC
+        AND (dt.received_at AT TIME ZONE $3)::date = $2::date
+      ORDER BY dt.received_at ASC
       LIMIT $4`,
     [String(deviceIdText || ""), dateStr, TZ, limit]
   );

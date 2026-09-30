@@ -4,9 +4,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import styles from "./shell.module.css";
 import { startAlarmSound, stopAlarmSound, resumeAudio } from "../lib/alarmSound.js";
+import { canSeeNav, canOpenPath } from "../lib/pageAccess.js";
 
 // Rail quick-nav (collapsed icons). Sections not yet built open the drawer.
 // The collapsed rail icons are map shortcuts — each navigates straight to its
@@ -42,6 +43,7 @@ const MENU = [
     ] },
   { key: "playback", label: "Playback", icon: "ti-player-play", color: "#8B5CF6", children: [
       { key: "route_playback", label: "Route playback", href: "/mainapp/playbackmap" },
+      { key: "response_playback", label: "Response playback", href: "/mainapp/responseplayback" },
       { key: "playback_exports", label: "Exports", href: "/mainapp/playback/exports" },
     ] },
   { key: "notifications", label: "Notifications", icon: "ti-bell", color: "#0EA5E9", href: "/mainapp/notifications" },
@@ -85,7 +87,11 @@ function initials(name) {
 
 export default function AppShell({ children, active, openAlarms = 0, criticalAlarms = 0, speakerPosition = "right" }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [drawer, setDrawer] = useState(false);
+  // Page access. Defaults to "open" until the real answer loads, so nothing
+  // flashes hidden and a slow fetch never locks the UI. Admins come back all:true.
+  const [access, setAccess] = useState({ all: true, pages: [], role: null });
   const [expanded, setExpanded] = useState(() => {
     // Expand whichever group contains the active item.
     const open = {};
@@ -124,6 +130,34 @@ export default function AppShell({ children, active, openAlarms = 0, criticalAla
       .catch(() => {});
     return () => { ok = false; };
   }, []);
+
+  // The signed-in user's page access, for nav visibility + the route guard.
+  useEffect(() => {
+    let ok = true;
+    fetch("/api/mainapp/permissions/mine")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => ok && d && setAccess(d))
+      .catch(() => {});
+    return () => { ok = false; };
+  }, []);
+
+  // Route guard: a direct URL to a page this role can't open sends them to the
+  // landing (Alarm Maps, granted to every role). Admins bypass. Only acts once
+  // real access has loaded (all:true default won't redirect), and never loops on
+  // the landing itself.
+  useEffect(() => {
+    if (access?.all) return;
+    if (pathname && pathname !== "/mainapp/alarmmaps" && !canOpenPath(pathname, access)) {
+      router.replace("/mainapp/alarmmaps");
+    }
+  }, [pathname, access, router]);
+
+  // Nav filtered to what this user may open (admins see all; unmapped leaves show).
+  const railItems = RAIL.filter((r) => canSeeNav(`rail:${r.key}`, access));
+  const menuItems = MENU
+    .filter((m) => canSeeNav(m.key, access))
+    .map((m) => (m.children ? { ...m, children: m.children.filter((c) => canSeeNav(c.key, access)) } : m))
+    .filter((m) => !m.children || m.children.length > 0);
 
   // Poll the alarm summary. When the open count RISES (a new alarm came in), the
   // buzzer force-unmutes and rings — even if the operator had muted it.
@@ -208,7 +242,7 @@ export default function AppShell({ children, active, openAlarms = 0, criticalAla
             >
               <i className="ti ti-menu-2" style={{ fontSize: 21 }} aria-hidden="true" />
             </button>
-            {RAIL.map((r) => (
+            {railItems.map((r) => (
               <button
                 key={r.key}
                 className={`${styles.railBtn} ${active === r.key ? styles.railBtnActive : ""}`}
@@ -270,7 +304,7 @@ export default function AppShell({ children, active, openAlarms = 0, criticalAla
             </div>
 
             <div className={styles.menu}>
-              {MENU.map((m) => {
+              {menuItems.map((m) => {
                 if (m.children) {
                   const open = !!expanded[m.key];
                   return (

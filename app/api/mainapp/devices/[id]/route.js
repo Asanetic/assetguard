@@ -4,6 +4,11 @@
 //   PATCH  -> edit details / change status / update firmware  (admin)
 //   DELETE -> decommission the device                         (admin)
 // Uses direct SQL so it works regardless of the data-access module version.
+// Force dynamic + Node runtime so every request re-reads the DB (and runs the
+// pending-command reconcile) — never a cached device row.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { query } from "../../../apiUtils/s_env/db.js";
 import { getAuth, requireAdmin } from "../../../apiUtils/authUtils/session.js";
@@ -26,8 +31,17 @@ async function findDevice(idParam) {
 export async function GET(request, { params }) {
   if (!getAuth(request)) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   try {
-    const device = await findDevice(params?.id);
+    let device = await findDevice(params?.id);
     if (!device) return NextResponse.json({ error: "Device not found" }, { status: 404 });
+    // Reconcile any pending_* param markers against the command queue: a command
+    // that has CONFIRMED promotes its value to the live config key here, so the
+    // device details show the confirmed value once it leaves the active queue.
+    try {
+      const { reconcileDevicePending } = await import("../../../apiUtils/dataControl/deviceCommands.js");
+      await reconcileDevicePending(device.id);
+      const { rows } = await query(`SELECT config FROM devices WHERE id = $1`, [device.id]);
+      if (rows[0]) device.config = rows[0].config;
+    } catch (e) { console.error("[device reconcile]", e?.message || e); }
     // Estimated data-bundle usage (no carrier API yet).
     try {
       const { deviceDataUsage, fmtMb } = await import("../../../apiUtils/dataControl/dataUsage.js");
@@ -100,15 +114,30 @@ export async function PATCH(request, { params }) {
     console.error("[device PATCH] core error", err);
     return NextResponse.json({ error: "Update failed" }, { status: 500 });
   }
+  // Reinstating the device (any status other than Inactive) clears the powered_off
+  // marker so the "Powered off" indicator disappears once it's brought back.
+  if (body.status !== undefined && body.status !== "Inactive") {
+    try { await query(`UPDATE devices SET config = config - 'powered_off' - 'powered_off_at' WHERE id = $1`, [dev.id]); } catch {}
+  }
   // firmware + config live in optional columns (added by db/device_view.sql) —
   // guard each so an un-migrated DB still allows status/SIM edits.
+  let writeWarning = null;
   if (body.firmware !== undefined) {
     try { await query(`UPDATE devices SET firmware = $1 WHERE id = $2`, [body.firmware, dev.id]); }
-    catch { /* firmware column not present — run db/device_view.sql */ }
+    catch (e) { writeWarning = `firmware not saved: ${e?.message || e}`; console.error("[device PATCH] firmware write FAILED:", e?.message || e); }
   }
   if (body.config && typeof body.config === "object") {
-    try { await query(`UPDATE devices SET config = COALESCE(config, '{}'::jsonb) || $1::jsonb WHERE id = $2`, [JSON.stringify(body.config), dev.id]); }
-    catch { /* config column not present — run db/device_view.sql */ }
+    // No longer a silent swallow: if this write fails the caller is TOLD, instead
+    // of the page reporting "saved" while nothing changed.
+    try {
+      await query(
+        `UPDATE devices SET config = COALESCE(config, '{}'::jsonb) || $1::jsonb WHERE id = $2`,
+        [JSON.stringify(body.config), dev.id]
+      );
+    } catch (e) {
+      writeWarning = `settings not saved: ${e?.message || e}`;
+      console.error("[device PATCH] config write FAILED:", e?.message || e, "— body.config =", JSON.stringify(body.config));
+    }
   }
 
   const action = body.status !== undefined ? `Status changed to ${body.status}`
@@ -119,7 +148,7 @@ export async function PATCH(request, { params }) {
   logAudit(request, { action, category: "Devices", detail });
 
   const device = await findDevice(params?.id);
-  return NextResponse.json({ device });
+  return NextResponse.json({ device, ...(writeWarning ? { warning: writeWarning } : {}) });
 }
 
 export async function DELETE(request, { params }) {
@@ -130,6 +159,13 @@ export async function DELETE(request, { params }) {
   try {
     await query(`DELETE FROM devices WHERE id = $1`, [dev.id]);
     logAudit(request, { action: "Device decommissioned", category: "Devices", detail: `Decommissioned ${dev.device_id} (IMEI ${dev.imei})` });
+    // Roll the site up: if that was its last device, it drops back to Pending.
+    if (dev.site_id) {
+      try {
+        const { recomputeSiteStatus } = await import("../../../apiUtils/dataControl/sites.js");
+        await recomputeSiteStatus(dev.site_id);
+      } catch (e) { console.error("[device DELETE] site recompute", e?.message || e); }
+    }
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[device DELETE] error", err);

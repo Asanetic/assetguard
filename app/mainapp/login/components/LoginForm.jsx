@@ -42,7 +42,9 @@ export default function LoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identity, password, remember }),
+        // `app: "main"` gates this console to admins, the management tier and
+        // NOC — field responders and technicians sign in through their own apps.
+        body: JSON.stringify({ identity, password, remember, app: "main" }),
       });
       const data = await res.json();
 

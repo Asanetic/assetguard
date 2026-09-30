@@ -15,8 +15,13 @@ import { addExport } from "../../lib/exportsStore.js";
 import { useRouter } from "next/navigation";
 
 const WP_COLOR = { start: "#10B981", stop: "#F59E0B", end: "#EF4444" };
-const SPEEDS = [1, 2, 3, 4, 5];
-const TICK_MS = 200, STEP_SEC = 25; // prototype cadence: +25s of route time per 200ms at 1×
+const SPEEDS = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000];
+// 1× = REAL TIME — the route advances one second of movement per one second of
+// wall clock, so at 1× the vehicle moves exactly as fast as it actually did. Each
+// higher multiplier is that many times real speed (2× = twice, 10× = ten times…).
+// STEP_SEC is derived from the frame cadence so the relationship always holds.
+const TICK_MS = 100;               // animation frame every 100 ms (smooth)
+const STEP_SEC = TICK_MS / 1000;   // route-seconds advanced per frame at 1×
 
 function pad(n) { return (n < 10 ? "0" : "") + n; }
 function todayStr() { try { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; } catch { return ""; } }

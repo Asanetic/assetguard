@@ -5,8 +5,10 @@
 //      (or the simulator) actually reported can be replayed exactly like realtime.
 import { query } from "../s_env/db.js";
 
+const EAT_OFFSET = 3 * 3600; // Africa/Nairobi = UTC+3 (display clock + day boundaries)
+
 /** The route for a device on a date (points + waypoints + summary), or null. */
-export async function getRoute(deviceId, date) {
+export async function getRoute(deviceId, date, sources = []) {
   const { rows } = await query(
     `SELECT * FROM playback_routes WHERE device_id = $1 AND route_date = $2 LIMIT 1`,
     [String(deviceId || ""), date]
@@ -31,7 +33,7 @@ export async function getRoute(deviceId, date) {
     };
   }
   // Fall back to the live telemetry feed.
-  return await routeFromTelemetry(deviceId, date);
+  return await routeFromTelemetry(deviceId, date, sources);
 }
 
 /**
@@ -48,6 +50,24 @@ function srcOf(value) {
   return v;
 }
 
+/**
+ * Keep only the telemetry rows whose fix source is one the caller asked for.
+ * `sources` is the lowercase set the UI sends (subset of gps/wifi/lbs); empty =
+ * no filter (show everything). A row's `loc_source` is normalised the same way
+ * the points are (network→lbs, wifi+lbs counts as both), so unticking "Wi-Fi" or
+ * "LBS" actually removes those fixes from the route. Rows too old to be classified
+ * (loc_source null) stay visible — hiding history we cannot label would be worse.
+ */
+function filterSources(rows, sources) {
+  if (!Array.isArray(sources) || sources.length === 0) return rows;
+  const want = sources.map((s) => String(s).toLowerCase());
+  return rows.filter((r) => {
+    const s = srcOf(r.loc_source);         // gps | wifi | lbs | wifi+lbs | null
+    if (s == null) return true;
+    return s.split("+").some((p) => want.includes(p));
+  });
+}
+
 function haversineKm(a, b) {
   const R = 6371, toRad = (d) => (d * Math.PI) / 180;
   const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
@@ -55,24 +75,35 @@ function haversineKm(a, b) {
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-/** Build a playback route from device_telemetry for a device (device_id text) + date. */
-export async function routeFromTelemetry(deviceIdText, date) {
-  const { rows } = await query(
-    `SELECT COALESCE(t.device_time, t.received_at) AS ts, t.lat, t.lng, t.speed,
+/** Build a playback route from device_telemetry for a device (device_id text) + date.
+ *
+ * Filtered and ordered by `received_at` — the time the PLATFORM received the fix,
+ * not `device_time` (the tracker's own clock). GL trackers routinely report a
+ * wrong RTC (default/UTC-1970/drifted), which filed a fix taken during today's run
+ * under some other date and made it vanish from playback. received_at is always
+ * correct, so "today" means the fixes that actually arrived today. */
+export async function routeFromTelemetry(deviceIdText, date, sources = []) {
+  const { rows: all } = await query(
+    `SELECT t.received_at AS ts, t.lat, t.lng, t.speed,
             t.loc_source, t.accuracy
        FROM device_telemetry t
        JOIN devices d ON d.id = t.device_id
       WHERE d.device_id = $1
         AND t.lat IS NOT NULL AND t.lng IS NOT NULL
-        AND COALESCE(t.device_time, t.received_at)::date = $2::date
-      ORDER BY ts ASC`,
+        AND (t.received_at AT TIME ZONE 'Africa/Nairobi')::date = $2::date
+      ORDER BY t.received_at ASC`,
     [String(deviceIdText || ""), date]
   );
-  if (rows.length < 2) return null;
+  const rows = filterSources(all, sources);
+  // A SINGLE fix is still playable — show the point. Only a day with NO recorded
+  // position at all has nothing to draw. (A stationary asset routinely reports one
+  // position for a whole day; the old "need 2 points" rule hid it entirely.)
+  if (rows.length < 1) return null;
 
   const first = new Date(rows[0].ts);
   const t0 = first.getTime();
-  const start_sec = first.getUTCHours() * 3600 + first.getUTCMinutes() * 60 + first.getUTCSeconds();
+  // Clock shown in EAT so the timeline matches the calendar day the user picked.
+  const start_sec = ((Math.floor(t0 / 1000) + EAT_OFFSET) % 86400 + 86400) % 86400;
 
   const points = rows.map((r) => ({
     t: Math.max(0, Math.round((new Date(r.ts).getTime() - t0) / 1000)),
@@ -119,23 +150,23 @@ export async function routeFromTelemetry(deviceIdText, date) {
   };
 }
 
-const EAT_OFFSET = 3 * 3600; // Africa/Nairobi = UTC+3 (for display clock)
-
 /** Build a playback route from device_telemetry within a from→to datetime range. */
-export async function routeFromTelemetryRange(deviceIdText, fromIso, toIso) {
-  const { rows } = await query(
-    `SELECT COALESCE(t.device_time, t.received_at) AS ts, t.lat, t.lng, t.speed,
+export async function routeFromTelemetryRange(deviceIdText, fromIso, toIso, sources = []) {
+  const { rows: all } = await query(
+    `SELECT t.received_at AS ts, t.lat, t.lng, t.speed,
             t.loc_source, t.accuracy
        FROM device_telemetry t
        JOIN devices d ON d.id = t.device_id
       WHERE d.device_id = $1
         AND t.lat IS NOT NULL AND t.lng IS NOT NULL
-        AND COALESCE(t.device_time, t.received_at) >= $2::timestamptz
-        AND COALESCE(t.device_time, t.received_at) <= $3::timestamptz
-      ORDER BY ts ASC`,
+        AND t.received_at >= $2::timestamptz
+        AND t.received_at <= $3::timestamptz
+      ORDER BY t.received_at ASC`,
     [String(deviceIdText || ""), fromIso, toIso]
   );
-  if (rows.length < 2) return null;
+  const rows = filterSources(all, sources);
+  // A single fix is playable — only an empty window has nothing to draw.
+  if (rows.length < 1) return null;
 
   const t0 = new Date(rows[0].ts).getTime();
   // clock shown in EAT so it matches the from/to the user picked
@@ -204,12 +235,12 @@ export async function getIncidentsRange(deviceIdText, fromIso, toIso, startMs) {
 export async function getIncidents(deviceIdText, date, startSec = 0) {
   const { rows } = await query(
     `SELECT id, name, priority, alarm_type, lat, lng, created_at AS at,
-            (EXTRACT(HOUR   FROM (created_at AT TIME ZONE 'UTC')) * 3600
-           + EXTRACT(MINUTE FROM (created_at AT TIME ZONE 'UTC')) * 60
-           + EXTRACT(SECOND FROM (created_at AT TIME ZONE 'UTC')))::int AS tod
+            (EXTRACT(HOUR   FROM (created_at AT TIME ZONE 'Africa/Nairobi')) * 3600
+           + EXTRACT(MINUTE FROM (created_at AT TIME ZONE 'Africa/Nairobi')) * 60
+           + EXTRACT(SECOND FROM (created_at AT TIME ZONE 'Africa/Nairobi')))::int AS tod
        FROM alarms
       WHERE device_id = $1
-        AND (created_at AT TIME ZONE 'UTC')::date = $2::date
+        AND (created_at AT TIME ZONE 'Africa/Nairobi')::date = $2::date
         AND lat IS NOT NULL AND lng IS NOT NULL
       ORDER BY created_at ASC`,
     [String(deviceIdText || ""), date]
@@ -226,7 +257,7 @@ export async function routeDatesForDevice(deviceId) {
   const { rows } = await query(
     `SELECT route_date::text AS d FROM playback_routes WHERE device_id = $1
      UNION
-     SELECT DISTINCT COALESCE(t.device_time, t.received_at)::date::text AS d
+     SELECT DISTINCT (t.received_at AT TIME ZONE 'Africa/Nairobi')::date::text AS d
        FROM device_telemetry t JOIN devices d ON d.id = t.device_id
       WHERE d.device_id = $1 AND t.lat IS NOT NULL
       ORDER BY d DESC`,

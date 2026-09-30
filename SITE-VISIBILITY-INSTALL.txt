@@ -1,0 +1,86 @@
+AssetGuard — Field technician site visibility: region OR imported list
+=====================================================================
+
+WHAT THIS ADDS (field technicians only)
+---------------------------------------
+FIELD TECHNICIANS' site visibility can be scoped two ways, and you can toggle
+between them:
+
+  • Region-controlled  — the existing behaviour (users.regions).
+  • Assigned sites      — an explicit per-technician list, imported from Excel/CSV.
+
+This applies ONLY to the Field Technician role. Every other role stays
+region-controlled exactly as before, regardless of the default or any stray
+setting. In practice this governs the sites a technician can pick/work on (the
+site picker), and therefore the devices and TEST ALARMS at those sites — a
+technician's world is test alarms, and those are already scoped to their own
+on-site sessions, so limiting their sites limits their tests to the sites you
+assign them.
+
+A GLOBAL DEFAULT decides which mode technicians use, and any single technician
+can be overridden.
+
+WHERE IT LIVES
+--------------
+  • Settings → Platform card → "Field technician site visibility" (global default).
+  • Users & roles → edit a FIELD TECHNICIAN → "Site visibility" (Use global
+    default / Region-controlled / Assigned sites). The control only appears for
+    field technicians.
+  • Users & roles → "Import site assignments" → bulk CSV.
+      Template columns: User, Site ID
+        - User    = the technician's email (or exact name)
+        - Site ID = the site's code (or exact name)
+      Repeat a technician across rows for multiple sites. Only field technicians
+      are assigned; rows for any other role are skipped and reported, along with
+      any unknown users / site IDs.
+
+ENFORCEMENT (one chokepoint)
+----------------------------
+authUtils/regionScope.js resolves an EFFECTIVE scope per user:
+  - admin                         -> everything
+  - NOT a field technician        -> region scope (list mode is ignored)
+  - field technician, region mode -> { regions:[...] } (unchanged SQL)
+  - field technician, list mode   -> { siteIds:[...] } from user_sites
+                                     (empty list = no sites until imported)
+The five list paths (sites, site picker/options, devices, alarms list, alarm
+counts) apply whichever filter is set. Because non-technicians always resolve to
+region scope, their behaviour is byte-for-byte unchanged.
+
+FILES  (same set as before; corrected to be field-technician-only)
+-----
+  NEW  db/user_site_scope.sql
+  NEW  app/api/apiUtils/dataControl/userSites.js
+  NEW  app/api/mainapp/site-scope/route.js
+  NEW  app/api/mainapp/users/[id]/sites/route.js
+  NEW  app/api/mainapp/users/site-scope/import/route.js
+       app/api/apiUtils/authUtils/regionScope.js
+       app/api/apiUtils/dataControl/appConfig.js
+       app/api/apiUtils/dataControl/users.js
+       app/api/apiUtils/dataControl/sites.js
+       app/api/apiUtils/dataControl/devices.js
+       app/api/apiUtils/dataControl/alarms.js
+       app/api/mainapp/sites/route.js
+       app/api/mainapp/sites/options/route.js
+       app/api/mainapp/devices/route.js
+       app/api/mainapp/alarms/route.js
+       app/api/mainapp/alarms/summary/route.js
+       app/api/mainapp/users/[id]/route.js
+       app/mainapp/admin/settings/components/SystemSettings.jsx
+       app/mainapp/admin/users/components/UsersAdmin.jsx
+
+DEPLOY  (migration first)
+------
+  cd /var/www/html/baseapps/assetguard
+  python3 -c "import zipfile; zipfile.ZipFile('site-visibility-web.zip').extractall('.')"
+  psql "postgresql://assetguard:admin001@localhost:5432/assetguard" -f db/user_site_scope.sql
+  npm run build
+  pm2 restart gps-3000 assetguard-3010
+
+NOTES
+-----
+- Default seeds to 'region', so nothing changes until you flip it or override a
+  technician.
+- A technician in list mode with no assignments yet sees NO sites (intended)
+  until you import theirs.
+- Apps: no changes — the technician app reads the scoped site picker, so the
+  toggle applies automatically.

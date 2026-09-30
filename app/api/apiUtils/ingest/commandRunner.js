@@ -19,7 +19,7 @@
 // -----------------------------------------------------------------------------
 import {
   activeJobImeis, getActiveJob, markSent, markAcked, markConfirmed, markFailed,
-  hasOpenCriticalAlarm, sweepStalled,
+  hasOpenCriticalAlarm, sweepStalled, paramSyncForCommand, commandArg,
 } from "../dataControl/deviceCommands.js";
 import { setDeviceStatus } from "../dataControl/devices.js";
 import { getFirmwareConfig } from "../dataControl/appConfig.js";
@@ -55,6 +55,35 @@ export function noteEnqueued(imei) { try { C().imeis.add(String(imei)); } catch 
 function isData(cmd) { return cmd === "UD" || cmd === "UD2" || cmd === "AL"; }
 
 /**
+ * Put the NEXT queued command for this device on the wire RIGHT NOW, on the same
+ * live socket, immediately after the previous one finished — instead of waiting
+ * for the device's next wake. A tracker that only heartbeats once every 24 h
+ * would otherwise apply one command per day; this drains its whole queue while it
+ * is awake, one command per reply.
+ *
+ * Only a brand-new `pending` job is sent. A job already `sent` (on the wire,
+ * awaiting its own reply) or `acked` (firmware waiting for its post-upgrade data)
+ * is left alone, so we never double-send and never jump a firmware job that is
+ * still confirming. Firmware keeps its gate: never pushed while the device has an
+ * open critical alarm. No-op when nothing is queued or there is no socket writer.
+ */
+async function dispatchNext(imei, send) {
+  if (typeof send !== "function") return;
+  let next;
+  try { next = await getActiveJob(imei); } catch { return; }
+  if (!next) { try { C().imeis.delete(String(imei)); } catch {} return; }
+  if (next.status !== "pending") return;   // 'sent' already out; 'acked' waits for data
+  if (next.kind === "firmware") {
+    try { if (await hasOpenCriticalAlarm(next.device_id_text, imei)) return; }
+    catch { return; }
+  }
+  const frame = `*HQ,${imei},${next.command}#`;
+  let ok = false;
+  try { ok = !!send(frame); } catch { ok = false; }
+  if (ok) { try { await markSent(next.id); } catch {} }
+}
+
+/**
  * Handle a parsed heartbeat/data frame from a device (called AFTER the platform
  * ACK). `send(frame)` writes bytes to the device's socket and returns bool.
  */
@@ -79,6 +108,10 @@ export async function onWake({ imei, cmd, send }) {
           console.log(`[firmware] ${imei} confirmed → labelled ${fw.latest}`);
         }
       } catch (e) { console.error("[firmware] label error:", e?.message || e); }
+      // The device is awake and healthy again after the upgrade (this data frame
+      // IS the post-upgrade confirmation telemetry) — send the next queued command
+      // right now so it is applied too, instead of waiting for the next wake.
+      try { await dispatchNext(imei, send); } catch {}
     }
     return; // acked jobs are otherwise just waiting for data
   }
@@ -93,10 +126,13 @@ export async function onWake({ imei, cmd, send }) {
     // retries). Once all attempts are spent with no reply, mark the command failed.
     if ((job.attempts || 0) >= (job.max_attempts || 3)) {
       try { await markFailed(job.id, "no reply after max attempts"); } catch {}
-      // A failed UPT never took effect on the device — drop the pending target so the
-      // ACTIVE wake interval (the last one the device accepted) stands.
-      if (/^UPT,/i.test(String(job.command || "")) && job.device_id) {
-        try { await query(`UPDATE devices SET config = config - 'pending_wake_interval_sec' WHERE id = $1`, [job.device_id]); } catch {}
+      // A failed synced-config command never took effect on the device — drop the
+      // pending target so the ACTIVE value (the last one the device accepted)
+      // stands. The details therefore never show a value the device did not take,
+      // and the failed job stays visible in the queue/history for a retry.
+      const sync = paramSyncForCommand(job.command);
+      if (sync && job.device_id) {
+        try { await query(`UPDATE devices SET config = config - $2::text WHERE id = $1`, [job.device_id, sync.pending]); } catch {}
       }
       return;
     }
@@ -116,7 +152,7 @@ export async function onWake({ imei, cmd, send }) {
  * Handle a device reply frame (raw HQ text, e.g. "*HQ,IMEI,V4,UPGRADE#").
  * Matches it to the device's active 'sent' job by the command word.
  */
-export async function onReply({ imei, replyText }) {
+export async function onReply({ imei, replyText, send }) {
   if (!imei) return;
   const set = await activeSet();
   if (!set.has(String(imei))) return;
@@ -129,30 +165,52 @@ export async function onReply({ imei, replyText }) {
   try {
     if (job.kind === "firmware") await markAcked(job.id); // firmware still waits for data to confirm
     else await markConfirmed(job.id);                     // other commands are done on ack
-    // A confirmed UPT means the device accepted the new wake interval — NOW promote
-    // the pending value to the ACTIVE config.wake_interval_sec and clear pending.
-    // Heartbeat prediction / offline detection start using the new interval only here.
-    if (job.kind !== "firmware" && /^UPT,/i.test(String(job.command || "")) && job.device_id) {
-      const m = String(job.command).match(/^UPT,\s*(\d+)/i);
-      const mins = m ? Number(m[1]) : null;
-      if (Number.isFinite(mins)) {
+    // A confirmed synced-config command (GS motion / update interval / UPT wake)
+    // means the device ACCEPTED the new value — NOW promote the pending value to
+    // the ACTIVE config key and clear pending. This is the moment the device
+    // details flip to the new value; before it, they showed the last value the
+    // device actually had. (Heartbeat prediction picks up a new wake interval
+    // only here, too.)
+    if (job.kind !== "firmware" && job.device_id) {
+      const sync = paramSyncForCommand(job.command);
+      const arg = sync ? commandArg(job.command) : null;
+      if (sync && Number.isFinite(arg)) {
         try {
           await query(
             `UPDATE devices
-                SET config = (COALESCE(config,'{}'::jsonb) || jsonb_build_object('wake_interval_sec', $2::int))
-                             - 'pending_wake_interval_sec'
+                SET config = (COALESCE(config,'{}'::jsonb) || jsonb_build_object($2::text, $3::int))
+                             - $4::text
               WHERE id = $1`,
-            [job.device_id, mins * 60]
+            [job.device_id, sync.live, sync.toStored(arg), sync.pending]
           );
-          console.log(`[command] ${imei} confirmed UPT,${mins} → active wake interval = ${mins} min`);
-        } catch (e) { console.error("[command] UPT promote error:", e?.message || e); }
+          console.log(`[command] ${imei} confirmed ${job.command} → active ${sync.live} = ${sync.toStored(arg)}`);
+        } catch (e) { console.error("[command] config promote error:", e?.message || e); }
       }
     }
-    // A power-off (deactivate) command: once the device acks pwroff, it has been put
-    // off — mark it INACTIVE (sticky, manual-exit).
+    // A power-off (deactivate) command: once the device ACKS pwroff, it has actually
+    // powered down — mark it INACTIVE (sticky, manual-exit) AND stamp a powered_off
+    // flag so the device page can show a clear "Powered off" indicator (distinct from
+    // a device that's merely Inactive for another reason).
     if (job.kind === "poweroff" && job.device_id) {
       try { await setDeviceStatus(job.device_id, "Inactive"); } catch {}
-      console.log(`[command] ${imei} acked pwroff → device set INACTIVE`);
+      try {
+        await query(
+          `UPDATE devices
+              SET config = COALESCE(config,'{}'::jsonb)
+                           || jsonb_build_object('powered_off', true, 'powered_off_at', now()::text)
+            WHERE id = $1`,
+          [job.device_id]
+        );
+      } catch (e) { console.error("[command] powered_off flag error:", e?.message || e); }
+      console.log(`[command] ${imei} acked pwroff → device set INACTIVE (powered off)`);
+    }
+    // CHAIN: the device is awake and has just confirmed this command — put the
+    // next queued command on the wire immediately, so a whole queue drains in one
+    // wake instead of one command per (up to 24 h) heartbeat. Not for firmware
+    // (that confirms later via its post-upgrade data, which chains in onWake) and
+    // not after a power-off (the device is going down).
+    if (job.kind !== "firmware" && job.kind !== "poweroff") {
+      try { await dispatchNext(imei, send); } catch {}
     }
   } catch {}
 }

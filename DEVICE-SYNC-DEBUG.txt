@@ -1,0 +1,51 @@
+AssetGuard — find out WHY motion / moving / wake won't reflect the confirmed command
+====================================================================================
+
+We've fixed the logic three ways and it still won't move, so this stops the
+guessing: a read-only diagnostic that prints exactly what the queue and the
+device config actually hold, and what the reconcile computes from them.
+
+DEPLOY (restart BOTH processes)
+  cd /var/www/html/baseapps/assetguard
+  python3 -c "import zipfile; zipfile.ZipFile('device-sync-debug.zip').extractall('.')"
+  npm run build && pm2 restart gps-3000 assetguard-3010
+
+THEN, signed in as an admin, open in the browser (use the device's display id,
+e.g. GL28-000123, or its numeric id):
+
+  https://<your-app>/api/mainapp/devices/<DEVICE_ID>/sync-debug
+
+Do this for a device where you JUST changed motion (or moving/wake) and the
+command shows confirmed in the queue. COPY THE WHOLE JSON BACK TO ME.
+
+What it tells us (you can read it too):
+  statusesInQueue     -> the ACTUAL status strings in the DB. If the queue UI
+                         shows "confirmed" but this shows only 'acked' / 'sent',
+                         then the command never reaches status='confirmed' and
+                         THAT is the bug (the ingest isn't confirming it).
+  params[].verb / newestConfirmedCommand / parsedArg / wouldWriteLive
+                      -> for each of motion(GS)/interval(update)/wake(UPT):
+                         the newest confirmed command, the number pulled from it,
+                         and the value it should write to live config.
+  params[].activeJobs -> if > 0, something is still queued and blocks promotion.
+  configBefore vs configAfter + changed
+                      -> the route RUNS the real reconcile; if it works you'll
+                         see the live value change here (changed:true). If
+                         changed:false with a valid newestConfirmedCommand, the
+                         write itself is failing — reconcileError will say why.
+  recentQueue         -> the last 40 rows (command, verb, status, timestamps).
+
+The answer will be obvious from that JSON — most likely one of:
+  (a) status is 'acked', never 'confirmed'  -> ingest confirm path (gps-3000);
+  (b) confirmed command exists but changed:false -> a write/permission error
+      (reconcileError tells us);
+  (c) everything promotes here (changed:true) -> the earlier deploy hadn't
+      picked up the new web code; this build fixes it.
+
+FILES (also carries the real fix, so this build already includes it)
+  app/api/mainapp/devices/[id]/sync-debug/route.js   (the diagnostic)
+  app/api/apiUtils/dataControl/deviceCommands.js     (confirmed-command reconcile)
+  app/api/mainapp/devices/[id]/route.js              (runs reconcile on GET)
+  app/mainapp/devices/view/components/ViewDevice.jsx (display + geofence 15–500)
+
+(Delete the sync-debug route once we've diagnosed it — it's a temporary probe.)

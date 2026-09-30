@@ -45,7 +45,7 @@ export async function listResponses(alarmId) {
 
 // ---- live responder positions ----------------------------------------------
 // A responder broadcasts their position for a device; upserted per (device,user).
-export async function upsertResponderPosition({ deviceId, userId, name, team, lat, lng }) {
+export async function upsertResponderPosition({ deviceId, userId, name, team, lat, lng, accuracy = null }) {
   if (!deviceId || !userId) return null;
   const { rows } = await query(
     `INSERT INTO responder_positions (device_id, user_id, name, team, lat, lng, updated_at)
@@ -56,6 +56,23 @@ export async function upsertResponderPosition({ deviceId, userId, name, team, la
      RETURNING *`,
     [deviceId, userId, name || null, team || null, lat ?? null, lng ?? null]
   );
+  // Also append to the HISTORY table (append-only) so the responder's route can be
+  // replayed later on Response Playback. Best-effort: a failure here (e.g. the
+  // migration hasn't run yet) must never break the live position broadcast. Only
+  // real fixes are recorded — a null position is a heartbeat, not a step on the map.
+  if (lat != null && lng != null) {
+    try {
+      await query(
+        `INSERT INTO responder_track (device_id, user_id, name, team, lat, lng, accuracy_m)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [deviceId, userId, name || null, team || null, lat, lng, accuracy ?? null]
+      );
+    } catch (e) {
+      if (/relation .*responder_track.* does not exist/i.test(e?.message || ""))
+        console.error("[responder_track] missing — run db/responder_track.sql to record responder routes.");
+      else console.error("[responder_track] insert:", e?.message || e);
+    }
+  }
   return rows[0] || null;
 }
 
@@ -121,7 +138,8 @@ export async function getDispatchInfo(alarmId) {
       const { rows } = await query(
         `SELECT name, email, phone, role FROM users
           WHERE role IN ('sec_regional','sec_country','company_mgr','asst_mgr')
-            AND $1 = ANY(regions) AND lower(status) = 'active'
+            AND EXISTS (SELECT 1 FROM unnest(regions) AS ur WHERE lower(ur) = lower($1))
+            AND lower(status) = 'active'
           ORDER BY (role = 'sec_regional') DESC, (role = 'sec_country') DESC LIMIT 1`, [region]);
       manager = rows[0] || null;
     } catch {}
@@ -156,13 +174,75 @@ export async function getDispatchInfo(alarmId) {
 }
 
 // ---- response geography (regions + clusters, from tables) -------------------
+// Everything below is DB-backed so Settings registrations persist and every picker
+// (Add Site, Response Teams, facets) reflects them live — no static seed.
+let _geoEnsured = false;
+async function ensureGeo() {
+  if (_geoEnsured) return;
+  try {
+    await query(`CREATE TABLE IF NOT EXISTS response_regions (id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL, sort INT NOT NULL DEFAULT 0)`);
+    await query(`CREATE TABLE IF NOT EXISTS response_clusters (id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL, region TEXT, sort INT NOT NULL DEFAULT 0)`);
+    // Contact columns for the Settings cluster editor (idempotent).
+    await query(`ALTER TABLE response_clusters ADD COLUMN IF NOT EXISTS company   TEXT`);
+    await query(`ALTER TABLE response_clusters ADD COLUMN IF NOT EXISTS rm        TEXT`);
+    await query(`ALTER TABLE response_clusters ADD COLUMN IF NOT EXISTS rm_phones TEXT[]`);
+    await query(`ALTER TABLE response_clusters ADD COLUMN IF NOT EXISTS rm_emails TEXT[]`);
+    _geoEnsured = true;
+  } catch (e) { console.error("[response geo] ensure:", e?.message || e); }
+}
+
 export async function listRegions() {
+  await ensureGeo();
   try { const { rows } = await query(`SELECT name FROM response_regions ORDER BY sort, name`); return rows.map((r) => r.name); }
   catch { return []; }
 }
 export async function listClusters() {
+  await ensureGeo();
   try { const { rows } = await query(`SELECT name, region FROM response_clusters ORDER BY sort, name`); return rows; }
   catch { return []; }
+}
+/** Clusters with the Settings-editor fields (company + regional manager contacts). */
+export async function listClustersFull() {
+  await ensureGeo();
+  try {
+    const { rows } = await query(
+      `SELECT name, region, company, rm, rm_phones, rm_emails FROM response_clusters ORDER BY sort, name`
+    );
+    return rows.map((r) => ({
+      name: r.name, region: r.region || "", company: r.company || "",
+      rm: r.rm || "", rmPhones: r.rm_phones || [], rmEmails: r.rm_emails || [],
+    }));
+  } catch { return []; }
+}
+export async function saveRegion(name) {
+  const n = String(name || "").trim();
+  if (!n) throw new Error("region name required");
+  await ensureGeo();
+  await query(`INSERT INTO response_regions (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`, [n]);
+  return n;
+}
+export async function deleteRegion(name) {
+  await ensureGeo();
+  await query(`DELETE FROM response_regions WHERE name = $1`, [String(name || "").trim()]);
+}
+export async function saveCluster({ name, region = null, company = null, rm = null, rmPhones = [], rmEmails = [], originalName } = {}) {
+  const n = String(name || "").trim();
+  if (!n) throw new Error("cluster name required");
+  await ensureGeo();
+  if (originalName && originalName !== n) await query(`DELETE FROM response_clusters WHERE name = $1`, [originalName]);
+  await query(
+    `INSERT INTO response_clusters (name, region, company, rm, rm_phones, rm_emails)
+     VALUES ($1,$2,$3,$4,$5,$6)
+     ON CONFLICT (name) DO UPDATE
+       SET region = EXCLUDED.region, company = EXCLUDED.company, rm = EXCLUDED.rm,
+           rm_phones = EXCLUDED.rm_phones, rm_emails = EXCLUDED.rm_emails`,
+    [n, region || null, company || null, rm || null, Array.isArray(rmPhones) ? rmPhones : [], Array.isArray(rmEmails) ? rmEmails : []]
+  );
+  return n;
+}
+export async function deleteCluster(name) {
+  await ensureGeo();
+  await query(`DELETE FROM response_clusters WHERE name = $1`, [String(name || "").trim()]);
 }
 
 // ---- team membership --------------------------------------------------------
@@ -189,4 +269,112 @@ export async function setTeamMembers(teamCode, teamName, userIds = []) {
     );
   }
   return ids.length;
+}
+
+// ---- Response teams CRUD (admin) -------------------------------------------
+// The admin page used to keep these in memory; now they live in response_teams
+// so a registration survives a reload and the dispatch popup sees the same list.
+
+async function memberIdsFor(code) {
+  try { return (await listTeamMembers(code)).map((m) => String(m.id)); }
+  catch { return []; }
+}
+
+/** Every response team with its clusters, contacts, members — and the grants map. */
+export async function listResponseTeams() {
+  const { rows } = await query(
+    `SELECT code, sec_region, phones, emails, company, clusters FROM response_teams ORDER BY code`
+  );
+  const teams = [];
+  for (const t of rows) {
+    // eslint-disable-next-line no-await-in-loop
+    const memberIds = await memberIdsFor(t.code);
+    teams.push({
+      code: t.code, sec: t.sec_region || "", clusters: t.clusters || [],
+      phones: t.phones || [], emails: t.emails || [], company: t.company || "", memberIds,
+    });
+  }
+  const grants = {};
+  try {
+    const g = (await query(`SELECT team_code, cluster FROM response_team_grants`)).rows;
+    for (const r of g) (grants[r.cluster] ||= []).push(r.team_code);
+  } catch { /* table may not exist yet */ }
+  return { teams, grants };
+}
+
+/** Create or update one response team (keyed by code). Renaming via originalCode. */
+export async function saveResponseTeam({ code, sec, clusters = [], phones = [], emails = [], company, memberIds, originalCode } = {}) {
+  const c = String(code || "").trim();
+  if (!c) throw new Error("code required");
+  if (originalCode && originalCode !== c) {
+    await query(`DELETE FROM response_teams WHERE code = $1`, [originalCode]);
+    await query(`UPDATE team_members SET team_code = $1, team_name = $1 WHERE team_code = $2`, [c, originalCode]);
+    await query(`UPDATE response_team_grants SET team_code = $1 WHERE team_code = $2`, [c, originalCode]);
+  }
+  await query(
+    `INSERT INTO response_teams (code, sec_region, phones, emails, company, clusters)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (code) DO UPDATE
+       SET sec_region = EXCLUDED.sec_region, phones = EXCLUDED.phones,
+           emails = EXCLUDED.emails, company = EXCLUDED.company, clusters = EXCLUDED.clusters`,
+    [c, sec || null, phones, emails, company || null, clusters]
+  );
+  if (Array.isArray(memberIds)) await setTeamMembers(c, c, memberIds);
+  return c;
+}
+
+export async function deleteResponseTeam(code) {
+  await query(`DELETE FROM response_team_grants WHERE team_code = $1`, [code]);
+  await query(`DELETE FROM team_members WHERE team_code = $1`, [code]);
+  await query(`DELETE FROM response_teams WHERE code = $1`, [code]);
+  return true;
+}
+
+export async function addTeamGrant(teamCode, cluster) {
+  await query(`INSERT INTO response_team_grants (team_code, cluster) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [teamCode, cluster]);
+}
+export async function removeTeamGrant(teamCode, cluster) {
+  await query(`DELETE FROM response_team_grants WHERE team_code = $1 AND cluster = $2`, [teamCode, cluster]);
+}
+
+// ---- NOC teams CRUD --------------------------------------------------------
+export async function listNocTeams() {
+  const { rows } = await query(
+    `SELECT code, owner, company, covers, phones, emails FROM noc_teams ORDER BY company, code`
+  );
+  const out = [];
+  for (const t of rows) {
+    // eslint-disable-next-line no-await-in-loop
+    const memberIds = await memberIdsFor(t.code);
+    out.push({
+      code: t.code, owner: t.owner || "mon", company: t.company || "",
+      covers: t.covers || [], phones: t.phones || [], emails: t.emails || [], memberIds,
+    });
+  }
+  return out;
+}
+
+export async function saveNocTeam({ code, owner = "mon", company, covers = [], phones = [], emails = [], memberIds, originalCode } = {}) {
+  const c = String(code || "").trim();
+  if (!c) throw new Error("code required");
+  if (originalCode && originalCode !== c) {
+    await query(`DELETE FROM noc_teams WHERE code = $1`, [originalCode]);
+    await query(`UPDATE team_members SET team_code = $1, team_name = $1 WHERE team_code = $2`, [c, originalCode]);
+  }
+  await query(
+    `INSERT INTO noc_teams (code, owner, company, covers, phones, emails)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (code) DO UPDATE
+       SET owner = EXCLUDED.owner, company = EXCLUDED.company, covers = EXCLUDED.covers,
+           phones = EXCLUDED.phones, emails = EXCLUDED.emails`,
+    [c, owner === "sec" ? "sec" : "mon", company || null, covers, phones, emails]
+  );
+  if (Array.isArray(memberIds)) await setTeamMembers(c, c, memberIds);
+  return c;
+}
+
+export async function deleteNocTeam(code) {
+  await query(`DELETE FROM team_members WHERE team_code = $1`, [code]);
+  await query(`DELETE FROM noc_teams WHERE code = $1`, [code]);
+  return true;
 }

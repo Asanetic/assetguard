@@ -1,0 +1,39 @@
+AssetGuard — THE fix: config values now update when a command confirms
+======================================================================
+
+ROOT CAUSE (found in the live logs):
+  [command] config promote error: could not determine data type of parameter $2
+  [queueParamChange] pending set: could not determine data type of parameter $2
+
+Every query that promoted a confirmed command into the live value (and the one
+that set the "pending" marker) used  jsonb_build_object($2, $3::int)  with the
+KEY as a bare parameter. Postgres can't infer the type of $2 there, so the query
+threw EVERY TIME and was silently caught. That's why motion / moving interval /
+wake never changed, why "pending" never showed, and why even a refresh didn't
+help (the reconcile had the same query). Geofence always worked because it uses
+a different, correctly-typed query — which is exactly why it was the giveaway.
+
+THE FIX (5 queries, 3 files): cast the key to ::text
+  jsonb_build_object($2::text, $3::int)   and   config - $2::text
+Files:
+  app/api/apiUtils/ingest/commandRunner.js         (live promote on confirm)
+  app/api/apiUtils/dataControl/deviceCommands.js   (pending-set + refresh reconcile)
+
+DEPLOY
+  cd /var/www/html/baseapps/assetguard
+  python3 -c "import zipfile; zipfile.ZipFile('device-sync-fix.zip').extractall('.')"
+  npm run build && pm2 restart gps-3000 assetguard-3010 --update-env
+
+REPAIR THE ALREADY-STUCK VALUES (one-time) — sets each device's live value to
+its newest CONFIRMED command, so the values that were frozen jump to correct now:
+  psql "$DATABASE_URL" -f db/backfill_confirmed_params.sql
+
+TEST
+  Change motion to, say, 27, Save, wait for the device to reply. The command
+  goes confirmed AND the value now flips to 27 (no refresh needed once the
+  device confirms; a refresh also shows it via the reconcile). Watch:
+  pm2 logs assetguard-3010 --lines 50   # now shows: [command] ... → active motion_sensitivity = 27
+  The "config promote error" line should be GONE.
+
+You can delete the temporary probe route once satisfied:
+  app/api/mainapp/devices/[id]/sync-debug/route.js

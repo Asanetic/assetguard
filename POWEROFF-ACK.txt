@@ -1,0 +1,33 @@
+AssetGuard — Power-off: ack-driven + clear "Powered off" indicator
+==================================================================
+
+CHANGE OF PLAN (per your note: the device DOES ack pwroff)
+  - Reverted the earlier fire-and-forget behaviour.
+  - Power-off is once again ACK-DRIVEN: the device is set OFF only AFTER it
+    acknowledges the pwroff command (via onReply), exactly as before.
+  - PLUS: on that ack we now also stamp a `powered_off` flag on the device, and
+    the Device details page shows a clear red "⏻ Powered off" badge next to the
+    status. So you can tell at a glance the device was deliberately powered off
+    (not merely Inactive for some other reason).
+  - The badge clears automatically when you reinstate the device (set its status
+    back to Live / Testing / anything other than Inactive).
+
+FLOW
+  Deactivate → pwroff queued → sends on next wake → device ACKS →
+  status = Inactive AND config.powered_off = true → page shows "Powered off".
+
+FILES
+  app/api/apiUtils/ingest/commandRunner.js            (ack sets Inactive + powered_off; fire-and-forget removed)
+  app/api/mainapp/devices/[id]/route.js               (clears powered_off when reinstated)
+  app/mainapp/devices/view/components/ViewDevice.jsx  ("Powered off" badge + wording)
+
+DEPLOY
+  cd /var/www/html/baseapps/assetguard
+  python3 -c "import zipfile; zipfile.ZipFile('poweroff-ack.zip').extractall('.')"
+  npm run build && pm2 restart gps-3000 assetguard-3010 --update-env
+
+TEST
+  Deactivate a live device; once it acks (watch the queue go confirmed / the log
+  line "[command] <imei> acked pwroff → device set INACTIVE (powered off)"),
+  the device page shows the red "Powered off" badge and status Inactive.
+  Set the status back to Live to clear the badge.

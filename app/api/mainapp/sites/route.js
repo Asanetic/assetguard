@@ -5,12 +5,14 @@ import { NextResponse } from "next/server";
 import {
   listSites, createSite, getSiteByCode,
 } from "../../apiUtils/dataControl/sites.js";
-import { requireAdmin } from "../../apiUtils/authUtils/session.js";
+import { getAuth, requireAdmin } from "../../apiUtils/authUtils/session.js";
+import { scopeFilterFor } from "../../apiUtils/authUtils/regionScope.js";
 import { logAudit } from "../../apiUtils/dataControl/audit.js";
 
 export async function GET(request) {
-  const gate = requireAdmin(request);
-  if (gate.error) return gate.error;
+  // Any signed-in user may LIST sites, but only those in their region scope.
+  const me = getAuth(request);
+  if (!me) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q") || undefined;
@@ -18,7 +20,8 @@ export async function GET(request) {
   const status = searchParams.get("status") || undefined;
 
   try {
-    const sites = await listSites({ q, region, status });
+    const { regions, siteIds } = await scopeFilterFor(me);   // region OR list scope
+    const sites = await listSites({ q, region, status, regions, siteIds });
     return NextResponse.json({ sites });
   } catch (err) {
     console.error("[sites GET] error", err);

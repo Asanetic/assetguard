@@ -3,9 +3,9 @@
 // auditLogsWebMount, backed by the real /api/mainapp/audit endpoint.
 //
 // The trail is append-only: this screen reads it (newest first), lets you search
-// and filter by category, and exports the current view to a real CSV file. It
-// seeds with the same five prototype entries so it renders instantly, then
-// replaces them with whatever the backend returns.
+// and filter by category, and exports the current view to a real CSV file. It shows
+// only real backend data — the category filter options are derived from the logs
+// themselves, and there is no prototype fallback.
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -16,17 +16,6 @@ const CAT_COLORS = {
   Users: "#2E6CF5", Sites: "#10B981", Devices: "#F59E0B",
   Alarms: "#EF4444", System: "#64748B", Companies: "#8B5CF6",
 };
-const CATEGORIES = ["Users", "Sites", "Devices", "Alarms", "Companies", "System"];
-
-// Shown immediately; replaced by the API response on load.
-const SEED = [
-  { ts: "2026-07-15 09:41:22", user: "Jane Wanjiku", role: "Administrator", action: "User approved", cat: "Users", detail: "Approved REG-2043 Mercy Achieng and assigned Field Responder", ip: "196.201.14.32" },
-  { ts: "2026-07-15 09:12:04", user: "Grace Wambui", role: "Super Admin", action: "Site deleted", cat: "Sites", detail: "Deleted site THK-WH-006 Thika Warehouse (0 devices)", ip: "196.201.14.9" },
-  { ts: "2026-07-15 08:55:47", user: "Kevin Ouma", role: "NOC", action: "Alarm closed", cat: "Alarms", detail: "Closed ALM-3391 perimeter breach at Nairobi Headquarters", ip: "41.90.7.220" },
-  { ts: "2026-07-15 08:40:10", user: "James Mwangi", role: "Administrator", action: "Device added", cat: "Devices", detail: "Registered device 004_NakuruDepot_V (IMEI 352093…34580)", ip: "196.201.14.32" },
-  { ts: "2026-07-14 17:22:33", user: "Alice Njeri", role: "Company Manager", action: "Role changed", cat: "Users", detail: "Changed Nancy Wairimu from NOC to suspended", ip: "196.201.14.51" },
-];
-
 function initials(name) {
   return String(name || "")
     .split(" ").map((w) => w.charAt(0)).slice(0, 2).join("").toUpperCase();
@@ -47,7 +36,7 @@ function csvCell(v) {
 }
 
 export default function AuditLogs() {
-  const [logs, setLogs] = useState(SEED);
+  const [logs, setLogs] = useState([]);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -70,14 +59,20 @@ export default function AuditLogs() {
         const data = await res.json();
         if (alive && Array.isArray(data.logs)) { setLogs(data.logs); setOffline(false); }
       } catch {
-        // Keep the seed rows so the screen still matches the prototype offline.
-        if (alive) setOffline(true);
+        // No fake fallback — show nothing rather than prototype rows.
+        if (alive) { setLogs([]); setOffline(true); }
       } finally {
         if (alive) setLoading(false);
       }
     })();
     return () => { alive = false; };
   }, []);
+
+  // Category filter options come from the categories actually present in the logs.
+  const catOptions = useMemo(
+    () => [...new Set(logs.map((a) => a.cat).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    [logs]
+  );
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -131,7 +126,7 @@ export default function AuditLogs() {
         </div>
         <select className={styles.catSelect} value={cat} onChange={(e) => setCat(e.target.value)}>
           <option value="all">All categories</option>
-          {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          {catOptions.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 

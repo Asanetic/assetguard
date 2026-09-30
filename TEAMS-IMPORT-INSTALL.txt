@@ -1,0 +1,42 @@
+AssetGuard — Response/NOC teams: mandatory rules + NOC import
+=============================================================
+
+RESPONSE TEAMS  (app/mainapp/response/components/ResponseTeams.jsx)
+  - One response cluster and one response user are now MANDATORY; the second of
+    each is optional.
+      * Manual form: registering a team now requires at least one assigned
+        field-response user (and, as before, at least one cluster).
+      * CSV import: a row must have Code Name + Response Cluster 1 + a matched
+        Response User 1, or it is flagged as an error in the preview.
+    Template columns (unchanged): Code Name, Security Region, Response Cluster 1,
+    Response Cluster 2, Response User 1, Response User 2.
+
+NOC TEAMS  (app/mainapp/noc/components/NocTeams.jsx)  — NEW: template + import
+  - Import CSV + Template buttons on the NOC teams page.
+    Template columns:
+      Code Name, Belongs To, Company, Coverage 1, Coverage 2,
+      Phone(s), Email(s), NOC User 1, NOC User 2
+    Rules:
+      * Code Name and Company are required; the company must already exist
+        (Belongs To = Monitoring or Security decides which list it's matched in;
+        defaults to Monitoring).
+      * Coverage 1/2 are security regions; leave both blank for country-wide.
+      * NOC User 1/2 are matched to registered users by email or name; a team's
+        phone/email default to those users' contacts when the Phone(s)/Email(s)
+        columns are empty. Each row must have at least one contact (a phone, an
+        email, or a matched user).
+    The preview shows new / duplicate / error per row before you confirm.
+
+DEPLOY (web)
+  cd /var/www/html/baseapps/assetguard
+  python3 -c "import zipfile; zipfile.ZipFile('teams-import-web.zip').extractall('.')"
+  npm run build
+  pm2 restart gps-3000 assetguard-3010
+
+NOTES
+-----
+- Both team lists remain in-memory (as before) — imported teams appear
+  immediately and their assigned members persist via the members API, but the
+  team rows reset on reload. Say the word to add a database-backed teams store so
+  imports survive a refresh.
+- No app changes: the Response/Technician apps don't manage teams.

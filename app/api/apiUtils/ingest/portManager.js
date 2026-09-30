@@ -58,7 +58,20 @@ async function ingest(conn, p, port) {
       const dev = (m && m[1]) || conn.imei || null;
       insertRawLog({ dir: "in", ip: conn.ip, srcPort: conn.port, port, device: dev, data: f, bytes: f.length }).catch(() => {});
       // A command reply (e.g. "*HQ,IMEI,V4,UPGRADE#") ACKs a queued downlink job.
-      if (dev) { try { await cmdOnReply({ imei: dev, replyText: f }); } catch {} }
+      // Pass a writer bound to THIS live socket so the runner can chain the next
+      // queued command straight out on the same connection (see dispatchNext).
+      if (dev) {
+        const send = (frame) => {
+          try {
+            conn.socket.write(Buffer.from(frame, "latin1"));
+            p.bytesOut = (p.bytesOut || 0) + frame.length;
+            insertRawLog({ dir: "out", ip: conn.ip, srcPort: conn.port, port, device: dev, data: frame, bytes: frame.length }).catch(() => {});
+            console.log(`[cmd] -> ${dev} @:${port}  ${frame}`);
+            return true;
+          } catch { return false; }
+        };
+        try { await cmdOnReply({ imei: dev, replyText: f, send }); } catch {}
+      }
       continue;
     }
 

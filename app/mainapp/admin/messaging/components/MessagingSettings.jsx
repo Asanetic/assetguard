@@ -18,8 +18,12 @@ const EMAIL_FALLBACK = {
 };
 const SMS_FALLBACK = {
   enabled: true, provider: "Asanetic", apiUrl: "https://asanetic.com/sms/sendsms",
-  senderId: "", apiKeySet: false,
+  senderId: "", partnerID: "", apiKeySet: false,
 };
+const SMS_PROVIDERS = ["Asanetic", "Celcom Africa"];
+const CELCOM_ENDPOINT = "https://isms.celcomafrica.com/api/services/sendsms/";
+const ASANETIC_ENDPOINT = "https://asanetic.com/sms/sendsms";
+const isCelcom = (p) => String(p || "").toLowerCase().replace(/\s+/g, "").includes("celcom");
 
 export default function MessagingSettings() {
   const [email, setEmail] = useState(EMAIL_FALLBACK);
@@ -67,6 +71,16 @@ export default function MessagingSettings() {
   const setE = (k, v) => setEmail((e) => ({ ...e, [k]: v }));
   const setS = (k, v) => setSms((s) => ({ ...s, [k]: v }));
 
+  // Switching provider auto-fills the endpoint to that provider's default when the
+  // box is empty or still holds the other provider's default (never clobbers a
+  // custom URL the admin typed).
+  const setProvider = (v) => setSms((s) => {
+    const next = { ...s, provider: v };
+    if (isCelcom(v) && (!s.apiUrl || s.apiUrl === ASANETIC_ENDPOINT)) next.apiUrl = CELCOM_ENDPOINT;
+    if (!isCelcom(v) && (!s.apiUrl || s.apiUrl === CELCOM_ENDPOINT)) next.apiUrl = ASANETIC_ENDPOINT;
+    return next;
+  });
+
   async function save() {
     setSaving(true); setSaveNote({ text: "", tone: "" });
     try {
@@ -77,7 +91,8 @@ export default function MessagingSettings() {
           ...(emailPass.trim() ? { pass: emailPass } : {}),
         },
         sms: {
-          enabled: sms.enabled, provider: sms.provider, apiUrl: sms.apiUrl, senderId: sms.senderId,
+          enabled: sms.enabled, provider: sms.provider, apiUrl: sms.apiUrl,
+          senderId: sms.senderId, partnerID: sms.partnerID || "",
           ...(smsKey.trim() ? { apiKey: smsKey } : {}),
         },
       };
@@ -106,7 +121,7 @@ export default function MessagingSettings() {
         ? { enabled: email.enabled, host: email.host, port: Number(email.port), user: email.user,
             fromName: email.fromName, fromEmail: email.fromEmail, ...(emailPass.trim() ? { pass: emailPass } : {}) }
         : { enabled: sms.enabled, provider: sms.provider, apiUrl: sms.apiUrl, senderId: sms.senderId,
-            ...(smsKey.trim() ? { apiKey: smsKey } : {}) };
+            partnerID: sms.partnerID || "", ...(smsKey.trim() ? { apiKey: smsKey } : {}) };
       const res = await fetch("/api/mainapp/messaging-config/test", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ channel, to: to.trim(), config }),
@@ -221,12 +236,16 @@ export default function MessagingSettings() {
             </span>
           </span>
         </div>
-        <div className={styles.cardSub}>Outbound SMS gateway. Defaults to the Asanetic SMS API.</div>
+        <div className={styles.cardSub}>Outbound SMS gateway. Choose a provider — Asanetic or Celcom Africa.</div>
 
         <div className={styles.g2}>
           <div className={styles.field}>
             <label className={styles.lab}>PROVIDER</label>
-            <input className={styles.in} value={sms.provider} onChange={(e) => setS("provider", e.target.value)} />
+            <select className={styles.in} value={sms.provider} onChange={(e) => setProvider(e.target.value)}>
+              {SMS_PROVIDERS.map((p) => <option key={p} value={p}>{p}</option>)}
+              {!SMS_PROVIDERS.includes(sms.provider) && sms.provider
+                ? <option value={sms.provider}>{sms.provider}</option> : null}
+            </select>
           </div>
           <div className={styles.field}>
             <label className={styles.lab}>STATUS</label>
@@ -242,12 +261,19 @@ export default function MessagingSettings() {
           <input className={`${styles.in} ${styles.mono}`} value={sms.apiUrl} onChange={(e) => setS("apiUrl", e.target.value)} />
         </div>
 
+        {isCelcom(sms.provider) && (
+          <div className={styles.field} style={{ marginBottom: 10 }}>
+            <label className={styles.lab}>PARTNER ID <span className={styles.labHint}>Celcom Africa — from your dashboard</span></label>
+            <input className={styles.in} placeholder="e.g. 00" value={sms.partnerID || ""} onChange={(e) => setS("partnerID", e.target.value)} />
+          </div>
+        )}
+
         <div className={styles.g2}>
           <div className={styles.field}>
-            <label className={styles.lab}>API KEY / TOKEN <span className={styles.labHint}>sent as “pushsms”</span></label>
+            <label className={styles.lab}>API KEY / TOKEN <span className={styles.labHint}>{isCelcom(sms.provider) ? "sent as “apikey”" : "sent as “pushsms”"}</span></label>
             <div className={styles.keyRow}>
               <input className={`${styles.in} ${styles.mono}`} type={showKey ? "text" : "password"}
-                placeholder={sms.apiKeySet ? "•••••••••• (leave blank to keep current)" : "Optional — leave blank if IP-whitelisted"}
+                placeholder={sms.apiKeySet ? "•••••••••• (leave blank to keep current)" : (isCelcom(sms.provider) ? "Required — your Celcom API key" : "Optional — leave blank if IP-whitelisted")}
                 value={smsKey} onChange={(e) => setSmsKey(e.target.value)} autoComplete="off" spellCheck={false} />
               <button type="button" className={styles.eyeBtn} onClick={() => setShowKey((s) => !s)} aria-label={showKey ? "Hide" : "Show"}>
                 <i className={showKey ? "ti ti-eye-off" : "ti ti-eye"} />
@@ -255,14 +281,17 @@ export default function MessagingSettings() {
             </div>
           </div>
           <div className={styles.field}>
-            <label className={styles.lab}>SENDER ID <span className={styles.labHint}>optional</span></label>
-            <input className={styles.in} placeholder="e.g. ASSETGUARD" value={sms.senderId} onChange={(e) => setS("senderId", e.target.value)} />
+            <label className={styles.lab}>SENDER ID <span className={styles.labHint}>{isCelcom(sms.provider) ? "Celcom “shortcode” — required" : "optional"}</span></label>
+            <input className={styles.in} placeholder={isCelcom(sms.provider) ? "e.g. INFOTEXT" : "e.g. ASSETGUARD"} value={sms.senderId} onChange={(e) => setS("senderId", e.target.value)} />
           </div>
         </div>
 
         <div className={styles.help}>
-          The current gateway posts <code>recp</code> (number) and <code>body</code> (message) form fields; the API key rides in <code>pushsms</code>.
-          If your Asanetic account authenticates by whitelisted server IP, you can leave the key blank.
+          {isCelcom(sms.provider) ? (
+            <>Celcom Africa posts JSON <code>partnerID</code>, <code>apikey</code>, <code>shortcode</code> (sender ID), <code>mobile</code> and <code>message</code> to the endpoint above. Numbers are sent as <code>2547XXXXXXXX</code>. API key, Partner ID and Sender ID are all required.</>
+          ) : (
+            <>Asanetic posts <code>recp</code> (number) and <code>body</code> (message) form fields; the API key rides in <code>pushsms</code>. If your account authenticates by whitelisted server IP, you can leave the key blank.</>
+          )}
         </div>
 
         <div className={styles.testWrap}>

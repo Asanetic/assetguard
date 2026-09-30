@@ -57,6 +57,7 @@
 .lifeDetail { color: #64748B; font-size: 12.5px; margin-top: 2px; }
 .lifeTime { color: #94A3B8; font-size: 12px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
 
+
 /* actions */
 .act { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border: none; border-radius: 10px; padding: 13px; font-weight: 700; font-size: 14px; cursor: pointer; margin-bottom: 12px; text-decoration: none; }
 .act:disabled { opacity: .5; cursor: not-allowed; }
@@ -88,6 +89,13 @@
 .galItem img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; border-radius: 8px; background: #EEF2F7; }
 .galItem:hover { border-color: #2E6CF5; box-shadow: 0 4px 12px rgba(46,108,245,.18); }
 .galCap { font-size: 11px; color: #64748B; text-align: center; font-weight: 600; margin-top: 7px; }
+/* Field response, in the alarm report — one block per mission: who went, the
+   outcome, their remark, and the evidence they brought back. */
+.missionBlock { background: #FFFBF5; border: 1px solid #FDEBD3; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+.missionOutcome { display: inline-block; background: #FFF7ED; color: #EA580C; font-size: 11px; font-weight: 800; letter-spacing: .03em; border-radius: 999px; padding: 4px 10px; margin: 8px 0 0; }
+.missionRemark { color: #334155; font-size: 12.5px; line-height: 1.5; margin: 8px 0 0; font-style: italic; }
+.missionBlock .gallery { margin-top: 10px; }
+
 .lightImg { max-width: 92vw; max-height: 92vh; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
 
 /* report modal */

@@ -1,0 +1,29 @@
+AssetGuard — DLR parser fix (verified against real Celcom responses) + status rule
+==================================================================================
+Overlay on celcom-sms-dlr-web.zip (just two files changed).
+
+VERIFIED against your live responses:
+  getbalance → {"response-code":200,"credit":"99.40000","partner-id":"36"}
+       → balance parser reads `credit` correctly → shows "99.4" on the SMS provider row. ✓
+  getdlr    → {"response-code":200,"message-id":"…","delivery-status":32,
+               "delivery-description":"DeliveredToTerminal", …}
+       → FIXED: now reads `delivery-description` ("DeliveredToTerminal" → delivered)
+         and maps the numeric `delivery-status` (32 = delivered). Before, it keyed off
+         the number 32 and wrongly stayed "pending". "DeliveredToNetwork"/EnRoute are
+         treated as in-transit (not final), real failures as failed.
+  Also: send parser now captures `messageid` OR `message-id` (alphanumeric) in either
+  wrapped or top-level shape, so the id we store matches what getdlr expects.
+
+STATUS RULE (your next task): the recent-log STATUS now shows "Delivered" for
+EMAIL and PUSH on a successful accept (they have no async receipt), and for SMS only
+when a real Celcom DLR confirms it — so Asanetic SMS (no DLR) never shows Delivered,
+exactly as asked.
+
+FILES (overlay)
+  app/api/apiUtils/notify/celcom.js
+  app/mainapp/notifications/components/Notifications.jsx
+
+DEPLOY
+  cd /var/www/html/baseapps/assetguard
+  python3 -c "import zipfile; zipfile.ZipFile('celcom-dlr-fix.zip').extractall('.')"
+  npm run build && pm2 restart gps-3000 assetguard-3010 --update-env

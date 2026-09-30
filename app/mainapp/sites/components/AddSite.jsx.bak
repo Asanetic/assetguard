@@ -1,0 +1,770 @@
+// app/mainapp/sites/components/AddSite.jsx
+// Full "Add site" form — the enhanced contact-hierarchy layout:
+//   Location (country/county/distribution + security region + response cluster)
+//   Company        — national, one manager + two assistant managers
+//   Security company — country tier + regional tier + NOC & response teams
+//   NOC            — monitoring company + its NOC teams
+//   Alert recipients
+// Pick a security region and cluster; everything below auto-fills and stays
+// editable. Saves the full structure to /api/mainapp/sites (details JSONB).
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import styles from "./addsite.module.css";
+import { fetchMapsConfig, loadGoogleMaps, sitePinIcon } from "../../lib/googleMaps.js";
+// Only fixed reference GEOGRAPHY is seeded (counties, distribution regions). Every
+// operational entity — vendors, security regions, clusters, companies, NOC + response
+// teams — comes from registered data / facets, never a hardcoded list.
+import { COUNTIES, DIST_REGIONS } from "./addSiteData.js";
+import { useFacets } from "../../lib/useFacets.js";
+
+// --- small helpers -----------------------------------------------------------
+const joinC = (a) => (a || []).join(", ");
+const splitC = (v) => String(v || "").split(",").map((x) => x.trim()).filter(Boolean);
+const validEmail = (e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
+const validPhone = (p) => /^[+0-9][0-9\s()-]{6,}$/.test(p);
+const person = (p) => ({ name: p.name, phones: splitC(p.phones), emails: splitC(p.emails) });
+const toStr = (p) => (p ? { name: p.name, phones: joinC(p.phones), emails: joinC(p.emails) } : { name: "", phones: "", emails: "" });
+const emptyTeam = () => ({ name: "", vehicle: "", phones: "", emails: "", on: true });
+const teamFrom = (t) => ({ name: t.code || "", vehicle: t.vehicle || "", phones: joinC(t.phones), emails: joinC(t.emails), on: true });
+const listOrEmpty = (arr) => (arr && arr.length ? arr.map(teamFrom) : [emptyTeam()]);
+// Ensure a saved value that isn't in the preset list still shows in its select.
+const withVal = (opts, v) => (v && !opts.includes(v) ? [v, ...opts] : opts);
+
+// Comma-separated contact input with a live chip preview.
+function ContactField({ value, onChange, kind }) {
+  const parts = splitC(value);
+  const ok = (x) => (kind === "email" ? validEmail(x) : validPhone(x));
+  return (
+    <div>
+      <input
+        className={`${styles.in} ${styles.inAuto}`}
+        data-cf={kind}
+        placeholder={kind === "email" ? "name@co.ke, second@co.ke" : "+254 7.., +254 7.."}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {parts.length > 0 && (
+        <div className={styles.chips}>
+          {parts.map((x, i) => {
+            const bad = !ok(x);
+            return (
+              <span key={i} className={`${styles.chip} ${bad ? styles.chipBad : ""}`}>
+                {bad && <i className="ti ti-alert-circle" aria-hidden="true" />}{x}
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// A person row: name + Phone(s) + Email(s). When `readOnly`, the row is a locked
+// display of contacts inherited from a company record (no editing here — change
+// them on the company).
+function PersonRow({ label, value, onChange, hint = "(auto)", readOnly = false }) {
+  if (readOnly) {
+    return (
+      <div className={styles.g3}>
+        <div>
+          <label className={styles.lab}>{label} <span className={styles.op}>(inherited)</span></label>
+          <input className={`${styles.in} ${styles.inLock}`} readOnly value={value.name || "—"} />
+        </div>
+        <div>
+          <label className={styles.lab}>Phone(s)</label>
+          <input className={`${styles.in} ${styles.inLock}`} readOnly value={value.phones || "—"} />
+        </div>
+        <div>
+          <label className={styles.lab}>Email(s)</label>
+          <input className={`${styles.in} ${styles.inLock}`} readOnly value={value.emails || "—"} />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className={styles.g3}>
+      <div>
+        <label className={styles.lab}>{label} <span className={styles.op}>{hint}</span></label>
+        <input className={`${styles.in} ${styles.inAuto}`} value={value.name}
+          onChange={(e) => onChange({ ...value, name: e.target.value })} />
+      </div>
+      <div>
+        <label className={styles.lab}>Phone(s) <span className={styles.op}>comma separated</span></label>
+        <ContactField kind="phone" value={value.phones} onChange={(v) => onChange({ ...value, phones: v })} />
+      </div>
+      <div>
+        <label className={styles.lab}>Email(s) <span className={styles.op}>comma separated</span></label>
+        <ContactField kind="email" value={value.emails} onChange={(v) => onChange({ ...value, emails: v })} />
+      </div>
+    </div>
+  );
+}
+
+// A list of team cards with include checkbox, delete and "Add another team".
+function TeamList({ rows, setRows, icon, tint, ink, hasVehicle }) {
+  const update = (i, patch) => setRows(rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  const del = (i) => { const next = rows.filter((_, idx) => idx !== i); setRows(next.length ? next : [emptyTeam()]); };
+  const add = () => setRows([...rows, emptyTeam()]);
+  return (
+    <>
+      {rows.map((t, i) => (
+        <div key={i} className={`${styles.teamCard} ${t.on ? "" : styles.teamCardOff}`}>
+          <div className={`${styles.teamHead} ${t.on ? styles.teamHeadOn : ""}`}>
+            <input type="checkbox" className={styles.teamChk} checked={t.on}
+              onChange={(e) => update(i, { on: e.target.checked })} />
+            <span className={styles.teamIcon} style={{ background: tint, color: ink }}>
+              <i className={`ti ${icon}`} aria-hidden="true" />
+            </span>
+            <b className={styles.teamName}>{t.name || "New team"}</b>
+            <button className={styles.teamDel} onClick={() => del(i)} aria-label="Remove team">
+              <i className="ti ti-trash" aria-hidden="true" />
+            </button>
+          </div>
+          {t.on && (
+            <>
+              <div className={hasVehicle ? styles.g2 : ""} style={hasVehicle ? undefined : { marginBottom: 10 }}>
+                <div>
+                  <label className={styles.lab}>Team name <span className={styles.op}>(auto)</span></label>
+                  <input className={`${styles.in} ${styles.inAuto}`} value={t.name}
+                    onChange={(e) => update(i, { name: e.target.value })} />
+                </div>
+                {hasVehicle && (
+                  <div>
+                    <label className={styles.lab}>Vehicle <span className={styles.op}>(auto)</span></label>
+                    <input className={`${styles.in} ${styles.inAuto}`} value={t.vehicle}
+                      onChange={(e) => update(i, { vehicle: e.target.value })} />
+                  </div>
+                )}
+              </div>
+              <div className={styles.g2} style={{ marginBottom: 0 }}>
+                <div>
+                  <label className={styles.lab}>Phone(s) <span className={styles.op}>comma separated</span></label>
+                  <ContactField kind="phone" value={t.phones} onChange={(v) => update(i, { phones: v })} />
+                </div>
+                <div>
+                  <label className={styles.lab}>Email(s) <span className={styles.op}>comma separated</span></label>
+                  <ContactField kind="email" value={t.emails} onChange={(v) => update(i, { emails: v })} />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      ))}
+      <button className={styles.addTeam} onClick={add}>
+        <i className="ti ti-plus" aria-hidden="true" /> Add another team
+      </button>
+    </>
+  );
+}
+
+const REQUIRED = ["id", "name", "county", "distRegion", "securityRegion", "responseCluster", "coords", "sms"];
+
+export default function AddSite() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
+  const [editing] = useState(!!editId);
+  const facets = useFacets();
+  // Merge live facet values with the static seed list (and the current value), so
+  // every option in the system is offered and nothing already-in-use is missing.
+  const merge = (facetList, constList, v) => {
+    const base = [...new Set([...(facetList || []), ...(constList || [])])]
+      .sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
+    return withVal(base, v);
+  };
+
+  const [f, setF] = useState({
+    id: "", name: "", smpms: "", county: "", distRegion: "",
+    securityRegion: "", responseCluster: "", coords: "", sms: "", emails: "",
+  });
+  // National (client) company block — filled from the registered client company
+  // (companies directory) on mount; no hardcoded placeholder.
+  const [comp, setComp] = useState({ name: "", mgr: toStr(null), a1: toStr(null), a2: toStr(null) });
+  // Security company block. The company is CHOSEN from the registered security
+  // companies; its national Manager + one Assistant are inherited (read-only)
+  // from that company's record. No regional tier any more.
+  const [sec, setSec] = useState({ company: "", ops: toStr(null), opsAsst: toStr(null), opsAsst2: toStr(null) });
+  // Registered security / monitoring companies (with contacts) for the dropdowns,
+  // and the global client company for the Company block.
+  const [secDir, setSecDir] = useState([]);
+  const [monDir, setMonDir] = useState([]);
+  const [vendorDir, setVendorDir] = useState([]); // REGISTERED SMPMS / service-vendor companies
+  const [nocDir, setNocDir] = useState([]);   // REGISTERED NOC teams (noc_teams table)
+  const [respDir, setRespDir] = useState([]); // REGISTERED response teams (response_teams)
+  const [respGrants, setRespGrants] = useState({}); // cluster -> [team code] grants
+  const [monitoringCompany, setMonitoringCompany] = useState("");
+  const [secNoc, setSecNoc] = useState([emptyTeam()]);
+  const [response, setResponse] = useState([emptyTeam()]);
+  const [mnc, setMnc] = useState([emptyTeam()]);
+
+  const [invalid, setInvalid] = useState(new Set());
+  const [showMsg, setShowMsg] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState("");
+  const [pin, setPin] = useState({ left: "50%", top: "52%" });
+  const [toast, setToast] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const refs = useRef({});
+
+  // --- real Google map ---
+  const mapEl = useRef(null);
+  const gmap = useRef(null);
+  const marker = useRef(null);
+  const mapsApi = useRef(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [siteStatus, setSiteStatus] = useState("Pending"); // drives the marker colour
+
+  function set(k, v) { setF((s) => ({ ...s, [k]: v })); }
+
+  // Client + security + monitoring companies come from the COMPANY records now.
+  // The Company block shows the global Client company (read-only); the Security
+  // company is chosen from the registered security companies and inherits its
+  // Manager + Assistant. Loading a saved site (edit) sets its own values after,
+  // so we don't clobber the assigned company on hydrate.
+  const secByName = (name) => secDir.find((c) => (c.name || "").toLowerCase() === String(name || "").toLowerCase()) || null;
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/mainapp/companies/directory", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return;
+        setSecDir(Array.isArray(d.security) ? d.security : []);
+        setMonDir(Array.isArray(d.monitoring) ? d.monitoring : []);
+        setVendorDir(Array.isArray(d.vendors) ? d.vendors : []);
+        const cl = d.client;
+        if (cl) {
+          const c = cl.contacts || {};
+          setComp({ name: cl.name || "", mgr: toStr(c.manager), a1: toStr(c.assistant1), a2: toStr(c.assistant2) });
+        }
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  // Load the REGISTERED NOC + response teams. The region/cluster cascade fills the
+  // team lists from THESE only — never from any seed/prototype list — so if none are
+  // registered for a region/cluster, nothing is auto-populated.
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/mainapp/noc/teams", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive && d && Array.isArray(d.teams)) setNocDir(d.teams); })
+      .catch(() => {});
+    fetch("/api/mainapp/response/teams", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return;
+        if (Array.isArray(d.teams)) setRespDir(d.teams);
+        if (d.grants && typeof d.grants === "object") setRespGrants(d.grants);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  // Response teams for a cluster (its own clusters[] + any team granted into it);
+  // if no cluster is picked yet, fall back to teams in the security region. Registered
+  // data only — an empty result yields a single blank editable row, no phantom teams.
+  function registeredResponseTeams(cluster, region) {
+    if (cluster) {
+      const granted = new Set(respGrants[cluster] || []);
+      return respDir.filter((t) => (Array.isArray(t.clusters) && t.clusters.includes(cluster)) || granted.has(t.code));
+    }
+    if (region) return respDir.filter((t) => t.sec === region);
+    return [];
+  }
+
+  // REGISTERED NOC teams (noc_teams) for a given region + owner ('sec'|'mon'),
+  // scoped to a company when one is chosen. A team with no `covers` counts as
+  // all-regions; a team with no `company` isn't excluded by the company filter.
+  function nocTeamsFor(region, owner, company) {
+    const inRegion = (t) => !(Array.isArray(t.covers) && t.covers.length) || t.covers.includes(region);
+    const matchCo = (t) => !company || !t.company || t.company === company;
+    return nocDir.filter((t) => (owner === "sec" ? t.owner === "sec" : t.owner !== "sec") && inRegion(t) && matchCo(t));
+  }
+
+  // Pick a security company -> inherit its national Manager + one Assistant, and
+  // re-pull THIS company's security NOC teams for the chosen region.
+  function onSecurityCompany(name) {
+    const co = secByName(name);
+    const c = co?.contacts || {};
+    setSec({ company: name, ops: toStr(c.manager), opsAsst: toStr(c.assistant1), opsAsst2: toStr(c.assistant2) });
+    setSecNoc(listOrEmpty(nocTeamsFor(f.securityRegion, "sec", name)));
+  }
+  // Pick a monitoring company -> re-pull ITS monitoring NOC teams for the region.
+  function onMonitoringCompany(name) {
+    setMonitoringCompany(name);
+    setMnc(listOrEmpty(nocTeamsFor(f.securityRegion, "mon", name)));
+  }
+
+  // The auto-fill cascade runs ONLY when the user picks a security region or
+  // response cluster (not on hydration), so loading a saved site never wipes its
+  // stored contacts.
+  function onSecurityRegion(v) {
+    set("securityRegion", v);
+    // NOC teams: registered noc_teams for this region, scoped to the chosen security
+    // / monitoring company. None registered → a single blank editable row, no seed.
+    setSecNoc(listOrEmpty(nocTeamsFor(v, "sec", sec.company)));
+    const monTeams = nocTeamsFor(v, "mon", monitoringCompany);
+    setMnc(listOrEmpty(monTeams));
+    // If no monitoring company is chosen yet, suggest the one that owns a registered
+    // NOC team for this region. Never invent one.
+    if (!monitoringCompany) { const monCo = monTeams.find((t) => t.company)?.company; if (monCo) setMonitoringCompany(monCo); }
+    // Response teams from the REGISTERED response_teams (by cluster/region).
+    setResponse(listOrEmpty(registeredResponseTeams(f.responseCluster, v)));
+  }
+  function onResponseCluster(v) {
+    set("responseCluster", v);
+    setResponse(listOrEmpty(registeredResponseTeams(v, f.securityRegion)));
+  }
+
+  // Edit mode — load the saved site and prefill every field, without triggering
+  // the auto-fill cascade (which would overwrite the saved contacts).
+  useEffect(() => {
+    if (!editId) return;
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/mainapp/sites/${editId}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const { site } = await res.json();
+        if (!alive || !site) return;
+        if (site.status) setSiteStatus(site.status);
+        const d = site.details || {};
+        const teamRow = (t) => ({ name: t.name || t.code || "", vehicle: t.vehicle || "", phones: joinC(t.phones), emails: joinC(t.emails), on: true });
+        const teamsIn = (arr) => (arr && arr.length ? arr.map(teamRow) : [emptyTeam()]);
+        const coordStr = d.coordinates
+          || (site.lat != null && site.lng != null ? `${site.lat}, ${site.lng}` : "");
+        setF({
+          id: site.code || "", name: site.name || "", smpms: site.smpms_vendor || "",
+          county: site.county || d.county || "", distRegion: site.dist_region || d.distRegion || "",
+          securityRegion: site.security_region || d.securityRegion || "",
+          responseCluster: site.response_cluster || d.responseCluster || "",
+          coords: coordStr,
+          sms: joinC(d.alerts?.sms), emails: joinC(d.alerts?.emails),
+        });
+        // The client company comes from Settings (loaded on mount, covers every site);
+        // we don't overwrite it from the saved snapshot.
+        const scy = d.securityCompany || {};
+        const savedCo = scy.company || site.security_company || "";
+        // Prefer live contacts from the assigned company; fall back to whatever the
+        // site was saved with (in case the company record has none yet).
+        const liveCo = secByName(savedCo);
+        const lc = liveCo?.contacts || {};
+        setSec({
+          company: savedCo,
+          ops: liveCo ? toStr(lc.manager) : toStr(scy.country?.operationsManager),
+          opsAsst: liveCo ? toStr(lc.assistant1) : toStr(scy.country?.assistant),
+          opsAsst2: liveCo ? toStr(lc.assistant2) : toStr(scy.country?.assistant2),
+        });
+        setSecNoc(teamsIn(scy.nocTeams));
+        setResponse(teamsIn(scy.responseTeams));
+        setMonitoringCompany(d.noc?.monitoringCompany || site.monitoring_company || "");
+        setMnc(teamsIn(d.noc?.nocTeams));
+      } catch { /* ignore */ }
+    })();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId]);
+
+  // Init the real map once.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const cfg = await fetchMapsConfig();
+        if (!cfg.apiKey) return;              // no key → keep the drawn placeholder
+        const maps = await loadGoogleMaps(cfg);
+        if (cancelled || !mapEl.current) return;
+        mapsApi.current = maps;
+        const start = parseCoords(f.coords);
+        const has = start.lat != null && start.lng != null;
+        const center = has ? { lat: start.lat, lng: start.lng } : cfg.defaultCenter;
+        const map = new maps.Map(mapEl.current, {
+          center, zoom: has ? 15 : (Number(cfg.defaultZoom) || 7),
+          mapTypeId: cfg.mapType || "roadmap", streetViewControl: false, fullscreenControl: false,
+          mapTypeControl: true,
+          mapTypeControlOptions: { style: maps.MapTypeControlStyle.HORIZONTAL_BAR, position: maps.ControlPosition.TOP_RIGHT },
+          // +/- zoom buttons (bottom-right).
+          zoomControl: true,
+          zoomControlOptions: { position: maps.ControlPosition.RIGHT_BOTTOM },
+        });
+        gmap.current = map;
+        if (has) marker.current = new maps.Marker({ map, position: center, icon: sitePinIcon(maps, siteStatus) });
+        // click the map to drop / move the pin
+        map.addListener("click", (e) => {
+          const lat = e.latLng.lat().toFixed(6), lng = e.latLng.lng().toFixed(6);
+          setF((s) => ({ ...s, coords: `${lat}, ${lng}` }));
+        });
+        maps.event.trigger(map, "resize"); map.setCenter(center);
+        setMapReady(true);
+      } catch { /* keep placeholder */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Re-centre the map + marker whenever the coordinates change.
+  useEffect(() => {
+    if (!mapReady || !gmap.current || !mapsApi.current) return;
+    const { lat, lng } = parseCoords(f.coords);
+    if (lat == null || lng == null) return;
+    const pos = { lat, lng };
+    gmap.current.setCenter(pos);
+    if (gmap.current.getZoom() < 13) gmap.current.setZoom(15);
+    if (marker.current) marker.current.setPosition(pos);
+    else marker.current = new mapsApi.current.Marker({ map: gmap.current, position: pos, icon: sitePinIcon(mapsApi.current, siteStatus) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.coords, mapReady]);
+
+  // keep the marker colour in sync with the site's status (edit mode)
+  useEffect(() => {
+    if (marker.current && mapsApi.current) marker.current.setIcon(sitePinIcon(mapsApi.current, siteStatus));
+  }, [siteStatus]);
+
+  // --- map pin + geolocation ---
+  function moveMap() {
+    setPin({ left: (30 + Math.random() * 40).toFixed(1) + "%", top: (28 + Math.random() * 44).toFixed(1) + "%" });
+    setToast(true);
+    setTimeout(() => setToast(false), 1800);
+  }
+  function onCoords(v) { set("coords", v); if (v.indexOf(",") > -1) moveMap(); }
+  function useMyLocation() {
+    setLocating(true);
+    const finish = (lat, lng) => { setF((s) => ({ ...s, coords: `${lat}, ${lng}` })); moveMap(); setLocating(false); };
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => finish(pos.coords.latitude.toFixed(4), pos.coords.longitude.toFixed(4)),
+        () => finish("-1.2921", "36.8219"),
+        { timeout: 6000 }
+      );
+    } else setTimeout(() => finish("-1.2921", "36.8219"), 700);
+  }
+  function openLiveMaps() {
+    const parts = splitC(f.coords);
+    const q = parts.length === 2 ? `${parts[0]},${parts[1]}` : "Kenya";
+    window.open(`https://www.google.com/maps?q=${encodeURIComponent(q)}`, "_blank", "noopener");
+  }
+
+  function parseCoords(s) {
+    const p = String(s || "").split(",");
+    if (p.length !== 2) return { lat: null, lng: null };
+    const lat = Number(p[0].trim()), lng = Number(p[1].trim());
+    return { lat: Number.isFinite(lat) ? lat : null, lng: Number.isFinite(lng) ? lng : null };
+  }
+  const teamsOut = (list, veh) => list
+    .filter((t) => t.on && (t.name || t.phones || t.emails))
+    .map((t) => ({ name: t.name, ...(veh ? { vehicle: t.vehicle } : {}), phones: splitC(t.phones), emails: splitC(t.emails) }));
+
+  async function save() {
+    setErr("");
+    const bad = new Set(REQUIRED.filter((k) => !String(f[k]).trim()));
+    setInvalid(bad);
+    if (bad.size) {
+      setShowMsg(true);
+      const firstKey = REQUIRED.find((k) => bad.has(k));
+      const node = refs.current[firstKey];
+      if (node) node.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setShowMsg(false);
+    setSaving(true);
+
+    const { lat, lng } = parseCoords(f.coords);
+    const details = {
+      country: "Kenya", county: f.county, distRegion: f.distRegion,
+      securityRegion: f.securityRegion, responseCluster: f.responseCluster,
+      coordinates: f.coords,
+      company: {
+        name: comp.name, coverage: "National — all regions",
+        manager: person(comp.mgr), assistant1: person(comp.a1), assistant2: person(comp.a2),
+      },
+      securityCompany: {
+        company: sec.company,
+        // National tier only — inherited from the company record. No regional tier.
+        country: { operationsManager: person(sec.ops), assistant: person(sec.opsAsst), assistant2: person(sec.opsAsst2) },
+        nocTeams: teamsOut(secNoc), responseTeams: teamsOut(response),
+      },
+      noc: { monitoringCompany, nocTeams: teamsOut(mnc) },
+      alerts: { sms: splitC(f.sms), emails: splitC(f.emails) },
+    };
+
+    const payload = {
+      code: f.id, name: f.name, smpms_vendor: f.smpms,
+      country: "Kenya", county: f.county, dist_region: f.distRegion,
+      security_region: f.securityRegion, response_cluster: f.responseCluster,
+      security_company: sec.company || null, monitoring_company: monitoringCompany || null,
+      lat, lng, coordinates: f.coords, details,
+    };
+
+    try {
+      let res;
+      if (editing) {
+        // Edit — update the existing site (status is left untouched).
+        res = await fetch(`/api/mainapp/sites/${editId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        res = await fetch("/api/mainapp/sites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, status: "Pending" }),
+        });
+      }
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setErr(d.error || "Could not save site"); setSaving(false); return; }
+      setSaved(true); setSaving(false);
+      setTimeout(() => router.push(editing ? `/mainapp/sites/${editId}` : "/mainapp/sites"), 1200);
+    } catch {
+      setErr("Network error"); setSaving(false);
+    }
+  }
+
+  const reg = (k) => ({
+    ref: (n) => { refs.current[k] = n; },
+    className: `${styles.in} ${invalid.has(k) ? styles.invalid : ""}`,
+  });
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.head}>
+        <div>
+          <div className={styles.title}>{editing ? "Edit site" : "Add site"}</div>
+          <div className={styles.sub}>
+            {editing ? "Update this location's details" : "Register a new location — scroll down to complete all sections"}
+          </div>
+        </div>
+      </div>
+
+      {/* location map — real Google map, with a drawn placeholder until it loads */}
+      <div className={styles.map}>
+        <div ref={mapEl} className={styles.mapReal} />
+        {!mapReady && (
+          <>
+            <svg className={styles.mapSvg} viewBox="0 0 900 170" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M780 0 L900 0 L900 170 L700 170 C740 130 760 90 748 55 C744 35 760 18 780 0 Z" fill="#CFE3F5" />
+              <path d="M0 60 C200 48 420 74 690 60" stroke="#FFFFFF" strokeWidth="4" fill="none" />
+              <path d="M150 0 C190 60 230 120 210 170" stroke="#F1E9D2" strokeWidth="3" fill="none" />
+            </svg>
+            <div className={styles.pin} style={{ left: pin.left, top: pin.top }}>
+              <i className="ti ti-map-pin" aria-hidden="true" />
+            </div>
+          </>
+        )}
+        {toast && <div className={styles.toast}>Location updated</div>}
+        <div className={styles.mapNote}>
+          {mapReady ? "Click the map or type coordinates to set the exact location" : "Exact site location — updates when coordinates change"}
+        </div>
+      </div>
+
+      {/* full-width two-column layout */}
+      <div className={styles.cols}>
+      <div className={styles.col}>
+
+      {/* 1) Site details */}
+      <div className={styles.sec}>
+        <div className={styles.sech}>
+          <span className={styles.schip} style={{ background: "#DBE7FE", color: "#2E6CF5" }}>
+            <i className="ti ti-map-pin" aria-hidden="true" />
+          </span>Site details
+        </div>
+        <div className={styles.g3} style={{ marginBottom: 0 }}>
+          <div>
+            <label className={styles.lab}>Site ID <span className={styles.rq}>*</span></label>
+            <input {...reg("id")} placeholder="010" value={f.id} onChange={(e) => set("id", e.target.value)} />
+          </div>
+          <div>
+            <label className={styles.lab}>Site name <span className={styles.rq}>*</span></label>
+            <input {...reg("name")} placeholder="Naivasha Depot" value={f.name} onChange={(e) => set("name", e.target.value)} />
+          </div>
+          <div>
+            <label className={styles.lab}>SMPMS vendor</label>
+            <input className={styles.in} list="smpmsVendors" placeholder="Select or type a vendor"
+              value={f.smpms} onChange={(e) => set("smpms", e.target.value)} />
+            <datalist id="smpmsVendors">
+              {withVal([...new Set([...vendorDir.map((c) => c.name), ...(facets.vendors || [])])], f.smpms).map((v) => <option key={v} value={v} />)}
+            </datalist>
+          </div>
+        </div>
+      </div>
+
+      {/* 2) Location details */}
+      <div className={styles.sec}>
+        <div className={styles.sech}>
+          <span className={styles.schip} style={{ background: "#D1FAE5", color: "#059669" }}>
+            <i className="ti ti-world" aria-hidden="true" />
+          </span>Location details <span className={styles.secHint}>all fields mandatory</span>
+        </div>
+        <div className={styles.g3}>
+          <div>
+            <label className={styles.lab}>Country <span className={styles.op}>(global setting)</span></label>
+            <input className={`${styles.in} ${styles.inLock}`} value="Kenya" readOnly />
+          </div>
+          <div>
+            <label className={styles.lab}>County <span className={styles.rq}>*</span></label>
+            <select {...reg("county")} value={f.county} onChange={(e) => set("county", e.target.value)}>
+              <option value="">Select county</option>
+              {merge(facets.counties, COUNTIES, f.county).map((c) => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className={styles.lab}>Distribution region <span className={styles.rq}>*</span> <span className={styles.op}>(client split)</span></label>
+            <select {...reg("distRegion")} value={f.distRegion} onChange={(e) => set("distRegion", e.target.value)}>
+              <option value="">Select distribution region</option>
+              {merge(facets.regions, DIST_REGIONS, f.distRegion).map((r) => <option key={r}>{r}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className={styles.g2}>
+          <div>
+            <label className={styles.lab}>Security region <span className={styles.rq}>*</span> <span className={styles.op}>(regional managers &amp; heads)</span></label>
+            <select {...reg("securityRegion")} value={f.securityRegion} onChange={(e) => onSecurityRegion(e.target.value)}>
+              <option value="">Select security region</option>
+              {withVal(facets.securityRegions || [], f.securityRegion).map((r) => <option key={r}>{r}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className={styles.lab}>Response cluster <span className={styles.rq}>*</span> <span className={styles.op}>(team that responds here)</span></label>
+            <select {...reg("responseCluster")} value={f.responseCluster} onChange={(e) => onResponseCluster(e.target.value)}>
+              <option value="">Select response cluster</option>
+              {withVal(facets.clusters || [], f.responseCluster).map((c) => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className={styles.g2} style={{ marginBottom: 4 }}>
+          <div>
+            <label className={styles.lab}>Coordinates <span className={styles.rq}>*</span> <span className={styles.op}>(latitude, longitude)</span></label>
+            <input {...reg("coords")} placeholder="-1.2921, 36.8219" value={f.coords} onChange={(e) => onCoords(e.target.value)} />
+          </div>
+          <div>
+            <label className={styles.lab}>&nbsp;</label>
+            <button type="button" className={styles.locBtn} onClick={useMyLocation} disabled={locating}>
+              <i className="ti ti-current-location" aria-hidden="true" />
+              {locating ? "Locating…" : "Use my location"}
+            </button>
+          </div>
+        </div>
+        <div className={styles.banner}>
+          <i className="ti ti-info-circle" aria-hidden="true" />
+          Stand at the centre of the site, outdoors, before picking your location — the map above will update.
+        </div>
+      </div>
+
+      {/* 6) Additional alert recipients */}
+      <div className={styles.sec}>
+        <div className={styles.sech}>
+          <span className={styles.schip} style={{ background: "#FEF3C7", color: "#B45309" }}>
+            <i className="ti ti-message" aria-hidden="true" />
+          </span>Additional alert recipients <span className={styles.secHint}>typed manually</span>
+        </div>
+        <div style={{ marginBottom: 11 }}>
+          <label className={styles.lab}>More phone numbers for SMS alerts <span className={styles.rq}>*</span> <span className={styles.op}>(separate with commas)</span></label>
+          <input {...reg("sms")} placeholder="+254 712 000 111, +254 733 222 333" value={f.sms} onChange={(e) => set("sms", e.target.value)} />
+        </div>
+        <div>
+          <label className={styles.lab}>More alert emails <span className={styles.op}>(optional, separate with commas)</span></label>
+          <input className={styles.in} placeholder="ops@company.com, security@company.com" value={f.emails} onChange={(e) => set("emails", e.target.value)} />
+        </div>
+      </div>
+
+      </div>{/* end left col */}
+      <div className={styles.col}>
+
+      {/* 3) Company (national) */}
+      <div className={styles.sec}>
+        <div className={styles.sech}>
+          <span className={styles.schip} style={{ background: "#EDE9FE", color: "#7C3AED" }}>
+            <i className="ti ti-building" aria-hidden="true" />
+          </span>Company <span className={styles.secHint}>client company — inherited, same for every site</span>
+        </div>
+        <div className={styles.g2}>
+          <div>
+            <label className={styles.lab}>Company <span className={styles.op}>(inherited)</span></label>
+            <input className={`${styles.in} ${styles.inLock}`} readOnly value={comp.name || "—"} />
+          </div>
+          <div>
+            <label className={styles.lab}>Coverage</label>
+            <input className={`${styles.in} ${styles.inLock}`} value="National — all regions" readOnly />
+          </div>
+        </div>
+        <PersonRow label="Manager" value={comp.mgr} readOnly />
+        <PersonRow label="Assistant manager 1" value={comp.a1} readOnly />
+        <PersonRow label="Assistant manager 2" value={comp.a2} readOnly />
+      </div>
+
+      {/* 5) NOC details */}
+      <div className={styles.sec}>
+        <div className={styles.sech}>
+          <span className={styles.schip} style={{ background: "#E0F2FE", color: "#0284C7" }}>
+            <i className="ti ti-headset" aria-hidden="true" />
+          </span>NOC details <span className={styles.secHint}>contacts auto-filled from NOC records</span>
+        </div>
+        <div className={styles.secHint} style={{ margin: "-4px 0 10px" }}>monitoring company follows the security region</div>
+        <div className={styles.g2}>
+          <div>
+            <label className={styles.lab}>Monitoring company</label>
+            <select className={`${styles.in} ${styles.inAuto}`} value={monitoringCompany}
+              onChange={(e) => onMonitoringCompany(e.target.value)}>
+              <option value="">Select monitoring company</option>
+              {withVal(monDir.map((c) => c.name), monitoringCompany).map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+          <div />
+        </div>
+        <div className={styles.groupLabel}>NOC TEAMS</div>
+        <TeamList rows={mnc} setRows={setMnc} icon="ti-headset" tint="#E0F2FE" ink="#0284C7" hasVehicle={false} />
+      </div>
+
+      </div>{/* end right col */}
+      </div>{/* end cols */}
+
+      {/* 4) Security company details — full width for the team lists */}
+      <div className={styles.sec}>
+        <div className={styles.sech}>
+          <span className={styles.schip} style={{ background: "#FEE2E2", color: "#DC2626" }}>
+            <i className="ti ti-shield" aria-hidden="true" />
+          </span>Security company details <span className={styles.secHint}>Manager &amp; Assistant inherited from the company record</span>
+        </div>
+        <div className={styles.g2}>
+          <div>
+            <label className={styles.lab}>Security company</label>
+            <select className={`${styles.in} ${styles.inAuto}`} value={sec.company}
+              onChange={(e) => onSecurityCompany(e.target.value)}>
+              <option value="">Select security company</option>
+              {withVal(secDir.map((c) => c.name), sec.company).map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+          <div />
+        </div>
+
+        <div className={styles.subHead}><b>National</b><span>controlled from national — inherited from the company</span></div>
+        <PersonRow label="Manager" value={sec.ops} readOnly />
+        <PersonRow label="Assistant manager 1" value={sec.opsAsst} readOnly />
+        <PersonRow label="Assistant manager 2" value={sec.opsAsst2} readOnly />
+
+        <div className={styles.subHead}><b>Security company teams</b><span>NOC teams follow the security region — response teams follow the cluster</span></div>
+        <div className={styles.groupLabel}>NOC TEAMS</div>
+        <TeamList rows={secNoc} setRows={setSecNoc} icon="ti-headset" tint="#E0F2FE" ink="#0284C7" hasVehicle={false} />
+        <div className={styles.groupLabel}>RESPONSE TEAMS</div>
+        <TeamList rows={response} setRows={setResponse} icon="ti-car" tint="#DBE7FE" ink="#2E6CF5" hasVehicle={false} />
+      </div>
+
+      {(showMsg || err) && <div className={styles.msg}>{err || "Fill in all required fields"}</div>}
+
+      <div className={styles.actions}>
+        <button type="button" className={`${styles.save} ${saved ? styles.saveOk : ""}`} onClick={save} disabled={saving || saved}>
+          {editing
+            ? (saved ? "Changes saved" : saving ? "Saving…" : "Save changes")
+            : (saved ? "Site saved — status: Pending" : saving ? "Saving…" : "Save site")}
+        </button>
+        <button type="button" className={styles.cancel} onClick={() => router.push("/mainapp/sites")} disabled={saving}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}

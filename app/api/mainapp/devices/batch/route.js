@@ -5,9 +5,9 @@
 import { NextResponse } from "next/server";
 import {
   batchUpdateDevices, batchDeleteDevices, reassignDevices,
-  setDevicesArmed, setDevicesMute, setDevicesConfig,
+  setDevicesArmed, setDevicesMute, setDevicesConfig, siteIdsForDevices,
 } from "../../../apiUtils/dataControl/devices.js";
-import { recomputeSitesForDevices } from "../../../apiUtils/dataControl/sites.js";
+import { recomputeSitesForDevices, recomputeSites } from "../../../apiUtils/dataControl/sites.js";
 import { planToMb } from "../../../apiUtils/dataControl/dataUsage.js";
 import { requireAdmin } from "../../../apiUtils/authUtils/session.js";
 import { logAudit } from "../../../apiUtils/dataControl/audit.js";
@@ -34,8 +34,18 @@ export async function POST(request) {
   try {
     let affected = 0;
     let extra = value ? ` → ${value}` : "";
+
+    // Capture the sites these devices sit in BEFORE a move or a removal, so a
+    // site that loses its last device can be rolled back to Pending afterwards.
+    // (After the op the devices no longer point at the old site — a transfer
+    // repoints them and a delete removes them — so it has to be read up front.)
+    let priorSiteIds = [];
+    if (op === "resite" || op === "del") {
+      try { priorSiteIds = await siteIdsForDevices(ids); } catch {}
+    }
+
     if (op === "del") affected = await batchDeleteDevices(ids);
-    else if (op === "resite") affected = await reassignDevices(ids, value);
+    else if (op === "resite") affected = await reassignDevices(ids, value, body.orientation);
     else if (op === "status") affected = await batchUpdateDevices(ids, { status: value });
     else if (op === "fw") affected = await batchUpdateDevices(ids, { firmware: value });
     else if (op === "arm") { affected = await setDevicesArmed(ids, true); extra = ""; }
@@ -71,6 +81,9 @@ export async function POST(request) {
 
     // Roll a status/site change up to the affected site(s).
     if (op === "status" || op === "resite") { try { await recomputeSitesForDevices(ids); } catch {} }
+    // Roll up the sites the devices LEFT (transfer) or were removed from (delete):
+    // any that are now empty drop back to Pending.
+    if (op === "resite" || op === "del") { try { await recomputeSites(priorSiteIds); } catch {} }
 
     logAudit(request, {
       action: LABEL[op] || "Batch device op", category: "Devices",

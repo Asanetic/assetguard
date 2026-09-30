@@ -11,11 +11,13 @@ import {
   setStatus,
   setRole,
   setRegions,
+  setSiteScopeMode,
   setPasswordById,
   updateUserProfile,
   deleteUser,
   findUserById,
 } from "../../../apiUtils/dataControl/users.js";
+import { setUserSites } from "../../../apiUtils/dataControl/userSites.js";
 import { hashPassword } from "../../../apiUtils/authUtils/password.js";
 import { notifyApproved, notifyRejected } from "../../../apiUtils/notify/notifications.js";
 import { requireAdmin } from "../../../apiUtils/authUtils/session.js";
@@ -71,6 +73,16 @@ export async function PATCH(request, { params }) {
       case "setRegions":
         result = await setRegions(id, regions);
         break;
+      case "setSiteScope": {
+        // { mode: 'region' | 'list' | null (inherit) }, optional siteIds to
+        // replace this user's assigned sites in one call.
+        const modeIn = body.mode === "region" || body.mode === "list" ? body.mode : null;
+        result = await setSiteScopeMode(id, modeIn);
+        if (Array.isArray(body.siteIds)) {
+          await setUserSites(id, body.siteIds.map(Number).filter(Number.isFinite));
+        }
+        break;
+      }
       case "update":
         result = await updateUserProfile(id, {
           name: body.name, email: body.email, phone: body.phone,
@@ -90,6 +102,7 @@ export async function PATCH(request, { params }) {
       activate: { action: "User activated", detail: `Activated ${who}` },
       setRole: { action: "Role changed", detail: `Changed ${who} role to ${role}` },
       setRegions: { action: "Regions changed", detail: `Updated region scope for ${who}` },
+      setSiteScope: { action: "Site scope changed", detail: `Updated site visibility for ${who}` },
       setPassword: { action: "Password reset", detail: `Reset password for ${who}` },
       update: { action: "User updated", detail: `Updated profile for ${who}` },
     }[action];

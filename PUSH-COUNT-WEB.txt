@@ -1,0 +1,17 @@
+Web/back-end — the PUSH channel count now updates like email & SMS
+==================================================================
+CAUSE: test-alarm push (notifyTestAlarmPush) sent the notification but never
+recorded it in the `notifications` table — while the email/SMS for the same alarm
+DID. So on the Notifications screen (web and mobile) the Push channel count stayed
+at 0 while Email/SMS moved. (Real raised-alarm push already logged; only the
+test-alarm path was missing it.)
+
+FIX: notifyTestAlarmPush now writes one `notifications` row per technician it
+pushed to (channel='push', status sent/failed), so the Push channel's sent /
+failed / delivery-% counts update exactly like email and SMS. Best-effort — a
+logging failure can't affect delivery.
+
+FILE: app/api/apiUtils/notify/testAlarmPush.js
+DEPLOY: extract → npm run build → pm2 restart gps-3000 assetguard-3010 --update-env
+The mobile Notifications screen already renders a Push row and reads these counts,
+so no mobile change is needed for the count — it lights up once this is deployed.

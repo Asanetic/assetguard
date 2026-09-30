@@ -25,6 +25,13 @@ CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications (created_a
 CREATE INDEX IF NOT EXISTS idx_notifications_alarm   ON notifications (alarm_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_status  ON notifications (status);
 
+-- Delivery-report tracking (added for Celcom DLR + provider trace). Idempotent.
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS message_id     TEXT;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS provider       TEXT;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS delivered_at   TIMESTAMPTZ;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS dlr_checked_at TIMESTAMPTZ;
+
+
 -- CRITICAL: the app connects as role "assetguard". When this table is created by
 -- the postgres superuser, the app role has NO access by default, so every insert
 -- (listener) and read (Notifications page) fails silently — the classic

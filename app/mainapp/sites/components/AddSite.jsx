@@ -13,10 +13,10 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./addsite.module.css";
 import { fetchMapsConfig, loadGoogleMaps, sitePinIcon } from "../../lib/googleMaps.js";
-import {
-  COUNTIES, DIST_REGIONS, SEC_REGIONS, CLUSTERS, VENDORS, COMPANY,
-  resolveSiteContacts, responseTeamsFor,
-} from "./addSiteData.js";
+// Only fixed reference GEOGRAPHY is seeded (counties, distribution regions). Every
+// operational entity — vendors, security regions, clusters, companies, NOC + response
+// teams — comes from registered data / facets, never a hardcoded list.
+import { COUNTIES, DIST_REGIONS } from "./addSiteData.js";
 import { useFacets } from "../../lib/useFacets.js";
 
 // --- small helpers -----------------------------------------------------------
@@ -31,6 +31,11 @@ const teamFrom = (t) => ({ name: t.code || "", vehicle: t.vehicle || "", phones:
 const listOrEmpty = (arr) => (arr && arr.length ? arr.map(teamFrom) : [emptyTeam()]);
 // Ensure a saved value that isn't in the preset list still shows in its select.
 const withVal = (opts, v) => (v && !opts.includes(v) ? [v, ...opts] : opts);
+// A team list is "blank" when it's just the single empty starter row — i.e. the
+// saved site carried no teams. Used in edit mode to decide whether to auto-fill
+// from registered data (never overwrites real saved teams or the user's edits).
+const isBlankList = (rows) => Array.isArray(rows) && rows.length === 1 &&
+  !rows[0].name && !rows[0].vehicle && !rows[0].phones && !rows[0].emails;
 
 // Comma-separated contact input with a live chip preview.
 function ContactField({ value, onChange, kind }) {
@@ -61,8 +66,28 @@ function ContactField({ value, onChange, kind }) {
   );
 }
 
-// A person row: name (auto) + Phone(s) + Email(s).
-function PersonRow({ label, value, onChange, hint = "(auto)" }) {
+// A person row: name + Phone(s) + Email(s). When `readOnly`, the row is a locked
+// display of contacts inherited from a company record (no editing here — change
+// them on the company).
+function PersonRow({ label, value, onChange, hint = "(auto)", readOnly = false }) {
+  if (readOnly) {
+    return (
+      <div className={styles.g3}>
+        <div>
+          <label className={styles.lab}>{label} <span className={styles.op}>(inherited)</span></label>
+          <input className={`${styles.in} ${styles.inLock}`} readOnly value={value.name || "—"} />
+        </div>
+        <div>
+          <label className={styles.lab}>Phone(s)</label>
+          <input className={`${styles.in} ${styles.inLock}`} readOnly value={value.phones || "—"} />
+        </div>
+        <div>
+          <label className={styles.lab}>Email(s)</label>
+          <input className={`${styles.in} ${styles.inLock}`} readOnly value={value.emails || "—"} />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={styles.g3}>
       <div>
@@ -159,21 +184,28 @@ export default function AddSite() {
     id: "", name: "", smpms: "", county: "", distRegion: "",
     securityRegion: "", responseCluster: "", coords: "", sms: "", emails: "",
   });
-  // National company block (prefilled, editable).
-  const [comp, setComp] = useState({
-    name: COMPANY.name,
-    mgr: toStr(COMPANY.manager),
-    a1: toStr(COMPANY.assistant1),
-    a2: toStr(COMPANY.assistant2),
-  });
-  // Security company block (auto-filled by the cascade).
-  const [sec, setSec] = useState({
-    company: "", ops: toStr(null), opsAsst: toStr(null), field: toStr(null), fieldAsst: toStr(null),
-  });
+  // National (client) company block — filled from the registered client company
+  // (companies directory) on mount; no hardcoded placeholder.
+  const [comp, setComp] = useState({ name: "", mgr: toStr(null), a1: toStr(null), a2: toStr(null) });
+  // Security company block. The company is CHOSEN from the registered security
+  // companies; its national Manager + one Assistant are inherited (read-only)
+  // from that company's record. No regional tier any more.
+  const [sec, setSec] = useState({ company: "", ops: toStr(null), opsAsst: toStr(null), opsAsst2: toStr(null) });
+  // Registered security / monitoring companies (with contacts) for the dropdowns,
+  // and the global client company for the Company block.
+  const [secDir, setSecDir] = useState([]);
+  const [monDir, setMonDir] = useState([]);
+  const [vendorDir, setVendorDir] = useState([]); // REGISTERED SMPMS / service-vendor companies
+  const [nocDir, setNocDir] = useState([]);   // REGISTERED NOC teams (noc_teams table)
+  const [respDir, setRespDir] = useState([]); // REGISTERED response teams (response_teams)
+  const [respGrants, setRespGrants] = useState({}); // cluster -> [team code] grants
   const [monitoringCompany, setMonitoringCompany] = useState("");
   const [secNoc, setSecNoc] = useState([emptyTeam()]);
   const [response, setResponse] = useState([emptyTeam()]);
   const [mnc, setMnc] = useState([emptyTeam()]);
+  // In edit mode: the loaded site's context, so a follow-up effect can auto-fill
+  // any EMPTY team/manager fields from registered data once the directories load.
+  const [loaded, setLoaded] = useState(null);
 
   const [invalid, setInvalid] = useState(new Set());
   const [showMsg, setShowMsg] = useState(false);
@@ -195,52 +227,105 @@ export default function AddSite() {
 
   function set(k, v) { setF((s) => ({ ...s, [k]: v })); }
 
-  // Client company (national — covers every site) is pulled from Settings.
+  // Client + security + monitoring companies come from the COMPANY records now.
+  // The Company block shows the global Client company (read-only); the Security
+  // company is chosen from the registered security companies and inherits its
+  // Manager + Assistant. Loading a saved site (edit) sets its own values after,
+  // so we don't clobber the assigned company on hydrate.
+  const secByName = (name) => secDir.find((c) => (c.name || "").toLowerCase() === String(name || "").toLowerCase()) || null;
   useEffect(() => {
     let alive = true;
-    fetch("/api/mainapp/org", { cache: "no-store" })
+    fetch("/api/mainapp/companies/directory", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (!alive || !d?.org) return;
-        const o = d.org;
-        setComp({ name: o.name || COMPANY.name, mgr: toStr(o.manager), a1: toStr(o.assistant1), a2: toStr(o.assistant2) });
+        if (!alive || !d) return;
+        setSecDir(Array.isArray(d.security) ? d.security : []);
+        setMonDir(Array.isArray(d.monitoring) ? d.monitoring : []);
+        setVendorDir(Array.isArray(d.vendors) ? d.vendors : []);
+        const cl = d.client;
+        if (cl) {
+          const c = cl.contacts || {};
+          setComp({ name: cl.name || "", mgr: toStr(c.manager), a1: toStr(c.assistant1), a2: toStr(c.assistant2) });
+        }
       })
       .catch(() => {});
     return () => { alive = false; };
   }, []);
+
+  // Load the REGISTERED NOC + response teams. The region/cluster cascade fills the
+  // team lists from THESE only — never from any seed/prototype list — so if none are
+  // registered for a region/cluster, nothing is auto-populated.
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/mainapp/noc/teams", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive && d && Array.isArray(d.teams)) setNocDir(d.teams); })
+      .catch(() => {});
+    fetch("/api/mainapp/response/teams", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return;
+        if (Array.isArray(d.teams)) setRespDir(d.teams);
+        if (d.grants && typeof d.grants === "object") setRespGrants(d.grants);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  // Response teams for a cluster (its own clusters[] + any team granted into it);
+  // if no cluster is picked yet, fall back to teams in the security region. Registered
+  // data only — an empty result yields a single blank editable row, no phantom teams.
+  function registeredResponseTeams(cluster, region) {
+    if (cluster) {
+      const granted = new Set(respGrants[cluster] || []);
+      return respDir.filter((t) => (Array.isArray(t.clusters) && t.clusters.includes(cluster)) || granted.has(t.code));
+    }
+    if (region) return respDir.filter((t) => t.sec === region);
+    return [];
+  }
+
+  // REGISTERED NOC teams (noc_teams) for a given region + owner ('sec'|'mon'),
+  // scoped to a company when one is chosen. A team with no `covers` counts as
+  // all-regions; a team with no `company` isn't excluded by the company filter.
+  function nocTeamsFor(region, owner, company) {
+    const inRegion = (t) => !(Array.isArray(t.covers) && t.covers.length) || t.covers.includes(region);
+    const matchCo = (t) => !company || !t.company || t.company === company;
+    return nocDir.filter((t) => (owner === "sec" ? t.owner === "sec" : t.owner !== "sec") && inRegion(t) && matchCo(t));
+  }
+
+  // Pick a security company -> inherit its national Manager + one Assistant, and
+  // re-pull THIS company's security NOC teams for the chosen region.
+  function onSecurityCompany(name) {
+    const co = secByName(name);
+    const c = co?.contacts || {};
+    setSec({ company: name, ops: toStr(c.manager), opsAsst: toStr(c.assistant1), opsAsst2: toStr(c.assistant2) });
+    setSecNoc(listOrEmpty(nocTeamsFor(f.securityRegion, "sec", name)));
+  }
+  // Pick a monitoring company -> re-pull ITS monitoring NOC teams for the region.
+  function onMonitoringCompany(name) {
+    setMonitoringCompany(name);
+    setMnc(listOrEmpty(nocTeamsFor(f.securityRegion, "mon", name)));
+  }
 
   // The auto-fill cascade runs ONLY when the user picks a security region or
   // response cluster (not on hydration), so loading a saved site never wipes its
   // stored contacts.
   function onSecurityRegion(v) {
     set("securityRegion", v);
-    // Teams + monitoring company still come from the seed cascade (no DB source yet).
-    const r = resolveSiteContacts(v, f.responseCluster);
-    setSecNoc(listOrEmpty(r.secNocTeams));
-    setMonitoringCompany(r.monco ? r.monco.name : "");
-    setMnc(listOrEmpty(r.mncTeams));
-    setResponse(listOrEmpty(responseTeamsFor(f.responseCluster, v)));
-    // Security-company staff autofill from REAL registered users, matched to this region.
-    if (!v) {
-      setSec({ company: "", ops: toStr(null), opsAsst: toStr(null), field: toStr(null), fieldAsst: toStr(null) });
-      return;
-    }
-    fetch(`/api/mainapp/site-contacts?region=${encodeURIComponent(v)}`, { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((d) => {
-        if (!d) return;
-        const s = d.security || {};
-        setSec({
-          company: s.company || "",
-          ops: toStr(s.country?.opsMgr), opsAsst: toStr(s.country?.opsAsst),
-          field: toStr(s.region?.fieldMgr), fieldAsst: toStr(s.region?.fieldAsst),
-        });
-      })
-      .catch(() => {});
+    // NOC teams: registered noc_teams for this region, scoped to the chosen security
+    // / monitoring company. None registered → a single blank editable row, no seed.
+    setSecNoc(listOrEmpty(nocTeamsFor(v, "sec", sec.company)));
+    const monTeams = nocTeamsFor(v, "mon", monitoringCompany);
+    setMnc(listOrEmpty(monTeams));
+    // If no monitoring company is chosen yet, suggest the one that owns a registered
+    // NOC team for this region. Never invent one.
+    if (!monitoringCompany) { const monCo = monTeams.find((t) => t.company)?.company; if (monCo) setMonitoringCompany(monCo); }
+    // Response teams from the REGISTERED response_teams (by cluster/region).
+    setResponse(listOrEmpty(registeredResponseTeams(f.responseCluster, v)));
   }
   function onResponseCluster(v) {
     set("responseCluster", v);
-    setResponse(listOrEmpty(responseTeamsFor(v, f.securityRegion)));
+    setResponse(listOrEmpty(registeredResponseTeams(v, f.securityRegion)));
   }
 
   // Edit mode — load the saved site and prefill every field, without triggering
@@ -271,20 +356,75 @@ export default function AddSite() {
         // The client company comes from Settings (loaded on mount, covers every site);
         // we don't overwrite it from the saved snapshot.
         const scy = d.securityCompany || {};
+        const savedCo = scy.company || site.security_company || "";
+        // Prefer live contacts from the assigned company; fall back to whatever the
+        // site was saved with (in case the company record has none yet).
+        const liveCo = secByName(savedCo);
+        const lc = liveCo?.contacts || {};
         setSec({
-          company: scy.company || site.security_company || "",
-          ops: toStr(scy.country?.operationsManager), opsAsst: toStr(scy.country?.assistant),
-          field: toStr(scy.region?.fieldOperationsManager), fieldAsst: toStr(scy.region?.assistant),
+          company: savedCo,
+          ops: liveCo ? toStr(lc.manager) : toStr(scy.country?.operationsManager),
+          opsAsst: liveCo ? toStr(lc.assistant1) : toStr(scy.country?.assistant),
+          opsAsst2: liveCo ? toStr(lc.assistant2) : toStr(scy.country?.assistant2),
         });
         setSecNoc(teamsIn(scy.nocTeams));
         setResponse(teamsIn(scy.responseTeams));
-        setMonitoringCompany(d.noc?.monitoringCompany || site.monitoring_company || "");
+        const monCo = d.noc?.monitoringCompany || site.monitoring_company || "";
+        setMonitoringCompany(monCo);
         setMnc(teamsIn(d.noc?.nocTeams));
+        // Remember the context so the auto-fill effect (below) can complete any
+        // fields the saved snapshot left empty — the case for imported sites.
+        setLoaded({
+          savedCo,
+          monCo,
+          region: site.security_region || d.securityRegion || "",
+          cluster: site.response_cluster || d.responseCluster || "",
+        });
       } catch { /* ignore */ }
     })();
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId]);
+
+  // Edit mode auto-fill: once the registered directories (companies, NOC teams,
+  // response teams) have loaded, complete any field the saved site left blank —
+  // the security manager/assistants and the NOC + response team lists — from the
+  // registered data, matched by the site's security region, cluster and company.
+  // This is what the View page already shows; here we make Edit match it. Each
+  // fill is guarded so it NEVER overwrites a real saved value or an edit in
+  // progress (blank team lists only; empty manager only).
+  useEffect(() => {
+    if (!editing || !loaded) return;
+    const { savedCo, monCo, region, cluster } = loaded;
+    // Security company Manager + Assistants — inherited from the live company
+    // record. (Fixes the hydrate race where the directory wasn't loaded yet.)
+    const liveCo = secByName(savedCo);
+    if (liveCo) {
+      const c = liveCo.contacts || {};
+      setSec((s) => (s.ops && s.ops.name)
+        ? s
+        : { ...s, company: savedCo, ops: toStr(c.manager), opsAsst: toStr(c.assistant1), opsAsst2: toStr(c.assistant2) });
+    }
+    // Security-company NOC teams (registered noc_teams for this region + company).
+    setSecNoc((cur) => {
+      if (!isBlankList(cur)) return cur;
+      const reg = nocTeamsFor(region, "sec", savedCo);
+      return reg.length ? listOrEmpty(reg) : cur;
+    });
+    // Response teams (registered response_teams for this cluster / region).
+    setResponse((cur) => {
+      if (!isBlankList(cur)) return cur;
+      const reg = registeredResponseTeams(cluster, region);
+      return reg.length ? listOrEmpty(reg) : cur;
+    });
+    // Monitoring-company NOC teams.
+    setMnc((cur) => {
+      if (!isBlankList(cur)) return cur;
+      const reg = nocTeamsFor(region, "mon", monCo);
+      return reg.length ? listOrEmpty(reg) : cur;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, loaded, secDir, nocDir, respDir, respGrants]);
 
   // Init the real map once.
   useEffect(() => {
@@ -400,9 +540,9 @@ export default function AddSite() {
       },
       securityCompany: {
         company: sec.company,
-        country: { operationsManager: person(sec.ops), assistant: person(sec.opsAsst) },
-        region: { fieldOperationsManager: person(sec.field), assistant: person(sec.fieldAsst) },
-        nocTeams: teamsOut(secNoc), responseTeams: teamsOut(response, true),
+        // National tier only — inherited from the company record. No regional tier.
+        country: { operationsManager: person(sec.ops), assistant: person(sec.opsAsst), assistant2: person(sec.opsAsst2) },
+        nocTeams: teamsOut(secNoc), responseTeams: teamsOut(response),
       },
       noc: { monitoringCompany, nocTeams: teamsOut(mnc) },
       alerts: { sms: splitC(f.sms), emails: splitC(f.emails) },
@@ -500,10 +640,11 @@ export default function AddSite() {
           </div>
           <div>
             <label className={styles.lab}>SMPMS vendor</label>
-            <select className={styles.in} value={f.smpms} onChange={(e) => set("smpms", e.target.value)}>
-              <option value="">Select vendor</option>
-              {merge(facets.vendors, VENDORS, f.smpms).map((v) => <option key={v}>{v}</option>)}
-            </select>
+            <input className={styles.in} list="smpmsVendors" placeholder="Select or type a vendor"
+              value={f.smpms} onChange={(e) => set("smpms", e.target.value)} />
+            <datalist id="smpmsVendors">
+              {withVal([...new Set([...vendorDir.map((c) => c.name), ...(facets.vendors || [])])], f.smpms).map((v) => <option key={v} value={v} />)}
+            </datalist>
           </div>
         </div>
       </div>
@@ -540,14 +681,14 @@ export default function AddSite() {
             <label className={styles.lab}>Security region <span className={styles.rq}>*</span> <span className={styles.op}>(regional managers &amp; heads)</span></label>
             <select {...reg("securityRegion")} value={f.securityRegion} onChange={(e) => onSecurityRegion(e.target.value)}>
               <option value="">Select security region</option>
-              {merge(facets.securityRegions, SEC_REGIONS, f.securityRegion).map((r) => <option key={r}>{r}</option>)}
+              {withVal(facets.securityRegions || [], f.securityRegion).map((r) => <option key={r}>{r}</option>)}
             </select>
           </div>
           <div>
             <label className={styles.lab}>Response cluster <span className={styles.rq}>*</span> <span className={styles.op}>(team that responds here)</span></label>
             <select {...reg("responseCluster")} value={f.responseCluster} onChange={(e) => onResponseCluster(e.target.value)}>
               <option value="">Select response cluster</option>
-              {merge(facets.clusters, CLUSTERS, f.responseCluster).map((c) => <option key={c}>{c}</option>)}
+              {withVal(facets.clusters || [], f.responseCluster).map((c) => <option key={c}>{c}</option>)}
             </select>
           </div>
         </div>
@@ -595,22 +736,21 @@ export default function AddSite() {
         <div className={styles.sech}>
           <span className={styles.schip} style={{ background: "#EDE9FE", color: "#7C3AED" }}>
             <i className="ti ti-building" aria-hidden="true" />
-          </span>Company <span className={styles.secHint}>national — same for every site</span>
+          </span>Company <span className={styles.secHint}>client company — inherited, same for every site</span>
         </div>
         <div className={styles.g2}>
           <div>
-            <label className={styles.lab}>Company <span className={styles.op}>(auto)</span></label>
-            <input className={`${styles.in} ${styles.inAuto}`} value={comp.name}
-              onChange={(e) => setComp((c) => ({ ...c, name: e.target.value }))} />
+            <label className={styles.lab}>Company <span className={styles.op}>(inherited)</span></label>
+            <input className={`${styles.in} ${styles.inLock}`} readOnly value={comp.name || "—"} />
           </div>
           <div>
             <label className={styles.lab}>Coverage</label>
             <input className={`${styles.in} ${styles.inLock}`} value="National — all regions" readOnly />
           </div>
         </div>
-        <PersonRow label="Manager" value={comp.mgr} onChange={(v) => setComp((c) => ({ ...c, mgr: v }))} />
-        <PersonRow label="Assistant manager 1" value={comp.a1} onChange={(v) => setComp((c) => ({ ...c, a1: v }))} />
-        <PersonRow label="Assistant manager 2" value={comp.a2} onChange={(v) => setComp((c) => ({ ...c, a2: v }))} />
+        <PersonRow label="Manager" value={comp.mgr} readOnly />
+        <PersonRow label="Assistant manager 1" value={comp.a1} readOnly />
+        <PersonRow label="Assistant manager 2" value={comp.a2} readOnly />
       </div>
 
       {/* 5) NOC details */}
@@ -623,9 +763,12 @@ export default function AddSite() {
         <div className={styles.secHint} style={{ margin: "-4px 0 10px" }}>monitoring company follows the security region</div>
         <div className={styles.g2}>
           <div>
-            <label className={styles.lab}>Monitoring company <span className={styles.op}>(auto)</span></label>
-            <input className={`${styles.in} ${styles.inAuto}`} value={monitoringCompany}
-              onChange={(e) => setMonitoringCompany(e.target.value)} />
+            <label className={styles.lab}>Monitoring company</label>
+            <select className={`${styles.in} ${styles.inAuto}`} value={monitoringCompany}
+              onChange={(e) => onMonitoringCompany(e.target.value)}>
+              <option value="">Select monitoring company</option>
+              {withVal(monDir.map((c) => c.name), monitoringCompany).map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
           </div>
           <div />
         </div>
@@ -641,30 +784,30 @@ export default function AddSite() {
         <div className={styles.sech}>
           <span className={styles.schip} style={{ background: "#FEE2E2", color: "#DC2626" }}>
             <i className="ti ti-shield" aria-hidden="true" />
-          </span>Security company details <span className={styles.secHint}>contacts auto-filled from company records</span>
+          </span>Security company details <span className={styles.secHint}>Manager &amp; Assistant inherited from the company record</span>
         </div>
         <div className={styles.g2}>
           <div>
-            <label className={styles.lab}>Security company <span className={styles.op}>(auto)</span></label>
-            <input className={`${styles.in} ${styles.inAuto}`} value={sec.company}
-              onChange={(e) => setSec((s) => ({ ...s, company: e.target.value }))} />
+            <label className={styles.lab}>Security company</label>
+            <select className={`${styles.in} ${styles.inAuto}`} value={sec.company}
+              onChange={(e) => onSecurityCompany(e.target.value)}>
+              <option value="">Select security company</option>
+              {withVal(secDir.map((c) => c.name), sec.company).map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
           </div>
           <div />
         </div>
 
-        <div className={styles.subHead}><b>Country</b><span>national — covers every site</span></div>
-        <PersonRow label="Operations manager" value={sec.ops} onChange={(v) => setSec((s) => ({ ...s, ops: v }))} />
-        <PersonRow label="Assistant" value={sec.opsAsst} onChange={(v) => setSec((s) => ({ ...s, opsAsst: v }))} />
-
-        <div className={styles.subHead}><b>Region</b><span>follows the site’s security region</span></div>
-        <PersonRow label="Field operations manager" value={sec.field} onChange={(v) => setSec((s) => ({ ...s, field: v }))} />
-        <PersonRow label="Assistant" value={sec.fieldAsst} onChange={(v) => setSec((s) => ({ ...s, fieldAsst: v }))} />
+        <div className={styles.subHead}><b>National</b><span>controlled from national — inherited from the company</span></div>
+        <PersonRow label="Manager" value={sec.ops} readOnly />
+        <PersonRow label="Assistant manager 1" value={sec.opsAsst} readOnly />
+        <PersonRow label="Assistant manager 2" value={sec.opsAsst2} readOnly />
 
         <div className={styles.subHead}><b>Security company teams</b><span>NOC teams follow the security region — response teams follow the cluster</span></div>
         <div className={styles.groupLabel}>NOC TEAMS</div>
         <TeamList rows={secNoc} setRows={setSecNoc} icon="ti-headset" tint="#E0F2FE" ink="#0284C7" hasVehicle={false} />
         <div className={styles.groupLabel}>RESPONSE TEAMS</div>
-        <TeamList rows={response} setRows={setResponse} icon="ti-car" tint="#DBE7FE" ink="#2E6CF5" hasVehicle />
+        <TeamList rows={response} setRows={setResponse} icon="ti-car" tint="#DBE7FE" ink="#2E6CF5" hasVehicle={false} />
       </div>
 
       {(showMsg || err) && <div className={styles.msg}>{err || "Fill in all required fields"}</div>}

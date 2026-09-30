@@ -1,0 +1,47 @@
+AssetGuard — Response teams: no vehicle + CSV import
+====================================================
+
+WHAT CHANGED
+------------
+1) Vehicle registration removed from response teams — the Response Teams page,
+   the Add Site "Response teams" cards, and the seed/payload. Response teams are
+   now a code + shared phone/email assigned to response cluster(s).
+2) Import Response Teams from a CSV, with a downloadable template.
+   Template columns:
+     Code Name, Security Region, Response Cluster 1, Response Cluster 2,
+     Response User 1, Response User 2
+   - Two cluster columns (a team can cover up to two clusters).
+   - Response User 1/2 are matched to REGISTERED field-response users by email
+     (preferred) or exact name; matched users are assigned to the team and the
+     team's phone/email default to those users' contacts.
+   - The import previews each row (new / duplicate / error, with a note such as
+     "2 users matched · unmatched: John Otieno") before you confirm.
+
+WEB  (zip: response-teams-web.zip)
+  Files:
+    app/mainapp/response/components/ResponseTeams.jsx   (vehicle removed + import UI)
+    app/mainapp/response/components/teamsData.js        (seed without vehicle)
+    app/mainapp/sites/components/AddSite.jsx            (response cards: no vehicle)
+  Deploy:
+    cd /var/www/html/baseapps/assetguard
+    python3 -c "import zipfile; zipfile.ZipFile('response-teams-web.zip').extractall('.')"
+    npm run build
+    pm2 restart gps-3000 assetguard-3010
+
+MAIN ANDROID APP  (zip: response-teams-mainapp.zip)  — package com.example.assetguard
+  Add Site's "Response teams" cards no longer show or save a vehicle.
+  (The Response Teams admin page + CSV import are web-only; the app doesn't
+   manage teams.)
+  Files:
+    app/src/main/java/com/example/assetguard/ui/sites/add/AddSiteScreen.kt
+    app/src/main/java/com/example/assetguard/ui/sites/add/AddSiteViewModel.kt
+  Then rebuild the app.
+
+NOTES
+-----
+- The Response Teams page is still in-memory for the team list itself (as it was
+  before) — imported teams appear in the list immediately and their assigned
+  responders (members) are persisted via the members API. If you want response
+  teams persisted to the database (survive reload), say so and I'll add a teams
+  backend + import endpoint.
+- Response & Technician apps: no change — they don't show a team's vehicle.

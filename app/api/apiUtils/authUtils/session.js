@@ -7,6 +7,28 @@
 
 import { NextResponse } from "next/server";
 import { verifyToken, AUTH_COOKIE } from "./jwt.js";
+import { query } from "../s_env/db.js";
+
+// --- presence: "last seen" ---------------------------------------------------
+// Every authenticated request (web OR native app) passes through getAuth, so we
+// stamp users.last_seen here. That makes "online now" work for the ALREADY
+// DEPLOYED apps without any client change — they just keep making their normal
+// requests and the server records the activity.
+//
+// Writing on every request would be wasteful, so it is throttled in-memory: at
+// most one UPDATE per user per SEEN_THROTTLE_MS. The write is fire-and-forget —
+// presence must never slow down or fail the request it is riding on.
+const SEEN_THROTTLE_MS = 60 * 1000;
+const lastSeenWrite = new Map(); // sub -> epoch ms of last write
+function touchLastSeen(sub) {
+  if (sub == null) return;
+  const key = String(sub);
+  const now = Date.now();
+  if (now - (lastSeenWrite.get(key) || 0) < SEEN_THROTTLE_MS) return;
+  lastSeenWrite.set(key, now);
+  query(`UPDATE users SET last_seen = now() WHERE id = $1`, [key])
+    .catch((e) => console.error("[last_seen]", e?.message || e));
+}
 
 function tokenFromRequest(request) {
   // 1) Authorization: Bearer <token>
@@ -26,7 +48,9 @@ function tokenFromRequest(request) {
 export function getAuth(request) {
   const token = tokenFromRequest(request);
   if (!token) return null;
-  return verifyToken(token);
+  const payload = verifyToken(token);
+  if (payload && payload.sub != null) touchLastSeen(payload.sub); // presence
+  return payload;
 }
 
 const ADMIN_ROLES = new Set(["superadmin", "admin"]);

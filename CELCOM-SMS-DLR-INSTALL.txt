@@ -1,0 +1,48 @@
+AssetGuard — SMS provider (Celcom Africa) + delivery reports + balance + Push counts
+====================================================================================
+Supersedes the earlier celcom-sms-web.zip (includes everything in it).
+
+WHAT'S IN THIS BUILD
+1. SMS provider on Admin → Email & SMS: dropdown Asanetic | Celcom Africa, plus
+   endpoint URL, API key, Partner ID, Sender ID. (send-sms.js routes by provider;
+   OTP + alarm notify unchanged — same mosySendSMS contract.)
+2. DELIVERY REPORTS (Celcom): every Celcom SMS stores its message id; a throttled
+   reconcile calls Celcom's getdlr and promotes each row 'sent' → 'delivered' or
+   'failed'. It runs (fire-and-forget) whenever the Notifications page loads/auto-
+   refreshes, so delivery status fills in on its own. The recent-log now shows a
+   green "Delivered" pill once the network confirms, and the By-channel card shows
+   "N delivered / confirmed".
+3. SMS BALANCE (Celcom getbalance): shown on the Notifications page under the SMS
+   provider row ("Balance: …"), cached 60s so the auto-refresh doesn't hammer it.
+4. PUSH is now a live channel: By-channel shows Push with real counts (0 sent · 0 ok
+   · 0 failed until a push is sent), and the Providers table lists "Firebase FCM ·
+   Push · Active". The old "WhatsApp / Push — coming soon" row is now WhatsApp only.
+
+NOTE ON DLR/BALANCE RESPONSE SHAPES
+Celcom documents the getdlr/getbalance ENDPOINTS but not their response JSON, so the
+parsers in celcom.js are deliberately tolerant (multiple field-name variants) and
+keep the raw payload. After your first live send, check `pm2 logs` for a `[dlr]`
+line; if delivery/balance doesn't populate, send me one raw getdlr + getbalance
+response and I'll tighten the field mapping in ~2 minutes.
+
+FILES
+  db/notifications.sql                                        (adds message_id/provider/…)
+  app/api/apiUtils/notify/celcom.js                          (send + getdlr + getbalance)
+  app/api/apiUtils/notify/send-sms.js                        (provider switch + provider in result)
+  app/api/apiUtils/notify/alarmNotify.js                     (log message id + provider per SMS)
+  app/api/apiUtils/dataControl/appConfig.js                  (SMS partnerID)
+  app/api/apiUtils/dataControl/notifications.js              (columns, DLR reconcile, counts)
+  app/api/mainapp/notifications/route.js                     (DLR reconcile + balance + Push provider)
+  app/mainapp/admin/messaging/components/MessagingSettings.jsx (provider dropdown + Partner ID)
+  app/mainapp/notifications/components/Notifications.jsx     (Delivered pill, balance, Push live, filters)
+
+DEPLOY (VPS)
+  cd /var/www/html/baseapps/assetguard
+  python3 -c "import zipfile; zipfile.ZipFile('celcom-sms-dlr-web.zip').extractall('.')"
+  psql "$DATABASE_URL" -f db/notifications.sql     # adds the new columns (idempotent)
+  npm run build && pm2 restart gps-3000 assetguard-3010 --update-env
+
+THEN: Admin → Email & SMS → Provider "Celcom Africa" → API key + Partner ID + Sender
+ID → Save → Send test SMS. Open Notifications: SMS shows Sent then flips to Delivered
+once Celcom's DLR confirms; the SMS provider row shows your balance; Push shows 0/0/0.
+Build: compiles clean.

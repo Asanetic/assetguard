@@ -1,0 +1,37 @@
+AssetGuard — add Celcom Africa as an SMS provider (Email & SMS admin)
+====================================================================
+Adds Celcom Africa alongside the existing Asanetic gateway. Admin picks the
+provider on Admin → Email & SMS and fills: Provider, API endpoint URL, API key,
+Partner ID (Celcom), Sender ID. Nothing else in the app changes — OTP and alarm
+notifications keep calling mosySendSMS().
+
+CELCOM API (https://celcomafrica.com/developers)
+  POST https://isms.celcomafrica.com/api/services/sendsms/
+  JSON { partnerID, apikey, mobile, message, shortcode, pass_type:"plain" }
+  numbers: 2547XXXXXXXX  ·  success: { responses:[{ "respose-code":200, messageid,... }] }
+
+FILES (all under the app, drop-in over your current copy)
+  app/api/apiUtils/notify/celcom.js                         (NEW — Celcom sender)
+  app/api/apiUtils/notify/send-sms.js                       (provider switch)
+  app/api/apiUtils/dataControl/appConfig.js                 (SMS config + partnerID)
+  app/mainapp/admin/messaging/components/MessagingSettings.jsx (form: provider dropdown + Partner ID)
+
+WHAT CHANGED
+  - SMS config (app_config "sms") now also stores `partnerID`; `provider` becomes a
+    dropdown: "Asanetic" | "Celcom Africa".
+  - send-sms.js routes by provider: Celcom → JSON API (celcom.js), else Asanetic
+    (unchanged). Return contract {status,'success'|'error'} is identical, so OTP +
+    alarm notify are untouched.
+  - Switching the provider to Celcom auto-fills the endpoint to the Celcom URL
+    (won't overwrite a custom URL you typed).
+  - Optional env fallbacks: SMS_PROVIDER, SMS_PARTNER_ID (plus the existing
+    SMS_API_URL / SMS_API_KEY / SMS_SENDER_ID).
+
+DEPLOY (VPS)
+  cd /var/www/html/baseapps/assetguard
+  python3 -c "import zipfile; zipfile.ZipFile('celcom-sms-web.zip').extractall('.')"
+  npm run build && pm2 restart gps-3000 assetguard-3010 --update-env
+
+THEN: Admin → Email & SMS → Provider = "Celcom Africa" → set endpoint (auto-filled),
+API key, Partner ID, Sender ID (your registered Celcom shortcode) → Save →
+"Send test SMS" to your phone (+2547…). Verified: build compiles clean.

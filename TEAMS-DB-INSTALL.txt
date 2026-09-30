@@ -1,0 +1,37 @@
+AssetGuard — Response & NOC teams: now database-backed
+======================================================
+
+WHY: the Response teams and NOC teams admin pages kept teams IN MEMORY, so
+nothing registered survived a reload and the app showed "no teams". They now
+persist to the database (response_teams / noc_teams), shared by web + app, and
+the Response teams list matches what the dispatch popup uses.
+
+WEB + BACKEND (this zip)
+  Migration:
+    db/teams_admin.sql   (creates noc_teams; ensures response_teams +
+                          response_team_grants exist)
+  New endpoints:
+    GET/POST  /api/mainapp/response/teams
+    PUT/DEL   /api/mainapp/response/teams/{code}
+    POST/DEL  /api/mainapp/response/teams/grants   ({teamCode, cluster})
+    GET/POST  /api/mainapp/noc/teams
+    PUT/DEL   /api/mainapp/noc/teams/{code}
+    (members reuse the existing /response/teams/{code}/members)
+  Data layer: app/api/apiUtils/dataControl/response.js
+    listResponseTeams / saveResponseTeam / deleteResponseTeam / grants
+    listNocTeams / saveNocTeam / deleteNocTeam
+  Web pages now load/save from the DB (register, edit, delete, grants, import):
+    app/mainapp/response/components/ResponseTeams.jsx
+    app/mainapp/noc/components/NocTeams.jsx
+
+DEPLOY (migration first)
+  cd /var/www/html/baseapps/assetguard
+  python3 -c "import zipfile; zipfile.ZipFile('teams-db-web.zip').extractall('.')"
+  psql "postgresql://assetguard:admin001@localhost:5432/assetguard" -f db/teams_admin.sql
+  npm run build
+  pm2 restart gps-3000 assetguard-3010
+
+NOTES
+  - response_teams already existed (used by dispatch) with demo rows + a vehicle
+    column; the admin UI now writes to it (vehicle left untouched/unused).
+  - The mobile app is updated in a separate zip to read these same endpoints.

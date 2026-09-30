@@ -25,7 +25,10 @@
 
 export const ALARM_TYPES = {
   DISTURBANCE: "DISTURBANCE",
-  DISTURBANCE_TECH: "DISTURBANCE_TECH",     // a disturbance while a tech is on site (Low)
+  // DEPRECATED — no longer produced. A site with an open technician session now
+  // marks its alarms source='test' instead of downgrading their tier. Kept only
+  // so historical rows still resolve a name and priority.
+  DISTURBANCE_TECH: "DISTURBANCE_TECH",
   CRITICAL_MOTION: "CRITICAL_MOTION",
   LOW_BATTERY: "LOW_BATTERY",               // ≤ low_battery_pct  (Medium)
   CRITICAL_LOW_BATTERY: "CRITICAL_LOW_BATTERY", // ≤ critical_battery_pct (High)
@@ -51,12 +54,35 @@ export const DEFAULTS = {
   disturb_mems_mg: 1800,  // net vector floor for a disturbance (rest idles ~1450 mg; below 1800 = still)
   motion_mems_mg: 3000,   // net vector ≥ this, sustained (≥2 in window) => Critical Motion
   window: 3,              // how many recent MEMS readings define "sustained"
-  disturb_streak: 4,      // graduated disturbance rule (per EAT day, per device):
-                          //   #1        -> ignore
-                          //   #2, #3    -> early warning: SMS + email only (no system alarm)
-                          //   #4        -> raise the system alarm (+ SMS + email)
-                          //   #5+ / already open today -> event only
-                          // This is the count at which the ALARM is raised.
+  // DISTURBANCE ESCALATION IS BY TIME, NOT BY COUNT.
+  //
+  // The clock starts on the first disturbance of an episode (T0). What escalates
+  // it is the device STILL reporting at each mark — not how many packets arrive.
+  //
+  //   T0                     start the clock, raise nothing
+  //   T0 .. +60s             ignored entirely, however many packets
+  //   first packet ≥  60s    warning 1  (SMS + email, no alarm row)
+  //   first packet ≥ 120s    warning 2
+  //   first packet ≥ 180s    RAISE the alarm
+  //
+  // This replaces the old count rule (#1 ignore, #2/#3 warn, #4 raise), which
+  // conflated two different things: one violent gust that shakes a mast twenty
+  // times in forty seconds counted as four, and raised. Under the time rule that
+  // gust produces nothing at all, because it is over before the first mark —
+  // while something still reporting three minutes later is real by definition.
+  //
+  // KNOW THE TRADE: nothing RAISES for a full three minutes. A theft that is
+  // done in ninety seconds produces warning 1 and no alarm. Geofence and
+  // Critical Motion still fire at full severity, so it is not blind — but the
+  // disturbance signal itself is now deliberately slow, in exchange for not
+  // crying wolf at every gust.
+  disturb_warn1_sec: Math.max(1, Number(process.env.DISTURB_WARN1_SEC) || 60),
+  disturb_warn2_sec: Math.max(1, Number(process.env.DISTURB_WARN2_SEC) || 120),
+  disturb_raise_sec: Math.max(1, Number(process.env.DISTURB_RAISE_SEC) || 180),
+
+  // Retained for the config editor and for anything still reading it. The
+  // decision no longer uses it.
+  disturb_streak: Math.max(1, Number(process.env.DISTURB_STREAK) || 4),
   disturb_window_sec: 300, // the streak must accumulate within this window (5 min);
                            // if the run takes longer, the counter resets.
 };
@@ -94,6 +120,9 @@ export function resolveConfig(device) {
     motion_mems_mg: numOr(c.motion_mems_mg, numOr(c.motion?.mems_mg, DEFAULTS.motion_mems_mg)),
     window: numOr(c.window, numOr(c.motion?.window, DEFAULTS.window)),
     disturb_streak: Math.max(1, numOr(c.disturb_streak, DEFAULTS.disturb_streak)),
+    disturb_warn1_sec: Math.max(1, numOr(c.disturb_warn1_sec, DEFAULTS.disturb_warn1_sec)),
+    disturb_warn2_sec: Math.max(1, numOr(c.disturb_warn2_sec, DEFAULTS.disturb_warn2_sec)),
+    disturb_raise_sec: Math.max(1, numOr(c.disturb_raise_sec, DEFAULTS.disturb_raise_sec)),
     disturb_window_sec: Math.max(30, numOr(c.disturb_window_sec, DEFAULTS.disturb_window_sec)),
   };
 }
@@ -106,12 +135,16 @@ export function haversineMeters(aLat, aLng, bLat, bLng) {
 }
 
 /**
- * @param {object} ctx  optional per-evaluation context:
- *   { techOnSite:boolean }  — true when a technician is booked/present at the
- *   device's site right now. Only affects DISTURBANCE (it downgrades to Low).
- *   Supplied by store.js via the (currently inert) isTechOnSite() hook.
+ * Decide which alarms this packet raises. Pure: no knowledge of tests.
+ *
+ * The engine used to take a `ctx.techOnSite` flag and downgrade DISTURBANCE to a
+ * Low "tech on site" tier. That is gone. Whether a site is under test is not a
+ * question about SEVERITY — the alarm is the same alarm — it is a question about
+ * whether the alarm is REAL, and that is answered in store.js by marking the row
+ * source='test'. Keeping it out of here means the real rules have exactly one
+ * shape and cannot be bent by a testing flag.
  */
-export function evaluate(t, device, site, state = {}, ctx = {}) {
+export function evaluate(t, device, site, state = {}) {
   const c = resolveConfig(device);
   const alarms = [];
   const name = device?.device_id || device?.imei || t.imei;
@@ -180,7 +213,6 @@ export function evaluate(t, device, site, state = {}, ctx = {}) {
   //     → log the event only · a new EAT day raises a fresh alarm regardless.
   // Counting from the DB (not an in-memory streak) survives restarts and never
   // double-fires. If a technician is on site the disturbance is expected work, so
-  // it downgrades to the Low "tech on site" type (this alarm only).
   // Disturbance = the status byte's 3rd digit is 1, OR the NET vector is in the
   // disturbance band (≥ disturb_mems_mg). Either source makes this a candidate; the
   // graduated raise (2nd/3rd warn, 4th raise) is decided downstream in
@@ -188,14 +220,11 @@ export function evaluate(t, device, site, state = {}, ctx = {}) {
   const disturbBit = !!(t.status && t.status.disturbance);
   const disturbMems = dyn != null && dyn >= c.disturb_mems_mg;
   if (disturbBit || disturbMems) {
-    const techOnSite = !!ctx.techOnSite;
     const why = disturbBit ? `status ${t.status?.word}` : `${dyn} mg net`;
     alarms.push({
-      type: techOnSite ? ALARM_TYPES.DISTURBANCE_TECH : ALARM_TYPES.DISTURBANCE,
-      severity: techOnSite ? "info" : "critical",
-      message: techOnSite
-        ? `Disturbance on ${name} — technician on site`
-        : `Disturbance on ${name} (${why})`,
+      type: ALARM_TYPES.DISTURBANCE,
+      severity: "critical",
+      message: `Disturbance on ${name} (${why})`,
       ...at, value: t.status?.word || `${dyn}mg` });
   }
 
@@ -213,7 +242,7 @@ export function evaluate(t, device, site, state = {}, ctx = {}) {
 
   // ---- high temperature (enclosure °C from the MEMS tail; sensor is independent
   //      of the MEMS validity flag, so read temp even when x/y/z are void) ----
-  const temp = t.mems && t.mems.temp != null ? Number(t.mems.temp) : null;
+  const temp = t.mems && t.mems.temperature != null ? Number(t.mems.temperature) : null;
   if (temp != null && Number.isFinite(temp) && temp > c.high_temp_c) {
     alarms.push({ type: ALARM_TYPES.HIGH_TEMPERATURE, severity: "warning",
       message: `High temperature — ${name} at ${temp}°C (threshold ${c.high_temp_c}°C)`,

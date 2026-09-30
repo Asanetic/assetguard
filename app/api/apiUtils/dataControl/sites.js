@@ -9,9 +9,24 @@ import { query } from "../s_env/db.js";
 const COLS = `id, code, name, region, location, devices, status, created_at`;
 
 /** List sites, optionally filtered by search term, region and/or status. */
-export async function listSites({ q, region, status } = {}) {
+export async function listSites({ q, region, status, regions, siteIds } = {}) {
   const where = [];
   const params = [];
+
+  // Region visibility scope: when `regions` is a non-empty array, only sites whose
+  // security_region is in it are returned. null/undefined = no scope (see all).
+  // Case-insensitive: "WESTERN", "Western" and "western" all match, so a user's
+  // region scope lines up with the site's region regardless of how either was typed.
+  if (Array.isArray(regions)) {
+    params.push(regions.map((r) => String(r).toLowerCase()));
+    where.push(`lower(security_region) = ANY($${params.length}::text[])`);
+  }
+  // List visibility scope: when `siteIds` is an array, only those sites (an empty
+  // array => none). Used when a user is scoped by an imported list, not a region.
+  if (Array.isArray(siteIds)) {
+    params.push(siteIds);
+    where.push(`id = ANY($${params.length}::bigint[])`);
+  }
 
   if (q && q.trim()) {
     params.push(`%${q.trim().toLowerCase()}%`);
@@ -32,8 +47,20 @@ export async function listSites({ q, region, status } = {}) {
   const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
   // Include coordinates + a few detail columns so the sites map can plot markers
   // and fill popups without a second request.
+  //
+  // `devices` is a LIVE COUNT off the devices table, NOT the sites.devices column.
+  // That stored column is only ever the number typed on the Add-site form and is
+  // never kept in step with how devices actually attach to a site — registering
+  // one directly, a mass import, or a batch "reassign to another site" all just
+  // set devices.site_id and leave sites.devices untouched. Reading the stored
+  // column is why a site with real, transferred or imported devices showed "0
+  // registered" in the map popup and the sites list. Counting devices.site_id is
+  // the same link recomputeSiteStatus / recentSiteActivity already trust, so all
+  // three paths now show up the moment the device is attached.
   const { rows } = await query(
-    `SELECT ${COLS}, lat, lng, county, dist_region, security_region,
+    `SELECT id, code, name, region, location, status, created_at,
+            (SELECT COUNT(*)::int FROM devices d WHERE d.site_id = sites.id) AS devices,
+            lat, lng, county, dist_region, security_region,
             response_cluster, smpms_vendor,
             security_company, monitoring_company,
             armed, mute_until,
@@ -250,10 +277,36 @@ export async function recomputeSiteStatus(siteId) {
     [siteId]
   );
   const r = rows[0] || { n: 0 };
-  if (!r.n) return null; // no devices → don't clobber a manually-set status
+  if (!r.n) {
+    // No devices left — every one was transferred away, decommissioned or the
+    // site never had any. A site with nothing to monitor is not operational, so
+    // it drops back to Pending, the same state a freshly created site sits in
+    // until devices are attached. (Guarded so it never fires on the periodic
+    // sweep, which only ever passes sites that still have devices; this branch
+    // is reached only when a caller recomputes a specific emptied site.)
+    await query(`UPDATE sites SET status = 'Pending' WHERE id = $1 AND status <> 'Pending'`, [siteId]);
+    return "Pending";
+  }
   const next = r.distinct_states === 1 ? (STATE_LABEL[r.only_state] || "Live") : "Live";
   await query(`UPDATE sites SET status = $2 WHERE id = $1`, [siteId, next]);
   return next;
+}
+
+/**
+ * Recompute an EXPLICIT set of site ids, empty ones included.
+ *
+ * `recomputeSitesForDevices` only sees a device's CURRENT site, so it can never
+ * recompute a site a device just LEFT — after a transfer the device points at
+ * the destination, and after a delete the device is gone. The remove/transfer
+ * routes therefore capture the prior site ids first and pass them here, so a
+ * site that just lost its last device is rolled back to Pending (see
+ * `recomputeSiteStatus`).
+ */
+export async function recomputeSites(siteIds = []) {
+  const ids = [...new Set((siteIds || []).map(Number).filter(Number.isFinite))];
+  let n = 0;
+  for (const id of ids) { try { await recomputeSiteStatus(id); n++; } catch {} }
+  return n;
 }
 
 /** Recompute every site touched by a set of device ids (after a device changes). */

@@ -24,45 +24,21 @@ import { NextResponse } from "next/server";
 import { query } from "../../../apiUtils/s_env/db.js";
 import { requireAdmin } from "../../../apiUtils/authUtils/session.js";
 import { logAudit } from "../../../apiUtils/dataControl/audit.js";
-import { sendToDevice, listConnectedDevices } from "../../../apiUtils/ingest/portManager.js";
+import { listConnectedDevices } from "../../../apiUtils/ingest/portManager.js";
+import { queueParamChange } from "../../../apiUtils/dataControl/deviceCommands.js";
+import { buildUD } from "../../../apiUtils/ingest/simPackets.js";
+import { extractFrames, parseFrame } from "../../../apiUtils/ingest/parse.js";
+import { resolveAndStore } from "../../../apiUtils/ingest/store.js";
 
 const MAX_MUTE_HOURS = 24;
 
-/**
- * The GL-28 protocol has two interval commands and they do not meet:
- * `update,<sec>` covers 3–60 SECONDS, `UPT,<min>` covers 6–1440 MINUTES.
- * Everything between 60s and 6min — which includes the UI's "5 minutes" — maps
- * to neither. Returning null there is deliberate: the config is still recorded,
- * and the response says the device could not be told, rather than sending a
- * command that means something else.
- */
-function intervalCommand(label) {
-  const text = String(label || "").toLowerCase().trim();
-  const seconds =
-    /^(\d+)\s*second/.test(text) ? Number(RegExp.$1)
-      : /^(\d+)\s*minute/.test(text) ? Number(RegExp.$1) * 60
-        : /^(\d+)\s*hour/.test(text) ? Number(RegExp.$1) * 3600
-          : null;
-  if (seconds == null) return null;
-  if (seconds >= 3 && seconds <= 60) return `update,${seconds}`;
-  const minutes = Math.round(seconds / 60);
-  if (minutes >= 6 && minutes <= 1440) return `UPT,${minutes}`;
-  return null;
-}
-
-/** Sends one command to each IMEI, and reports who was not reachable. */
-function pushDownlink(imeis, command) {
-  const delivered = [];
-  const offline = [];
-  for (const imei of imeis) {
-    if (!imei) continue;
-    let result;
-    try { result = sendToDevice(imei, command, { wrap: false }); }
-    catch { result = { sent: 0 }; }
-    if (result.sent > 0) delivered.push(imei); else offline.push(imei);
-  }
-  return { command, delivered: delivered.length, offline };
-}
+// Motion sensitivity and upload interval used to be sent from here by an
+// IMMEDIATE TCP push and written straight to the live config. They now go
+// through queueParamChange (the same path the device-detail edit uses): queued
+// for the next wake, held as PENDING, and promoted to the live value only when
+// the device confirms. That is what keeps the batch op and the device details
+// in sync, and what makes a failed command leave the last accepted value in
+// place. See dataControl/deviceCommands.js.
 
 export async function POST(request) {
   const gate = requireAdmin(request);
@@ -81,11 +57,16 @@ export async function POST(request) {
   const value = body?.value;
 
   const { rows: devices } = await query(
-    `SELECT id, device_id, imei FROM devices WHERE id = ANY($1::bigint[])`,
+    // The site's coordinates come along for `test_alarm`, so a simulated packet
+    // reports from where the device actually is rather than from nowhere. Every
+    // other op ignores them.
+    `SELECT d.id, d.device_id, d.imei, s.lat, s.lng
+       FROM devices d
+       LEFT JOIN sites s ON s.id = d.site_id
+      WHERE d.id = ANY($1::bigint[])`,
     [ids]
   );
   if (!devices.length) return NextResponse.json({ error: "No matching devices" }, { status: 404 });
-  const imeis = devices.map((d) => d.imei).filter(Boolean);
 
   /** Merges a patch into every selected device's config, in one statement. */
   async function mergeConfig(patch) {
@@ -118,6 +99,82 @@ export async function POST(request) {
         });
       }
 
+      /* ---------------- test_alarm: SIMULATED, real pipeline ---------------- */
+      //
+      // Raises a genuine disturbance alarm on each selected device by feeding a
+      // disturbance packet through the SAME parse → resolve → store path a real
+      // tracker uses. Nothing is faked at the alarm layer: the engine decides,
+      // the row is ordinary, and the technician app receives it exactly as it
+      // would a real shake.
+      //
+      // For drills and for training a technician who is not standing at a mast.
+      //
+      // WHY IT SENDS SEVERAL PACKETS: the disturbance rule is graduated —
+      // #1 is ignored, #2 and #3 are early warnings, only #4 raises. That is
+      // right for a live site, where one bump means very little. A drill wants
+      // an alarm, so it sends the whole streak, which is precisely what a device
+      // being genuinely interfered with would report.
+      case "test_alarm": {
+        const withImei = devices.filter((d) => d.imei);
+        if (!withImei.length) {
+          return NextResponse.json(
+            { error: "None of the selected devices has an IMEI to simulate from." },
+            { status: 422 }
+          );
+        }
+
+        // ONE packet is now enough: the disturbance threshold defaults to 1, so
+        // the first shake raises. It used to send four to cross the graduated
+        // streak, which — now that the streak is gone — would write four
+        // telemetry rows and four alarms per device for a single drill.
+        //
+        // Still overridable via `value`, and still capped, so restoring
+        // DISTURB_STREAK=4 later needs no change here.
+        const bursts = Math.min(Math.max(Number(value) || 1, 1), 6);
+
+        let raised = 0;
+        const failed = [];
+        for (const d of withImei) {
+          try {
+            for (let i = 0; i < bursts; i++) {
+              // motionByte "00100008" is the disturbance bit — the same packet
+              // the Device Simulator's "disturbance" scenario sends.
+              const raw = buildUD({
+                imei: d.imei,
+                lat: d.lat ?? null,
+                lng: d.lng ?? null,
+                motionByte: "00100008",
+              });
+              const { frames } = extractFrames(raw);
+              for (const f of frames) {
+                let rec;
+                try { rec = parseFrame(f); } catch { continue; }
+                await resolveAndStore(rec, "batch-test", 0, { source: "test", pushTo: gate.user?.sub });
+              }
+            }
+            raised += 1;
+          } catch (err) {
+            console.error("[batch-ops test_alarm]", d.device_id, err?.message || err);
+            failed.push(d.device_id);
+          }
+        }
+
+        return NextResponse.json({
+          affected: raised,
+          skipped: devices.length - withImei.length,
+          failed,
+          // Said plainly: the engine still decides. A muted or inactive device
+          // may swallow it, and reporting "12 alarms raised" when the engine
+          // raised nine would be the kind of success message that teaches
+          // people not to trust the others.
+          note:
+            `Fed ${bursts} disturbance packet${bursts === 1 ? "" : "s"} to ${raised} ` +
+            `device(s) through the live ingest pipeline. The alarm engine decides ` +
+            `the outcome, so a muted, inactive or unregistered device may not ` +
+            `raise one.`,
+        });
+      }
+
       /* ---------------- mute: real ---------------- */
       case "mute": {
         const hours = Number(value);
@@ -141,55 +198,33 @@ export async function POST(request) {
         });
       }
 
-      /* ---------------- motion: config + downlink ---------------- */
+      /* -------- motion: queue GS + pending, promoted on confirm -------- */
       case "motion": {
-        const level = Number(value);
-        if (!Number.isFinite(level) || level < 1 || level > 100) {
-          return NextResponse.json({ error: "motion must be 1–100" }, { status: 422 });
-        }
-        const affected = await mergeConfig({ motion_sensitivity: level });
-        const push = pushDownlink(imeis, `GS,${level}`);
+        const r = await queueParamChange({ ids, op: "sensitivity", value: Number(value) });
+        if (r.invalid) return NextResponse.json({ error: `Motion sensitivity must be 1–50 (${r.reason})` }, { status: 422 });
         logAudit(request, {
-          action: "Motion sensitivity set",
-          category: "Devices",
-          detail: `${level}/100 on ${affected} device(s); ${push.delivered} reached over TCP`,
+          action: "Motion sensitivity set", category: "Devices",
+          detail: `${r.command} queued on ${r.queued} device(s); applies on next wake, details update on confirm`,
         });
         return NextResponse.json({
-          affected,
-          downlink: push,
-          // Said out loud: the stored value is a record the alarm engine does
-          // NOT read (it uses motion_mems_mg); the command is what changes the
-          // hardware, and it only reaches devices that are connected.
-          note: `Recorded on ${affected}; sent to ${push.delivered} connected device(s)` +
-            (push.offline.length ? `, ${push.offline.length} offline.` : "."),
+          affected: r.queued, queued: r.queued, command: r.command,
+          note: `Queued to ${r.queued} device(s). The device details show the new motion sensitivity once each device confirms it.`,
         });
       }
 
-      /* ---------------- interval: config + downlink ---------------- */
+      /* -------- interval: queue update,<s> + pending, promoted on confirm -------- */
       case "interval": {
-        const label = String(value || "").trim();
-        if (!label) return NextResponse.json({ error: "interval is required" }, { status: 422 });
-        const affected = await mergeConfig({ upload_interval: label });
-        const command = intervalCommand(label);
-        if (!command) {
-          return NextResponse.json({
-            affected,
-            downlink: null,
-            note: `Recorded on ${affected}. The devices were NOT told: the protocol ` +
-              `has no "${label}" interval (update is 3–60s, UPT is 6–1440min).`,
-          });
-        }
-        const push = pushDownlink(imeis, command);
+        // Accept plain seconds (3–60) or a legacy "10s"/"10 seconds" label.
+        const secs = Number(String(value ?? "").replace(/[^\d.]/g, ""));
+        const r = await queueParamChange({ ids, op: "interval", value: secs });
+        if (r.invalid) return NextResponse.json({ error: `Upload interval must be 3–60s (${r.reason})` }, { status: 422 });
         logAudit(request, {
-          action: "Upload interval set",
-          category: "Devices",
-          detail: `${label} on ${affected} device(s); ${push.delivered} reached over TCP`,
+          action: "Upload interval set", category: "Devices",
+          detail: `${r.command} queued on ${r.queued} device(s); applies on next wake, details update on confirm`,
         });
         return NextResponse.json({
-          affected,
-          downlink: push,
-          note: `Recorded on ${affected}; sent to ${push.delivered} connected device(s)` +
-            (push.offline.length ? `, ${push.offline.length} offline.` : "."),
+          affected: r.queued, queued: r.queued, command: r.command,
+          note: `Queued to ${r.queued} device(s). The device details show the new upload interval once each device confirms it.`,
         });
       }
 

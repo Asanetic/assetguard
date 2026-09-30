@@ -9,9 +9,8 @@
 // like the prototype (there is no teams backend yet).
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./response.module.css";
-import { SEED_TEAMS } from "./teamsData.js";
 
 /* ---- contact helpers (ports of agSplitContacts / agValidEmail / agValidPhone) ---- */
 function splitContacts(v) {
@@ -40,6 +39,38 @@ function listMatch(term, haystack) {
   if (!term) return true;
   return String(haystack).replace(/\s+/g, " ").toLowerCase().indexOf(term) > -1;
 }
+
+const normHead = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+
+/* Minimal CSV parser (handles quoted fields), returns an array of rows. */
+function parseCSV(text) {
+  const out = [];
+  const lines = String(text || "").replace(/\r\n?/g, "\n").split("\n").filter((l) => l.length);
+  for (const line of lines) {
+    const cells = []; let cur = ""; let q = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (q) {
+        if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; }
+        else cur += ch;
+      } else if (ch === ",") { cells.push(cur); cur = ""; }
+      else if (ch === '"') q = true;
+      else cur += ch;
+    }
+    cells.push(cur);
+    out.push(cells.map((c) => c.trim()));
+  }
+  return out;
+}
+
+/* The import template columns — Code Name, Security Region, two Response Cluster
+   columns, and two Response User columns matched to registered field-response
+   users by name or email. */
+const TEMPLATE_HEADERS = [
+  "Code Name", "Security Region",
+  "Response Cluster 1", "Response Cluster 2",
+  "Response User 1", "Response User 2",
+];
 
 /* Live chip preview under a phone/email input (agWireContactField). */
 function ContactChips({ value, kind }) {
@@ -86,12 +117,22 @@ function ClusterPicker({ selected, onToggle, clusters = [] }) {
 }
 
 export default function ResponseTeams() {
-  const [teams, setTeams] = useState(() => SEED_TEAMS.map((t) => ({ ...t })));
+  // Teams + grants now come from the DB (response_teams / response_team_grants),
+  // so a registration survives a reload and matches the dispatch popup.
+  const [teams, setTeams] = useState([]);
   // grants: { [cluster]: [teamCode, ...] } — a team allowed to respond outside its clusters.
   const [grants, setGrants] = useState({});
 
+  const loadTeams = useCallback(() => {
+    fetch("/api/mainapp/response/teams", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) { setTeams(d.teams || []); setGrants(d.grants || {}); } })
+      .catch(() => {});
+  }, []);
+  useEffect(() => { loadTeams(); }, [loadTeams]);
+
   // registration / edit form
-  const emptyForm = { code: "", sec: "", veh: "", phones: "", emails: "", company: "", clusters: [], members: [] };
+  const emptyForm = { code: "", sec: "", phones: "", emails: "", company: "", clusters: [], members: [] };
   const [form, setForm] = useState(emptyForm);
   const [editing, setEditing] = useState(null); // original code being edited
   const [err, setErr] = useState("");
@@ -148,6 +189,136 @@ export default function ResponseTeams() {
     toastTimer.current = setTimeout(() => setToast(""), 2600);
   }
 
+  // ---- Import teams (CSV) ----
+  const [importOpen, setImportOpen] = useState(false);
+  const [importPreview, setImportPreview] = useState(null); // { rows:[...], fileName }
+  const [importErr, setImportErr] = useState("");
+  const importInputRef = useRef(null);
+
+  function downloadTemplate() {
+    const example = [
+      "Bravo 14", "Nairobi North",
+      "Cluster A — Nairobi North", "Cluster B — Nairobi South",
+      "jane.doe@falconguard.co.ke", "John Otieno",
+    ].map((c) => (/[",\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c)).join(",");
+    const csv = `${TEMPLATE_HEADERS.join(",")}\n${example}\n`;
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "assetguard-response-teams-template.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    flashToast("Template downloaded");
+  }
+
+  // Match a "Response User" cell to a registered field-response user by email
+  // (preferred) or exact name, case-insensitive.
+  function matchUser(token) {
+    const t = String(token || "").trim();
+    if (!t) return null;
+    const tl = t.toLowerCase();
+    return (
+      fieldUsers.find((u) => (u.email || "").toLowerCase() === tl) ||
+      fieldUsers.find((u) => (u.name || "").toLowerCase() === tl) ||
+      null
+    );
+  }
+
+  function onImportFile(e) {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    setImportErr("");
+    const reader = new FileReader();
+    reader.onload = () => buildImport(String(reader.result || ""), f.name);
+    reader.onerror = () => setImportErr(`${f.name} could not be read.`);
+    reader.readAsText(f);
+  }
+
+  function buildImport(text, fileName) {
+    const grid = parseCSV(text);
+    if (!grid.length) { setImportErr("The file is empty."); return; }
+    const head = grid[0].map(normHead);
+    const col = (name) => head.indexOf(normHead(name));
+    if (col("Code Name") < 0 && col("Code") < 0) {
+      setImportErr(`Needs a "Code Name" column. This file has: ${grid[0].join(", ")}`);
+      return;
+    }
+    const get = (r, name) => { const k = col(name); return k < 0 ? "" : String(r[k] || "").trim(); };
+    const existing = new Set(teams.map((t) => t.code.toLowerCase()));
+    const seen = new Set();
+    const rows = grid.slice(1).filter((r) => r.some((c) => c && c.trim())).map((r, i) => {
+      const code = get(r, "Code Name") || get(r, "Code") || get(r, "Name");
+      const sec = get(r, "Security Region") || get(r, "Region");
+      const clusters = [
+        get(r, "Response Cluster 1") || get(r, "Response Cluster") || get(r, "Cluster 1"),
+        get(r, "Response Cluster 2") || get(r, "Cluster 2"),
+      ].filter(Boolean);
+      const userTokens = [
+        get(r, "Response User 1") || get(r, "User 1") || get(r, "Responder 1"),
+        get(r, "Response User 2") || get(r, "User 2") || get(r, "Responder 2"),
+      ].filter(Boolean);
+      const matched = [], unmatched = [];
+      userTokens.forEach((tok) => { const u = matchUser(tok); if (u) matched.push(u); else unmatched.push(tok); });
+
+      let status = "new", note = "";
+      const notes = [];
+      // One response cluster and one response user are mandatory; the second of
+      // each is optional.
+      if (!code) { status = "error"; note = "Code Name is blank"; }
+      else if (seen.has(code.toLowerCase())) { status = "dupe"; note = "repeated in this file"; }
+      else if (existing.has(code.toLowerCase())) { status = "dupe"; note = "already registered"; }
+      else if (!clusters.length) { status = "error"; note = "needs a Response Cluster 1"; }
+      else if (!matched.length) {
+        status = "error";
+        note = unmatched.length
+          ? `no registered user matched (${unmatched.join(", ")})`
+          : "needs a Response User 1";
+      } else {
+        notes.push(`${clusters.length} cluster${clusters.length > 1 ? "s" : ""}`);
+        notes.push(`${matched.length} user${matched.length > 1 ? "s" : ""} matched`);
+        if (unmatched.length) notes.push(`unmatched: ${unmatched.join(", ")}`);
+        note = notes.join(" · ");
+      }
+      if (code) seen.add(code.toLowerCase());
+      return { n: i + 2, code, sec, clusters, matched, unmatched, status, note };
+    });
+    setImportPreview({ rows, fileName });
+    setImportErr("");
+  }
+
+  function confirmImport() {
+    const pv = importPreview;
+    if (!pv) return;
+    const toAdd = pv.rows.filter((r) => r.status === "new");
+    if (!toAdd.length) { setImportErr("Nothing new to import."); return; }
+    const defaultCompany = companies[0] || "";
+    const recs = toAdd.map((r) => {
+      // Team phones/emails default to the matched users' own contacts, so an
+      // imported team is still reachable without a separate contact column.
+      const phones = [...new Set(r.matched.map((u) => u.phone).filter(Boolean))];
+      const emails = [...new Set(r.matched.map((u) => u.email).filter(Boolean))];
+      return {
+        code: r.code, sec: r.sec, clusters: r.clusters.slice(),
+        phones, emails, company: defaultCompany,
+        memberIds: r.matched.map((u) => String(u.id)),
+      };
+    });
+    // One bulk request — the server upserts each team + its members to the DB.
+    fetch("/api/mainapp/response/teams", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teams: recs }),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(() => {
+        setImportOpen(false);
+        setImportPreview(null);
+        flashToast(`Imported ${recs.length} team${recs.length > 1 ? "s" : ""}`);
+        loadTeams();
+      })
+      .catch(() => setImportErr("Import failed. Try again."));
+  }
+
   function set(k, v) { setForm((f) => ({ ...f, [k]: v })); }
   function toggleCluster(c) {
     setForm((f) => {
@@ -170,7 +341,6 @@ export default function ResponseTeams() {
     setForm({
       code: t.code,
       sec: t.sec || "",
-      veh: t.vehicle || "",
       phones: joinContacts(t.phones),
       emails: joinContacts(t.emails),
       company: t.company || "",
@@ -194,62 +364,42 @@ export default function ResponseTeams() {
     if (!ph.ok) return setErr("Check these phone numbers: " + ph.bad.join(", "));
     if (!em.list.length) return setErr("At least one email address is required.");
     if (!em.ok) return setErr("Check these email addresses: " + em.bad.join(", "));
-    const veh = form.veh.trim();
-    if (!veh) return setErr("A vehicle registration is required.");
     if (!form.clusters.length) return setErr("Assign the team to at least one response cluster.");
+    if (!(form.members || []).length) return setErr("Assign at least one response user to the team.");
 
-    const rec = {
-      code, sec: form.sec, clusters: form.clusters.slice(), vehicle: veh,
-      phones: ph.list, emails: em.list, company: form.company,
-    };
-
-    if (editing) {
-      // Renaming to an existing (other) code is rejected, mirroring the store.
-      if (code !== editing && teams.some((t) => t.code === code)) {
-        return setErr("A team with code “" + code + "” already exists.");
-      }
-      setTeams((arr) => arr.map((t) => (t.code === editing ? rec : t)));
-      // keep grants pointing at the (possibly renamed) team
-      if (code !== editing) {
-        setGrants((g) => {
-          const next = {};
-          Object.keys(g).forEach((cl) => { next[cl] = g[cl].map((c) => (c === editing ? code : c)); });
-          return next;
-        });
-      }
-      flashToast("Team " + code + " updated");
-    } else {
-      if (teams.some((t) => t.code === code)) {
-        return setErr("A team with code “" + code + "” already exists.");
-      }
-      setTeams((arr) => [...arr, rec]);
-      flashToast("Team " + code + " registered");
+    // Client-side dup guard (the server also upserts by code).
+    if (!editing && teams.some((t) => t.code === code)) {
+      return setErr("A team with code “" + code + "” already exists.");
     }
-    // Persist the assigned responders (team membership). Drives the responder
-    // marker + the alarm response log; unassigned responders show their own name.
-    const memberIds = form.members || [];
-    fetch(`/api/mainapp/response/teams/${encodeURIComponent(code)}/members`, {
-      method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: code, userIds: memberIds }),
-    }).catch(() => {});
-    clearForm();
+    if (editing && code !== editing && teams.some((t) => t.code === code)) {
+      return setErr("A team with code “" + code + "” already exists.");
+    }
+
+    const body = {
+      code, sec: form.sec, clusters: form.clusters.slice(),
+      phones: ph.list, emails: em.list, company: form.company,
+      memberIds: (form.members || []).map((x) => String(x)),
+    };
+    const url = editing
+      ? `/api/mainapp/response/teams/${encodeURIComponent(editing)}`
+      : "/api/mainapp/response/teams";
+    fetch(url, {
+      method: editing ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(() => { flashToast("Team " + code + (editing ? " updated" : " registered")); clearForm(); loadTeams(); })
+      .catch(() => setErr("Could not save the team. Try again."));
   }
 
   function removeTeam(code) {
     if (typeof window !== "undefined" &&
         !window.confirm("Delete response team " + code + "? This cannot be undone.")) return;
-    setTeams((arr) => arr.filter((t) => t.code !== code));
-    // drop any cross-cluster grants for this team
-    setGrants((g) => {
-      const next = {};
-      Object.keys(g).forEach((cl) => {
-        const kept = g[cl].filter((c) => c !== code);
-        if (kept.length) next[cl] = kept;
-      });
-      return next;
-    });
-    if (editing === code) clearForm();
-    flashToast("Response team " + code + " deleted");
+    fetch(`/api/mainapp/response/teams/${encodeURIComponent(code)}`, { method: "DELETE" })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(() => { if (editing === code) clearForm(); flashToast("Response team " + code + " deleted"); loadTeams(); })
+      .catch(() => flashToast("Could not delete " + code));
   }
 
   /* ---- cross-cluster grants ---- */
@@ -267,27 +417,28 @@ export default function ResponseTeams() {
     const t = teams.find((x) => x.code === code);
     const own = t && (t.clusters || []).indexOf(cl) > -1;
     if (own) { flashToast(code + " is already assigned to " + cl); return; }
-    setGrants((g) => {
-      const cur = g[cl] || [];
-      if (cur.indexOf(code) > -1) return g;
-      return { ...g, [cl]: [...cur, code] };
-    });
-    flashToast(code + " may now respond in " + cl + " and will be notified there");
+    fetch("/api/mainapp/response/teams/grants", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teamCode: code, cluster: cl }),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(() => { flashToast(code + " may now respond in " + cl + " and will be notified there"); loadTeams(); })
+      .catch(() => flashToast("Could not grant access"));
   }
   function revokeGrant(cluster, code) {
-    setGrants((g) => {
-      const kept = (g[cluster] || []).filter((c) => c !== code);
-      const next = { ...g };
-      if (kept.length) next[cluster] = kept; else delete next[cluster];
-      return next;
-    });
-    flashToast(code + " can no longer respond in " + cluster);
+    fetch("/api/mainapp/response/teams/grants", {
+      method: "DELETE", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teamCode: code, cluster }),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(() => { flashToast(code + " can no longer respond in " + cluster); loadTeams(); })
+      .catch(() => flashToast("Could not revoke"));
   }
 
   /* ---- registered list (filtered) ---- */
   const filtered = useMemo(() => {
     return teams.filter((x) =>
-      listMatch(term, [x.code, x.vehicle, x.sec, x.company,
+      listMatch(term, [x.code, x.sec, x.company,
         (x.clusters || []).join(" "), joinContacts(x.phones), joinContacts(x.emails)].join(" ")));
   }, [teams, term]);
 
@@ -300,7 +451,15 @@ export default function ResponseTeams() {
       <div className={styles.head}>
         <div>
           <div className={styles.title}>Response teams</div>
-          <div className={styles.sub}>Vehicle, shared phone and email — assigned to a response cluster</div>
+          <div className={styles.sub}>Shared phone and email — assigned to a response cluster</div>
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+          <button type="button" className={`${styles.btn} ${styles.btnGhost}`} onClick={() => { setImportErr(""); setImportPreview(null); setImportOpen(true); }}>
+            <i className="ti ti-upload" /> Import CSV
+          </button>
+          <button type="button" className={`${styles.btn} ${styles.btnGhost}`} onClick={downloadTemplate}>
+            <i className="ti ti-file-download" /> Template
+          </button>
         </div>
       </div>
 
@@ -311,10 +470,10 @@ export default function ResponseTeams() {
           Response teams
         </div>
         <div className={styles.cardSub}>
-          A team is a vehicle, a shared phone and a shared email — never a person.
+          A team is a code with a shared phone and email, assigned to a response cluster.
         </div>
 
-        <div className={styles.g3}>
+        <div className={styles.g2}>
           <div className={styles.field}>
             <label className={styles.lab}>CODE NAME</label>
             <input className={styles.in} placeholder="Bravo 14"
@@ -334,11 +493,6 @@ export default function ResponseTeams() {
               {regions.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
-          <div className={styles.field}>
-            <label className={styles.lab}>VEHICLE REG.</label>
-            <input className={styles.in} placeholder="KDA 123B"
-              value={form.veh} onChange={(e) => set("veh", e.target.value)} />
-          </div>
         </div>
 
         <div className={styles.clWrap}>
@@ -347,7 +501,7 @@ export default function ResponseTeams() {
         </div>
 
         <div className={styles.clWrap}>
-          <label className={styles.lab}>ASSIGN FIELD-RESPONSE USERS — their responder marker shows this team</label>
+          <label className={styles.lab}>ASSIGN FIELD-RESPONSE USERS — at least one required; their responder marker shows this team</label>
           {(() => {
             const selected = (form.members || [])
               .map((id) => fieldUsers.find((u) => u.id === id))
@@ -494,7 +648,7 @@ export default function ResponseTeams() {
       <div className={styles.search}>
         <i className="ti ti-search" />
         <input className={styles.searchInput}
-          placeholder="Search teams by code, vehicle, cluster, region or contact..."
+          placeholder="Search teams by code, cluster, region or contact..."
           value={term} onChange={(e) => setTerm(e.target.value)} />
       </div>
       <div>
@@ -505,7 +659,7 @@ export default function ResponseTeams() {
               <span className={styles.rowIcon}><i className="ti ti-car" /></span>
               <div className={styles.rowBody}>
                 <div className={styles.rowCode}>{x.code}</div>
-                <div className={styles.rowMeta}>{x.vehicle} · {joinContacts(x.phones)}</div>
+                <div className={styles.rowMeta}>{joinContacts(x.phones) || "No phone"}</div>
                 <div className={styles.rowEmail}>{joinContacts(x.emails)}</div>
                 <div className={styles.rowChips}>
                   {cls.length
@@ -530,6 +684,74 @@ export default function ResponseTeams() {
           </div>
         )}
       </div>
+
+      {/* import dialog */}
+      {importOpen ? (
+        <div onClick={() => setImportOpen(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.45)", display: "grid", placeItems: "center", zIndex: 60, padding: 16 }}>
+          <div onClick={(e) => e.stopPropagation()}
+            style={{ background: "#fff", borderRadius: 14, width: "min(760px, 96vw)", maxHeight: "90vh", overflow: "auto", boxShadow: "0 24px 60px rgba(15,23,42,.28)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 18px", borderBottom: "1px solid #EEF2F7" }}>
+              <span className={styles.cardHIcon}><i className="ti ti-upload" /></span>
+              <div style={{ fontWeight: 800, color: "#0F274A", fontSize: 16 }}>Import response teams</div>
+              <button type="button" onClick={() => setImportOpen(false)}
+                style={{ marginLeft: "auto", border: "none", background: "none", cursor: "pointer", color: "#94A3B8", fontSize: 20 }} aria-label="Close">
+                <i className="ti ti-x" />
+              </button>
+            </div>
+
+            <div style={{ padding: 18 }}>
+              <div style={{ color: "#475569", fontSize: 13, lineHeight: 1.5, marginBottom: 12 }}>
+                Columns: <b>Code Name</b>, <b>Security Region</b>, <b>Response Cluster 1</b>, <b>Response Cluster 2</b>,
+                {" "}<b>Response User 1</b>, <b>Response User 2</b>. <b>Code Name, Response Cluster 1 and Response
+                User 1 are required</b>; the second cluster and user are optional. Users are matched to registered
+                field-response users by email or name; a team’s phone and email default to those users’ contacts.
+                <button type="button" onClick={downloadTemplate}
+                  style={{ marginLeft: 6, border: "none", background: "none", color: "#2E6CF5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
+                  Download template
+                </button>
+              </div>
+
+              <input ref={importInputRef} type="file" accept=".csv,text/csv" style={{ display: "none" }} onChange={onImportFile} />
+              <button type="button" className={styles.btn} onClick={() => importInputRef.current && importInputRef.current.click()}>
+                <i className="ti ti-file-upload" /> Choose CSV file
+              </button>
+
+              {importErr ? <div className={styles.err} style={{ marginTop: 12 }}>{importErr}</div> : null}
+
+              {importPreview ? (
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ fontSize: 12.5, color: "#64748B", marginBottom: 8 }}>
+                    {importPreview.fileName} — {importPreview.rows.filter((r) => r.status === "new").length} to import,
+                    {" "}{importPreview.rows.filter((r) => r.status === "dupe").length} skipped,
+                    {" "}{importPreview.rows.filter((r) => r.status === "error").length} error
+                  </div>
+                  <div style={{ border: "1px solid #EEF2F7", borderRadius: 10, overflow: "hidden", maxHeight: 320, overflowY: "auto" }}>
+                    {importPreview.rows.map((r) => {
+                      const color = r.status === "new" ? "#047857" : r.status === "dupe" ? "#B45309" : "#B91C1C";
+                      const bg = r.status === "new" ? "#D1FAE5" : r.status === "dupe" ? "#FEF3C7" : "#FEE2E2";
+                      return (
+                        <div key={r.n} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderBottom: "1px solid #F4F7FB" }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, color, background: bg, borderRadius: 999, padding: "2px 9px", textTransform: "uppercase" }}>{r.status}</span>
+                          <span style={{ fontWeight: 700, color: "#0F274A", minWidth: 90 }}>{r.code || "—"}</span>
+                          <span style={{ color: "#64748B", fontSize: 12.5 }}>{r.note}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 14, justifyContent: "flex-end" }}>
+                    <button type="button" className={`${styles.btn} ${styles.btnGhost}`} onClick={() => { setImportPreview(null); setImportErr(""); }}>Choose another file</button>
+                    <button type="button" className={styles.btn} onClick={confirmImport}
+                      disabled={!importPreview.rows.some((r) => r.status === "new")}>
+                      Import {importPreview.rows.filter((r) => r.status === "new").length} team{importPreview.rows.filter((r) => r.status === "new").length === 1 ? "" : "s"}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {toast ? <div className={styles.toast}>{toast}</div> : null}
     </div>

@@ -1,0 +1,67 @@
+AssetGuard — Sites: 2 assistants for the Security company (+ app parity)
+========================================================================
+
+WHAT CHANGED
+------------
+Under Sites, the Security company now carries a Manager + TWO Assistant
+managers (was one), inherited read-only from the company record — matching the
+client company block. This ships for the WEB and the MAIN Android app.
+
+WEB  (zip: sites-2assistants-web.zip)  — supersedes company-contacts-phase2.zip
+  - Add Site → Security company details: pick the security company from the
+    dropdown; Manager + Assistant manager 1 + Assistant manager 2 fill in
+    read-only (inherited). No regional tier.
+  - View Site: shows SECURITY MANAGER, SECURITY ASSISTANT 1, SECURITY ASSISTANT 2.
+  - Save writes securityCompany.country = { operationsManager, assistant,
+    assistant2 }.
+  Files:
+    app/mainapp/admin/companies/components/CompaniesAdmin.jsx
+    app/api/apiUtils/dataControl/companies.js
+    app/mainapp/admin/settings/components/SystemSettings.jsx
+    app/api/apiUtils/dataControl/siteContacts.js
+    app/api/mainapp/site-contacts/route.js
+    app/api/mainapp/companies/directory/route.js
+    app/mainapp/sites/components/AddSite.jsx
+    app/mainapp/sites/[id]/components/ViewSite.jsx
+
+  Deploy (web):
+    cd /var/www/html/baseapps/assetguard
+    python3 -c "import zipfile; zipfile.ZipFile('sites-2assistants-web.zip').extractall('.')"
+    npm run build
+    pm2 restart gps-3000 assetguard-3010
+  (No DB migration — the companies.contacts column came in Phase 1. If you
+   never applied Phase 1, run db/company_contacts.sql first.)
+
+MAIN ANDROID APP  (zip: sites-2assistants-mainapp.zip)  — package com.example.assetguard
+  - Add Site: client company block is now read-only inherited; Security company
+    is a dropdown of registered security companies; its Manager + 2 Assistants
+    fill read-only. Regional tier removed. Monitoring company is a dropdown.
+    Now calls GET mainapp/companies/directory (new) instead of the old
+    region-based mainapp/site-contacts staff lookup.
+  - View Site: adds SECURITY MANAGER / SECURITY ASSISTANT 1 / SECURITY
+    ASSISTANT 2 to the details grid.
+  Files (unzip into the Assetguard project root, preserving paths):
+    app/src/main/java/com/example/assetguard/utils/ApiRoutes.kt
+    app/src/main/java/com/example/assetguard/models/SiteContacts.kt
+    app/src/main/java/com/example/assetguard/models/Site.kt
+    app/src/main/java/com/example/assetguard/ui/sites/add/AddSiteViewModel.kt
+    app/src/main/java/com/example/assetguard/ui/sites/add/AddSiteScreen.kt
+    app/src/main/java/com/example/assetguard/ui/sites/add/AddSiteFields.kt
+    app/src/main/java/com/example/assetguard/ui/sites/view/ViewSiteScreen.kt
+  Then rebuild the app (./gradlew assembleRelease or Android Studio).
+
+RESPONSE & TECHNICIAN APPS — no change required
+-----------------------------------------------
+Their View-site screens do not display or edit the security company's
+Manager/Assistants (they show the CLIENT manager only), and they never call the
+site-contacts endpoint, so the "2 assistants" change and the backend contract
+change do not affect them. If you want the security Manager + 2 Assistants shown
+on those field screens too, say so and I'll add them (a small, safe addition).
+
+OPTIONAL FOLLOW-UP (not done here)
+----------------------------------
+The MAIN app's Settings screen still has the client-company block (name +
+manager + assistants). Phase 2 removed that from the web Settings and moved it
+to Companies. The main app already has a Companies admin screen, so this block
+can be stripped there too for full parity — left out for now to keep this change
+focused on Sites. Ask and I'll do it.

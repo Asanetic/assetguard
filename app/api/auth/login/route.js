@@ -11,9 +11,10 @@
 // -----------------------------------------------------------------------------
 
 import { NextResponse } from "next/server";
-import { findUserByIdentity } from "../../apiUtils/dataControl/users.js";
+import { findUserByIdentity, touchUserSeen } from "../../apiUtils/dataControl/users.js";
 import { verifyPassword } from "../../apiUtils/authUtils/password.js";
 import { signToken, cookieOptions, AUTH_COOKIE } from "../../apiUtils/authUtils/jwt.js";
+import { roleAllowedForApp, APP_LABEL } from "../../apiUtils/authUtils/appAccess.js";
 
 function safeUser(u) {
   return {
@@ -36,7 +37,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { identity, password } = body || {};
+  const { identity, password, app } = body || {};
   if (!identity)
     return NextResponse.json({ error: "Enter your email or phone number" }, { status: 400 });
   if (!password)
@@ -72,6 +73,23 @@ export async function POST(request) {
       { error: "That account is suspended — speak to an administrator", status: "Suspended" },
       { status: 403 }
     );
+
+  // Per-app role gate. Only the two phone apps send an `app`; the web console
+  // sends none and is never gated here. A role not on that app's list is turned
+  // away at the door rather than dropped into an app built for another job.
+  if (!roleAllowedForApp(app, user.role)) {
+    const label = APP_LABEL[String(app || "").trim().toLowerCase()] || "this";
+    return NextResponse.json(
+      {
+        error: `Your account isn’t authorised for the ${label} app. Ask an administrator if you need access.`,
+        status: "Unauthorised",
+      },
+      { status: 403 }
+    );
+  }
+
+  // Mark them online immediately on sign-in (getAuth keeps it fresh from here on).
+  try { await touchUserSeen(user.id); } catch { /* presence is best-effort */ }
 
   const token = signToken(user);
   const res = NextResponse.json({ user: safeUser(user), token });

@@ -51,7 +51,9 @@ export async function GET(request) {
       .join("");
 
     const { rows } = await query(
-      `SELECT COALESCE(t.device_time, t.received_at) AS at, t.lat, t.lng, t.speed${optional}
+      `SELECT COALESCE(t.device_time, t.received_at) AS at,
+              EXTRACT(EPOCH FROM (now() - t.received_at))::bigint AS age_sec,
+              t.lat, t.lng, t.speed${optional}
          FROM device_telemetry t JOIN devices d ON d.id = t.device_id
         WHERE d.device_id = $1 AND t.lat IS NOT NULL AND t.lng IS NOT NULL
         ORDER BY COALESCE(t.device_time, t.received_at) DESC
@@ -78,6 +80,9 @@ export async function GET(request) {
       lng: Number(r.lng),
       speed: r.speed != null ? Math.round(Number(r.speed)) : null,
       at: r.at,
+      // Server-computed age of the fix (see track/live). The app uses this for an
+      // accurate "Updated N ago" instead of comparing `at` to the phone clock.
+      age_sec: r.age_sec != null ? Number(r.age_sec) : null,
       battery: r.battery != null ? Math.round(Number(r.battery)) : null,
       accuracy: r.accuracy != null ? Math.round(Number(r.accuracy)) : null,
       loc_source: locSource,

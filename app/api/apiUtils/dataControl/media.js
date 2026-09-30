@@ -107,7 +107,7 @@ const META = `id, site_id, site_code, site_name, photo_type, device_id, technici
  *   would hand every signed-in user every site's photos, complete with GPS fix
  *   and the name of whoever was standing there.
  */
-export async function listPhotos({ site_id, captured_by, limit = 50 } = {}) {
+export async function listPhotos({ site_id, device_id, captured_by, limit = 50 } = {}) {
   await ensureMediaTable();
   const capped = Math.min(Number(limit) || 50, 200);
 
@@ -116,6 +116,13 @@ export async function listPhotos({ site_id, captured_by, limit = 50 } = {}) {
   if (site_id !== undefined && site_id !== null && site_id !== "") {
     params.push(numericOrNull(site_id));
     where.push(`site_id = $${params.length}`);
+  }
+  // The device's own photo strip — what was fitted, and what it looked like.
+  // Added with the technician app: an installation photographs the DEVICE, and
+  // without this filter those photos are only reachable through the whole site.
+  if (device_id !== undefined && device_id !== null && device_id !== "") {
+    params.push(String(device_id));
+    where.push(`device_id = $${params.length}`);
   }
   if (captured_by) {
     params.push(captured_by);

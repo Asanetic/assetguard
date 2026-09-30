@@ -7,6 +7,7 @@ import { acknowledgeSide, getAlarm } from "../../../../apiUtils/dataControl/alar
 import { getAuth } from "../../../../apiUtils/authUtils/session.js";
 import { alarmPerms } from "../../../../apiUtils/authUtils/alarmPerms.js";
 import { getUserOrg } from "../../../../apiUtils/dataControl/companies.js";
+import { teamForUser } from "../../../../apiUtils/dataControl/response.js";
 import { logAudit } from "../../../../apiUtils/dataControl/audit.js";
 
 export async function POST(request, ctx) {
@@ -43,10 +44,14 @@ export async function POST(request, ctx) {
         return NextResponse.json({ error: "The security company only acknowledges Critical alarms" }, { status: 400 });
     }
 
-    const alarm = await acknowledgeSide(id, side, { by: me.name || me.email, finding, note });
+    // The acking user's team (e.g. a NOC team) — recorded on the alarm so the
+    // lifecycle shows "Acknowledged — Monitoring · by <name> · <team>".
+    const team = await teamForUser(me.sub).catch(() => null); // {team_code, team_name} | null
+    const teamName = team?.team_name || team?.team_code || null;
+    const alarm = await acknowledgeSide(id, side, { by: me.name || me.email, finding, note, team: teamName });
     if (!alarm) return NextResponse.json({ error: "Alarm not found" }, { status: 404 });
     logAudit(request, { action: `Alarm acknowledged (${side})`, category: "Alarms",
-      detail: `${alarm.name} (${alarm.id}) by ${me.name || me.email} — ${[finding, note].filter(Boolean).join(" · ")}` });
+      detail: `${alarm.name} (${alarm.id}) by ${me.name || me.email}${teamName ? ` · ${teamName}` : ""} — ${[finding, note].filter(Boolean).join(" · ")}` });
     return NextResponse.json({ alarm, side });
   } catch (err) {
     console.error("[alarm ack] error", err);

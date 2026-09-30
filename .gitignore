@@ -4,3 +4,15 @@ node_modules/
 .env.local
 .env*.local
 npm-debug.log*
+secrets/
+
+# Local VPS backups
+*.tar.gz
+*.zip
+
+# Accidental terminal / SQL output files
+", count(lat) with_coords,"
+=
+"ource |          created_at"
+t_received
+"| with_coords | gps | network |    min_device_clock    |         last_received"

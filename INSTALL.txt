@@ -1,0 +1,26 @@
+COMPANY CONTACTS — PHASE 1 (VPS install)
+----------------------------------------
+6 files + 1 migration.
+  cd /var/www/html/baseapps/assetguard
+  python3 -c "import zipfile; zipfile.ZipFile('company-contacts-phase1.zip').extractall('.')"
+  psql "postgresql://assetguard:admin001@localhost:5432/assetguard" -f db/company_contacts.sql
+  npm run build && pm2 restart gps-3000 assetguard-3010
+
+WHAT PHASE 1 DOES
+ • Companies now store a Manager + Assistant Manager 1 + Assistant Manager 2
+   (name / phones / emails), added in Admin > Companies (register/edit), for
+   EVERY company. Stored in companies.contacts (JSONB).
+ • Alarm emails/SMS for a site now ALSO go to the contacts of the companies it is
+   assigned to — its Security company (Critical-only, like the rest of the
+   security side), its Monitoring company, and the single global Client company
+   (the company whose purpose is 'Client') — read LIVE from the company record.
+ • The old per-site security/contact fields are STILL honoured too ("keep both"),
+   so no recipient is dropped during the transition.
+
+PHASE 2 (next, separate): remove the client company from Settings (leaving only
+domain/country/timezone/UTC + branding), and make Add Site / View Site show the
+Manager/Assistant read-only inherited from the assigned companies with the
+security Region tier removed.
+
+NOTE: set the Client company by giving one company the 'Client' purpose in
+Companies, and fill its Manager/assistants — that's the global client for alarms.

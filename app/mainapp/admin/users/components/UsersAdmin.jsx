@@ -2,15 +2,14 @@
 // Users & Roles — matches the AssetGuard prototype. Wired to the real API.
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./users.module.css";
+import { useFacets } from "../../../lib/useFacets.js";
 
-// Security regions (from the prototype) + the country-wide option.
-const SCOPE_REGIONS = [
-  "Nairobi North", "Nairobi South", "Coast", "Rift Valley",
-  "Western", "Upper Eastern", "North Eastern",
-];
-const REGIONS = ["Country-wide", ...SCOPE_REGIONS];
+// Fallback security regions (used only until the live facets load / on an empty DB).
+// Region-scope options come ONLY from real data — GET /api/mainapp/facets
+// (registered response_regions + distinct sites.security_region). No hardcoded seed.
+const scopeRegionsFrom = (facets) => (Array.isArray(facets?.securityRegions) ? facets.securityRegions : []);
 
 function initials(name) {
   return String(name || "")
@@ -38,16 +37,31 @@ const STATUS_CLASS = {
 export default function UsersAdmin() {
   const [roles, setRoles] = useState([]);
   const [users, setUsers] = useState([]);
+  const facets = useFacets();
+  const SCOPE = scopeRegionsFrom(facets);            // live security regions
+  const REGION_OPTS = ["Country-wide", ...SCOPE];
   const [companies, setCompanies] = useState([]);
   const [reqs, setReqs] = useState([]);
   const [tab, setTab] = useState("users"); // users | pending | requests
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState(""); // "" | Active | Suspended | Rejected
+  const [presence, setPresence] = useState("");         // "" | online | offline
+  const [regFilter, setRegFilter] = useState("");       // "" | Country-wide | <region>
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState("");
   const [modal, setModal] = useState(null); // {mode:'create'|'edit', user?}
   const [confirmDel, setConfirmDel] = useState(null); // user pending delete
   const [deleting, setDeleting] = useState(false);
+  const [importOpen, setImportOpen] = useState(false); // site-assignment import dialog
+  const [importUsersOpen, setImportUsersOpen] = useState(false); // bulk user import
+  const [selected, setSelected] = useState(() => new Set()); // ids picked for mass delete
+  const [bulkOpen, setBulkOpen] = useState(false);   // mass-delete confirm
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkEditOpen, setBulkEditOpen] = useState(false); // bulk role/region edit
+  const [bulkEditBusy, setBulkEditBusy] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState(null);      // "Suspended" | "Active" — confirm target
+  const [bulkStatusBusy, setBulkStatusBusy] = useState(false);
 
   const flash = (m) => { setToast(m); setTimeout(() => setToast(""), 2200); };
 
@@ -75,6 +89,21 @@ export default function UsersAdmin() {
   }, []);
 
   useEffect(() => { load(); loadReqs(); }, [load, loadReqs]);
+
+  // Keep "Online" live without a loading flash: every 45s pull the users list
+  // and merge ONLY the presence fields into the rows we already show, so open
+  // dropdowns and any in-row edits are never disturbed.
+  useEffect(() => {
+    const t = setInterval(async () => {
+      try {
+        const d = await fetch("/api/mainapp/users").then((r) => (r.ok ? r.json() : null));
+        if (!d || !Array.isArray(d.users)) return;
+        const presence = new Map(d.users.map((u) => [u.id, { online: u.online, last_seen: u.last_seen }]));
+        setUsers((prev) => prev.map((u) => (presence.has(u.id) ? { ...u, ...presence.get(u.id) } : u)));
+      } catch { /* ignore a missed poll */ }
+    }, 45000);
+    return () => clearInterval(t);
+  }, []);
   useEffect(() => {
     fetch("/api/mainapp/companies")
       .then((r) => (r.ok ? r.json() : null))
@@ -106,13 +135,22 @@ export default function UsersAdmin() {
     else if (tab === "users") list = list.filter((u) => u.status !== "Pending");
     else list = [];
     if (roleFilter) list = list.filter((u) => u.role === roleFilter);
+    if (statusFilter) list = list.filter((u) => u.status === statusFilter);
+    if (presence === "online") list = list.filter((u) => !!u.online);
+    else if (presence === "offline") list = list.filter((u) => !u.online);
+    if (regFilter) {
+      list = list.filter((u) => {
+        const scope = u.regions && u.regions.length ? u.regions[0] : "Country-wide";
+        return scope === regFilter;
+      });
+    }
     if (q.trim()) {
       const s = q.trim().toLowerCase();
       list = list.filter((u) =>
         [u.name, u.email, u.phone, u.company].some((v) => String(v || "").toLowerCase().includes(s)));
     }
     return list;
-  }, [users, tab, roleFilter, q]);
+  }, [users, tab, roleFilter, statusFilter, presence, regFilter, q]);
 
   async function patch(id, body, okMsg) {
     try {
@@ -140,6 +178,83 @@ export default function UsersAdmin() {
       load();
     } catch { flash("Network error"); }
     finally { setDeleting(false); }
+  }
+
+  // ---- mass selection / delete ----
+  const toggleSel = (id) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const allVisibleSelected = visible.length > 0 && visible.every((u) => selected.has(u.id));
+  const toggleSelAll = () => setSelected((s) => {
+    const n = new Set(s);
+    if (visible.every((u) => n.has(u.id))) visible.forEach((u) => n.delete(u.id));
+    else visible.forEach((u) => n.add(u.id));
+    return n;
+  });
+  useEffect(() => { setSelected(new Set()); }, [tab]);
+
+  async function doBulkDelete() {
+    const ids = [...selected];
+    if (!ids.length) return;
+    setBulkBusy(true);
+    try {
+      const res = await fetch("/api/mainapp/users", {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setBulkBusy(false); return flash(d.error || "Delete failed"); }
+      setBulkOpen(false); setSelected(new Set());
+      flash(`Deleted ${d.deleted} user${d.deleted === 1 ? "" : "s"}${d.skippedSelf ? " (your own account was kept)" : ""}`);
+      load();
+    } catch { flash("Network error"); }
+    finally { setBulkBusy(false); }
+  }
+
+  // Bulk-apply a role and/or a region scope to every selected user in one call.
+  // `role` "" means leave role unchanged; `region` null means leave region
+  // unchanged. "Country-wide" clears the region array.
+  async function doBulkEdit({ role, region }) {
+    const ids = [...selected];
+    if (!ids.length) return;
+    const payload = { ids };
+    if (role) payload.role = role;
+    if (region !== null && region !== undefined) payload.regions = region === "Country-wide" ? [] : [region];
+    if (!payload.role && !payload.regions) return flash("Pick a role or a region to apply");
+    setBulkEditBusy(true);
+    try {
+      const res = await fetch("/api/mainapp/users", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setBulkEditBusy(false); return flash(d.error || "Update failed"); }
+      setBulkEditOpen(false); setSelected(new Set());
+      const n = Math.max(d.roleUpdated || 0, d.regionUpdated || 0);
+      flash(`Updated ${n} user${n === 1 ? "" : "s"}${d.skippedSelfRole ? " (your own role kept)" : ""}`);
+      load();
+    } catch { flash("Network error"); }
+    finally { setBulkEditBusy(false); }
+  }
+
+  // Bulk-suspend or bulk-reactivate every selected user. Your own account is
+  // skipped server-side so a mass suspend can't lock you out.
+  async function doBulkStatus(status) {
+    const ids = [...selected];
+    if (!ids.length) return;
+    setBulkStatusBusy(true);
+    try {
+      const res = await fetch("/api/mainapp/users", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids, status }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setBulkStatusBusy(false); return flash(d.error || "Update failed"); }
+      setBulkStatus(null); setSelected(new Set());
+      const verb = status === "Suspended" ? "Suspended" : "Reactivated";
+      const n = d.statusUpdated || 0;
+      flash(`${verb} ${n} user${n === 1 ? "" : "s"}${d.skippedSelfStatus ? " (your own account kept)" : ""}`);
+      load();
+    } catch { flash("Network error"); }
+    finally { setBulkStatusBusy(false); }
   }
 
   const regionOf = (u) => (u.regions && u.regions.length ? u.regions[0] : "Country-wide");
@@ -189,6 +304,34 @@ export default function UsersAdmin() {
           <option value="">All roles</option>
           {roles.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
         </select>
+        {tab !== "requests" && (
+          <>
+            <select className={styles.roleFilter} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="">All statuses</option>
+              <option value="Active">Active</option>
+              <option value="Suspended">Suspended</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+            <select className={styles.roleFilter} value={presence} onChange={(e) => setPresence(e.target.value)}>
+              <option value="">Online &amp; offline</option>
+              <option value="online">Online now</option>
+              <option value="offline">Offline</option>
+            </select>
+            <select className={styles.roleFilter} value={regFilter} onChange={(e) => setRegFilter(e.target.value)}>
+              <option value="">All regions</option>
+              {REGION_OPTS.map((rg) => <option key={rg} value={rg}>{rg}</option>)}
+            </select>
+            {(roleFilter || statusFilter || presence || regFilter) && (
+              <button
+                className={styles.btnGhost}
+                onClick={() => { setRoleFilter(""); setStatusFilter(""); setPresence(""); setRegFilter(""); }}
+                title="Clear all filters"
+              >
+                Clear filters
+              </button>
+            )}
+          </>
+        )}
       </div>
 
       <div className={styles.tabsRow}>
@@ -214,10 +357,22 @@ export default function UsersAdmin() {
             <span className={newReqCount ? styles.tabBadge : styles.tabBadgeMuted}>{newReqCount}</span>
           </button>
         </div>
-        <button className={styles.createBtn} onClick={() => setModal({ mode: "create" })}>
-          <i className="ti ti-user-plus" style={{ fontSize: 16 }} aria-hidden="true" />
-          Create user
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className={styles.createBtn} style={{ background: "#fff", color: "#334155", border: "1px solid #e2e8f0" }}
+            onClick={() => setImportUsersOpen(true)}>
+            <i className="ti ti-users-plus" style={{ fontSize: 16 }} aria-hidden="true" />
+            Import users
+          </button>
+          <button className={styles.createBtn} style={{ background: "#fff", color: "#334155", border: "1px solid #e2e8f0" }}
+            onClick={() => setImportOpen(true)}>
+            <i className="ti ti-upload" style={{ fontSize: 16 }} aria-hidden="true" />
+            Import site assignments
+          </button>
+          <button className={styles.createBtn} onClick={() => setModal({ mode: "create" })}>
+            <i className="ti ti-user-plus" style={{ fontSize: 16 }} aria-hidden="true" />
+            Create user
+          </button>
+        </div>
       </div>
 
       {tab === "requests" ? (
@@ -264,9 +419,34 @@ export default function UsersAdmin() {
         </div>
       ) : (
         <div className={styles.tableWrap}>
+          {tab === "users" && selected.size > 0 && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", padding: "10px 14px", background: "#EFF4FF", border: "1px solid #BFD3FF", borderRadius: 10, margin: "0 0 10px" }}>
+              <span style={{ fontWeight: 700, color: "#1E40AF" }}>{selected.size} selected</span>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button className={styles.btnGhost} onClick={() => setSelected(new Set())}>Clear</button>
+                <button className={styles.btnPrimary} onClick={() => setBulkEditOpen(true)}>
+                  <i className="ti ti-edit" style={{ fontSize: 15 }} aria-hidden="true" /> Change role / region
+                </button>
+                <button className={styles.btnGhost} onClick={() => setBulkStatus("Suspended")}>
+                  <i className="ti ti-ban" style={{ fontSize: 15 }} aria-hidden="true" /> Suspend
+                </button>
+                <button className={styles.btnGhost} onClick={() => setBulkStatus("Active")}>
+                  <i className="ti ti-user-check" style={{ fontSize: 15 }} aria-hidden="true" /> Reactivate
+                </button>
+                <button className={styles.delConfirmBtn} onClick={() => setBulkOpen(true)}>
+                  <i className="ti ti-trash" style={{ fontSize: 15 }} aria-hidden="true" /> Delete selected
+                </button>
+              </div>
+            </div>
+          )}
           <table className={styles.table}>
             <thead>
               <tr>
+                {tab === "users" && (
+                  <th style={{ width: 34 }}>
+                    <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelAll} aria-label="Select all" />
+                  </th>
+                )}
                 <th>User</th>
                 <th>Company</th>
                 <th>Role</th>
@@ -278,15 +458,23 @@ export default function UsersAdmin() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7}><div className={styles.empty}>Loading…</div></td></tr>
+                <tr><td colSpan={8}><div className={styles.empty}>Loading…</div></td></tr>
               ) : visible.length === 0 ? (
-                <tr><td colSpan={7}><div className={styles.empty}>No users here.</div></td></tr>
+                <tr><td colSpan={8}><div className={styles.empty}>No users here.</div></td></tr>
               ) : (
                 visible.map((u) => (
                   <tr key={u.id}>
+                    {tab === "users" && (
+                      <td style={{ width: 34 }}>
+                        <input type="checkbox" checked={selected.has(u.id)} onChange={() => toggleSel(u.id)} aria-label={`Select ${u.name}`} />
+                      </td>
+                    )}
                     <td>
                       <div className={styles.userCell}>
-                        <span className={styles.avatar}>{initials(u.name)}</span>
+                        <span className={styles.avatarWrap}>
+                          <span className={styles.avatar}>{initials(u.name)}</span>
+                          {u.online && <span className={styles.avatarOnline} title="Online now" aria-label="Online" />}
+                        </span>
                         <div>
                           <div className={styles.uName}>{u.name}</div>
                           <div className={styles.uEmail}>{u.email || u.phone}</div>
@@ -327,7 +515,7 @@ export default function UsersAdmin() {
                               regions: e.target.value === "Country-wide" ? [] : [e.target.value],
                             }, "Region updated")}
                           >
-                            {REGIONS.map((rg) => <option key={rg} value={rg}>{rg}</option>)}
+                            {REGION_OPTS.map((rg) => <option key={rg} value={rg}>{rg}</option>)}
                           </select>
                         </div>
                       </td>
@@ -337,7 +525,11 @@ export default function UsersAdmin() {
                         <span className={styles.dot} />{u.status}
                       </span>
                     </td>
-                    <td className={styles.lastActive}>{ago(u.last_active)}</td>
+                    <td className={styles.lastActive}>
+                      {u.online
+                        ? <span className={styles.onlineTag}><span className={styles.onlineDot} />Online</span>
+                        : ago(u.last_seen)}
+                    </td>
                     <td>
                       <div className={styles.actions}>
                         {tab === "pending" ? (
@@ -385,9 +577,78 @@ export default function UsersAdmin() {
         if (modal.mode === "create")
           return <CreateUserModal prefill={modal.prefill || {}} roles={roles} companies={companies}
             onClose={() => setModal(null)} onSaved={afterSave} />;
-        return <UserModal modal={modal} roles={roles} companies={companies} regions={REGIONS}
+        return <UserModal modal={modal} roles={roles} companies={companies} regions={REGION_OPTS}
           onClose={() => setModal(null)} onSaved={afterSave} />;
       })()}
+
+      {importOpen && (
+        <SiteScopeImportDialog onClose={() => setImportOpen(false)}
+          onImported={(msg) => { setImportOpen(false); flash(msg); load(); }} />
+      )}
+
+      {importUsersOpen && (
+        <UserImportDialog regions={SCOPE} onClose={() => setImportUsersOpen(false)}
+          onImported={(msg) => { setImportUsersOpen(false); flash(msg); load(); }} />
+      )}
+
+      {bulkOpen && (
+        <div className={styles.scrim} onClick={() => !bulkBusy && setBulkOpen(false)}>
+          <div className={styles.modal} style={{ maxWidth: 420, textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+            <span className={styles.delIcon}><i className="ti ti-trash" style={{ fontSize: 24 }} aria-hidden="true" /></span>
+            <div className={styles.modalTitle}>Delete {selected.size} user{selected.size === 1 ? "" : "s"}?</div>
+            <div className={styles.modalSub}>
+              This permanently removes the selected user{selected.size === 1 ? "" : "s"}. Your own account is kept automatically. This can&apos;t be undone.
+            </div>
+            <div className={styles.modalActions} style={{ justifyContent: "center" }}>
+              <button className={styles.btnGhost} onClick={() => setBulkOpen(false)} disabled={bulkBusy}>Cancel</button>
+              <button className={styles.delConfirmBtn} onClick={doBulkDelete} disabled={bulkBusy}>
+                <i className="ti ti-trash" style={{ fontSize: 15 }} aria-hidden="true" />
+                {bulkBusy ? "Deleting…" : `Delete ${selected.size}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {bulkEditOpen && (
+        <BulkEditModal
+          count={selected.size}
+          roles={roles}
+          regions={REGION_OPTS}
+          busy={bulkEditBusy}
+          onClose={() => !bulkEditBusy && setBulkEditOpen(false)}
+          onApply={doBulkEdit}
+        />
+      )}
+
+      {bulkStatus && (
+        <div className={styles.scrim} onClick={() => !bulkStatusBusy && setBulkStatus(null)}>
+          <div className={styles.modal} style={{ maxWidth: 420, textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+            <span
+              className={styles.delIcon}
+              style={bulkStatus === "Active" ? { background: "#dcfce7", color: "#16a34a" } : { background: "#fef3c7", color: "#b45309" }}
+            >
+              <i className={`ti ${bulkStatus === "Active" ? "ti-user-check" : "ti-ban"}`} style={{ fontSize: 24 }} aria-hidden="true" />
+            </span>
+            <div className={styles.modalTitle}>
+              {bulkStatus === "Active" ? "Reactivate" : "Suspend"} {selected.size} user{selected.size === 1 ? "" : "s"}?
+            </div>
+            <div className={styles.modalSub}>
+              {bulkStatus === "Active"
+                ? "The selected users will be able to sign in again."
+                : "The selected users are signed out and blocked from signing in until reactivated. Your own account is kept automatically."}
+            </div>
+            <div className={styles.modalActions} style={{ justifyContent: "center" }}>
+              <button className={styles.btnGhost} onClick={() => setBulkStatus(null)} disabled={bulkStatusBusy}>Cancel</button>
+              <button className={styles.btnPrimary} onClick={() => doBulkStatus(bulkStatus)} disabled={bulkStatusBusy}>
+                {bulkStatusBusy
+                  ? "Applying…"
+                  : bulkStatus === "Active" ? `Reactivate ${selected.size}` : `Suspend ${selected.size}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmDel && (
         <div className={styles.scrim} onClick={() => !deleting && setConfirmDel(null)}>
@@ -411,6 +672,57 @@ export default function UsersAdmin() {
       )}
 
       {toast && <div className={styles.toast}>{toast}</div>}
+    </div>
+  );
+}
+
+/* ---------------- Bulk role / region edit ---------------- */
+// Applies to every currently-selected user. Either field can be left as
+// "Keep unchanged", so an admin can change only the role, only the region, or
+// both in one pass. The Apply button stays disabled until at least one field is
+// set, so an empty submit can't quietly touch every selected row.
+function BulkEditModal({ count, roles, regions, busy, onClose, onApply }) {
+  const [role, setRole] = useState("");        // "" = keep unchanged
+  const [region, setRegion] = useState("__keep__"); // sentinel = keep unchanged
+  const nothingChosen = !role && region === "__keep__";
+
+  const apply = () => {
+    if (nothingChosen) return;
+    onApply({ role: role || "", region: region === "__keep__" ? null : region });
+  };
+
+  return (
+    <div className={styles.scrim} onClick={onClose}>
+      <div className={styles.modal} style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalTitle}>Change role / region</div>
+        <div className={styles.modalSub}>
+          Applies to the {count} selected user{count === 1 ? "" : "s"}. Leave a field on
+          “Keep unchanged” to touch only the other. Your own role is never changed here.
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>Role</label>
+          <select className={styles.input} value={role} onChange={(e) => setRole(e.target.value)}>
+            <option value="">Keep unchanged</option>
+            {roles.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
+          </select>
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>Region scope</label>
+          <select className={styles.input} value={region} onChange={(e) => setRegion(e.target.value)}>
+            <option value="__keep__">Keep unchanged</option>
+            {regions.map((rg) => <option key={rg} value={rg}>{rg}</option>)}
+          </select>
+        </div>
+
+        <div className={styles.modalActions}>
+          <button className={styles.btnGhost} onClick={onClose} disabled={busy}>Cancel</button>
+          <button className={styles.btnPrimary} onClick={apply} disabled={busy || nothingChosen}>
+            {busy ? "Applying…" : `Apply to ${count}`}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -532,7 +844,9 @@ function CreateUserModal({ prefill, roles, companies, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
 
   const toggle = (r) => setSel((s) => (s.includes(r) ? s.filter((x) => x !== r) : [...s, r]));
-  const shown = SCOPE_REGIONS.filter((r) => r.toLowerCase().includes(filter.trim().toLowerCase()));
+  const facets = useFacets();
+  const SCOPE = scopeRegionsFrom(facets);
+  const shown = SCOPE.filter((r) => r.toLowerCase().includes(filter.trim().toLowerCase()));
 
   async function submit() {
     setErr("");
@@ -690,7 +1004,9 @@ function ApproveModal({ user, roles, companies, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
 
   const toggle = (r) => setSel((s) => (s.includes(r) ? s.filter((x) => x !== r) : [...s, r]));
-  const shown = SCOPE_REGIONS.filter((r) => r.toLowerCase().includes(filter.trim().toLowerCase()));
+  const facets = useFacets();
+  const SCOPE = scopeRegionsFrom(facets);
+  const shown = SCOPE.filter((r) => r.toLowerCase().includes(filter.trim().toLowerCase()));
 
   async function submit() {
     setErr("");
@@ -855,6 +1171,10 @@ function UserModal({ modal, roles, companies, onClose, onSaved }) {
   const [all, setAll] = useState(initialRegions.length === 0);
   const [sel, setSel] = useState(initialRegions);
   const [filter, setFilter] = useState("");
+  // Site visibility override: "" = inherit the global default, else region/list.
+  const [siteScopeMode, setSiteScopeMode] = useState(
+    u.site_scope_mode === "region" || u.site_scope_mode === "list" ? u.site_scope_mode : ""
+  );
 
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
@@ -867,7 +1187,9 @@ function UserModal({ modal, roles, companies, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
 
   const toggle = (r) => setSel((s) => (s.includes(r) ? s.filter((x) => x !== r) : [...s, r]));
-  const shown = SCOPE_REGIONS.filter((r) => r.toLowerCase().includes(filter.trim().toLowerCase()));
+  const facets = useFacets();
+  const SCOPE = scopeRegionsFrom(facets);
+  const shown = SCOPE.filter((r) => r.toLowerCase().includes(filter.trim().toLowerCase()));
   const signIn = u.email || u.phone || "—";
 
   function generate() {
@@ -894,6 +1216,9 @@ function UserModal({ modal, roles, companies, onClose, onSaved }) {
       await patch({ action: "update", name: name.trim(), email: email.trim(), phone: phone.trim(), company_id: companyId || null });
       await patch({ action: "setRole", role });
       await patch({ action: "setRegions", regions });
+      // Assigned-list scope is a field-technician feature; for any other role the
+      // override is cleared so a leftover setting can't linger after a role change.
+      await patch({ action: "setSiteScope", mode: role === "field_tech" ? (siteScopeMode || null) : null });
       if (status !== u.status) await patch({ action: status === "Suspended" ? "suspend" : "activate" });
       if (changePw) {
         const r = await patch({ action: "setPassword", password: pw });
@@ -985,6 +1310,24 @@ function UserModal({ modal, roles, companies, onClose, onSaved }) {
             </div>
           </div>
 
+          {role === "field_tech" && (
+            <div className={styles.field}>
+              <label className={styles.amLabel}>Site visibility <span className={styles.pwHint}>— field technicians only</span></label>
+              <select className={styles.input} value={siteScopeMode} onChange={(e) => setSiteScopeMode(e.target.value)}>
+                <option value="">Use global default</option>
+                <option value="region">Region-controlled</option>
+                <option value="list">Assigned sites (imported list)</option>
+              </select>
+              <div className={styles.scopeNote}>
+                {siteScopeMode === "list"
+                  ? `Sees only assigned sites — ${u.site_count || 0} assigned. Use “Import site assignments” to set them.`
+                  : siteScopeMode === "region"
+                    ? "Scoped by the region scope above."
+                    : "Follows the global default set in Settings."}
+              </div>
+            </div>
+          )}
+
           <div className={styles.pwHead}>
             Password <span className={styles.pwHint}>— leave the new fields blank to keep the current one</span>
           </div>
@@ -1035,6 +1378,284 @@ function UserModal({ modal, roles, companies, onClose, onSaved }) {
             {saving ? "Saving…" : "Save changes"}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---- Site-assignment import (User + Site ID -> user_sites, mode = list) ---- */
+function ssParseCSV(text) {
+  const out = [];
+  const lines = String(text || "").replace(/\r\n?/g, "\n").split("\n").filter((l) => l.length);
+  for (const line of lines) {
+    const cells = []; let cur = ""; let q = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (q) {
+        if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; }
+        else cur += ch;
+      } else if (ch === ",") { cells.push(cur); cur = ""; }
+      else if (ch === '"') q = true;
+      else cur += ch;
+    }
+    cells.push(cur);
+    out.push(cells.map((c) => c.trim()));
+  }
+  return out;
+}
+const ssNorm = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+
+function SiteScopeImportDialog({ onClose, onImported }) {
+  const [rows, setRows] = useState(null); // parsed [{user, site}]
+  const [fileName, setFileName] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null);
+  const inputRef = useRef(null);
+
+  function downloadTemplate() {
+    const csv = "User,Site ID\njane.doe@symphony.co.ke,NBI-HQ-001\njane.doe@symphony.co.ke,NBI-HQ-002\n";
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "assetguard-site-assignments-template.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function onPick(e) {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    setErr(""); setResult(null);
+    const reader = new FileReader();
+    reader.onload = () => build(String(reader.result || ""), f.name);
+    reader.onerror = () => setErr(`${f.name} could not be read.`);
+    reader.readAsText(f);
+  }
+
+  function build(text, name) {
+    const grid = ssParseCSV(text);
+    if (!grid.length) { setErr("The file is empty."); return; }
+    const head = grid[0].map(ssNorm);
+    const uCol = head.findIndex((h) => ["user", "email", "user email", "user (email)"].includes(h));
+    const sCol = head.findIndex((h) => ["site id", "site", "site code", "code"].includes(h));
+    if (uCol < 0 || sCol < 0) {
+      setErr(`Needs "User" and "Site ID" columns. This file has: ${grid[0].join(", ")}`);
+      return;
+    }
+    const parsed = grid.slice(1)
+      .map((r) => ({ user: (r[uCol] || "").trim(), site: (r[sCol] || "").trim() }))
+      .filter((r) => r.user && r.site);
+    if (!parsed.length) { setErr("No usable rows found."); return; }
+    setRows(parsed); setFileName(name); setErr("");
+  }
+
+  async function confirm() {
+    if (!rows) return;
+    setBusy(true); setErr("");
+    try {
+      const res = await fetch("/api/mainapp/users/site-scope/import", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows, setListMode: true }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setBusy(false); return setErr(d.error || "Import failed"); }
+      setResult(d); setBusy(false);
+    } catch { setBusy(false); setErr("Network error"); }
+  }
+
+  return (
+    <div className={styles.scrim} onClick={() => !busy && onClose()}>
+      <div className={styles.modal} style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalTitle}>Import field technician sites</div>
+        <div className={styles.modalSub} style={{ textAlign: "left" }}>
+          Two columns — <b>User</b> (email) and <b>Site ID</b> (site code). This assigns sites to
+          <b> field technicians</b> only: each matched technician is set to “Assigned sites” visibility and
+          given exactly the sites listed (other roles stay region-controlled). Repeat a technician across
+          rows for multiple sites.{" "}
+          <button type="button" onClick={downloadTemplate}
+            style={{ border: "none", background: "none", color: "#2E6CF5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+            Download template
+          </button>
+        </div>
+
+        <input ref={inputRef} type="file" accept=".csv,text/csv" style={{ display: "none" }} onChange={onPick} />
+
+        {!result ? (
+          <>
+            <button type="button" className={styles.btnPrimary} style={{ marginTop: 8 }}
+              onClick={() => inputRef.current && inputRef.current.click()}>
+              <i className="ti ti-file-upload" style={{ fontSize: 15 }} aria-hidden="true" /> Choose CSV file
+            </button>
+            {rows ? <div className={styles.scopeNote} style={{ marginTop: 10 }}>{fileName} — {rows.length} row{rows.length === 1 ? "" : "s"} ready.</div> : null}
+            {err ? <div className={styles.err} style={{ marginTop: 10 }}>{err}</div> : null}
+            <div className={styles.modalActions} style={{ marginTop: 14 }}>
+              <button className={styles.btnGhost} onClick={onClose} disabled={busy}>Cancel</button>
+              <button className={styles.btnPrimary} onClick={confirm} disabled={busy || !rows}>
+                {busy ? "Importing…" : rows ? `Import ${rows.length} row${rows.length === 1 ? "" : "s"}` : "Import"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className={styles.scopeNote} style={{ marginTop: 10, color: "#059669" }}>
+              Assigned {result.imported} site(s) across {result.users} user(s).
+              {result.skipped ? ` Skipped ${result.skipped}.` : ""}
+            </div>
+            {(result.unknownUsers?.length || result.unknownSites?.length || result.notTechnicians?.length) ? (
+              <div className={styles.scopeNote} style={{ color: "#B45309" }}>
+                {result.notTechnicians?.length ? `Not field technicians (skipped): ${result.notTechnicians.slice(0, 8).join(", ")}${result.notTechnicians.length > 8 ? "…" : ""}. ` : ""}
+                {result.unknownUsers?.length ? `Unknown users: ${result.unknownUsers.slice(0, 8).join(", ")}${result.unknownUsers.length > 8 ? "…" : ""}. ` : ""}
+                {result.unknownSites?.length ? `Unknown site IDs: ${result.unknownSites.slice(0, 8).join(", ")}${result.unknownSites.length > 8 ? "…" : ""}.` : ""}
+              </div>
+            ) : null}
+            <div className={styles.modalActions} style={{ marginTop: 14 }}>
+              <button className={styles.btnPrimary} onClick={() => onImported(`Imported ${result.imported} assignment(s)`)}>Done</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Bulk user import (CSV / Excel) ----------------
+   Columns: Name, Email, Phone, Company, Role, Region (security region).
+   Password for every imported user = their NAME with spaces removed. */
+function UserImportDialog({ regions = [], onClose, onImported }) {
+  const [rows, setRows] = useState(null);   // [{name,email,phone,company,role,region}]
+  const [fileName, setFileName] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null);
+  const inputRef = useRef(null);
+
+  const IDX = (head, names) => head.findIndex((h) => names.includes(h));
+
+  function fromGrid(grid) {
+    if (!grid.length) { setErr("The file is empty."); return; }
+    const head = grid[0].map(ssNorm);
+    const cN = IDX(head, ["name", "full name", "user name"]);
+    const cE = IDX(head, ["email", "email address", "user email"]);
+    const cP = IDX(head, ["phone", "phone number", "mobile", "msisdn"]);
+    const cC = IDX(head, ["company", "company name"]);
+    const cR = IDX(head, ["role"]);
+    const cReg = IDX(head, ["region", "security region", "region (security region)", "region scope"]);
+    if (cN < 0 || cE < 0) {
+      setErr(`Needs at least "Name" and "Email" columns. This file has: ${grid[0].join(", ")}`);
+      return;
+    }
+    const parsed = grid.slice(1).map((r) => ({
+      name: (r[cN] || "").trim(),
+      email: (r[cE] || "").trim(),
+      phone: cP >= 0 ? (r[cP] || "").trim() : "",
+      company: cC >= 0 ? (r[cC] || "").trim() : "",
+      role: cR >= 0 ? (r[cR] || "").trim() : "",
+      region: cReg >= 0 ? (r[cReg] || "").trim() : "",
+    })).filter((r) => r.name && r.email);
+    if (!parsed.length) { setErr("No usable rows (each needs a Name and Email)."); return; }
+    setRows(parsed); setErr("");
+  }
+
+  async function onPick(e) {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    setErr(""); setResult(null); setFileName(f.name);
+    try {
+      if (/\.(xlsx|xls)$/i.test(f.name)) {
+        const XLSX = await import("xlsx");
+        const buf = await f.arrayBuffer();
+        const wb = XLSX.read(buf, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        fromGrid(XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false }).map((r) => r.map((c) => String(c ?? ""))));
+      } else {
+        const text = await f.text();
+        fromGrid(ssParseCSV(text));
+      }
+    } catch { setErr(`${f.name} could not be read. Use a valid .csv or .xlsx.`); }
+  }
+
+  function downloadTemplate() {
+    const csv = "Name,Email,Phone,Company,Role,Region\nJane Wanjiku,jane.wanjiku@symphony.co.ke,+254720114880,Symphony Technologies Limited,Field Responder,Nairobi North\n";
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "assetguard-users-template.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function confirm() {
+    if (!rows) return;
+    setBusy(true); setErr("");
+    try {
+      const res = await fetch("/api/mainapp/users/import", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ users: rows }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setBusy(false); return setErr(d.error || "Import failed"); }
+      setResult(d); setBusy(false);
+    } catch { setBusy(false); setErr("Network error"); }
+  }
+
+  const skipped = result?.skipped || [];
+  const errors = result?.errors || [];
+
+  return (
+    <div className={styles.scrim} onClick={() => !busy && onClose()}>
+      <div className={styles.modal} style={{ maxWidth: 600 }} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalTitle}>Import users</div>
+        <div className={styles.modalSub} style={{ textAlign: "left" }}>
+          Columns: <b>Name</b>, <b>Email</b>, <b>Phone</b>, <b>Company</b>, <b>Role</b>, <b>Region</b> (security region).
+          Each new user is Active, and their <b>password is their name with spaces removed</b> (e.g. “Jane Wanjiku” → <code>JaneWanjiku</code>).
+          Company &amp; role are matched to registered records; region must be a registered security region{regions.length ? ` (e.g. ${regions.slice(0, 3).join(", ")}${regions.length > 3 ? "…" : ""})` : ""}.{" "}
+          <button type="button" onClick={downloadTemplate}
+            style={{ border: "none", background: "none", color: "#2E6CF5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+            Download template
+          </button>
+        </div>
+
+        <input ref={inputRef} type="file" accept=".csv,text/csv,.xlsx,.xls" style={{ display: "none" }} onChange={onPick} />
+
+        {!result ? (
+          <>
+            <button type="button" className={styles.btnPrimary} style={{ marginTop: 8 }}
+              onClick={() => inputRef.current && inputRef.current.click()}>
+              <i className="ti ti-file-upload" style={{ fontSize: 15 }} aria-hidden="true" /> Choose CSV or Excel file
+            </button>
+            {rows ? <div className={styles.scopeNote} style={{ marginTop: 10 }}>{fileName} — {rows.length} user{rows.length === 1 ? "" : "s"} ready.</div> : null}
+            {err ? <div className={styles.err} style={{ marginTop: 10 }}>{err}</div> : null}
+            <div className={styles.modalActions} style={{ marginTop: 14 }}>
+              <button className={styles.btnGhost} onClick={onClose} disabled={busy}>Cancel</button>
+              <button className={styles.btnPrimary} onClick={confirm} disabled={busy || !rows}>
+                {busy ? "Importing…" : rows ? `Import ${rows.length} user${rows.length === 1 ? "" : "s"}` : "Import"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className={styles.scopeNote} style={{ marginTop: 10, color: "#059669" }}>
+              Created {result.created} user{result.created === 1 ? "" : "s"}.
+              {skipped.length ? ` Skipped ${skipped.length}.` : ""}{errors.length ? ` ${errors.length} error(s).` : ""}
+            </div>
+            {skipped.length ? (
+              <div className={styles.scopeNote} style={{ color: "#B45309" }}>
+                Skipped: {skipped.slice(0, 8).map((s) => `${s.email} (${s.reason})`).join(", ")}{skipped.length > 8 ? "…" : ""}
+              </div>
+            ) : null}
+            {errors.length ? (
+              <div className={styles.err} style={{ marginTop: 6 }}>
+                Errors: {errors.slice(0, 8).map((s) => `${s.email || s.name} (${s.reason})`).join(", ")}{errors.length > 8 ? "…" : ""}
+              </div>
+            ) : null}
+            <div className={styles.modalActions} style={{ marginTop: 14 }}>
+              <button className={styles.btnPrimary} onClick={() => onImported(`Imported ${result.created} user(s)`)}>Done</button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

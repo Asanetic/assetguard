@@ -1,0 +1,70 @@
+AssetGuard — Company CSV template fix + Company-Contacts PHASE 2
+================================================================
+
+WHAT'S IN THIS ZIP
+------------------
+1) Company CSV import template — corrected
+   - The downloadable template now carries the company's Manager + 2 Assistant
+     managers, and the importer reads them into the company's contacts.
+   - New header:
+       Company, Purpose, Email, Phone,
+       Manager Name, Manager Phone, Manager Email,
+       Assistant 1 Name, Assistant 1 Phone, Assistant 1 Email,
+       Assistant 2 Name, Assistant 2 Phone, Assistant 2 Email
+   - Multiple phones/emails in one cell: separate with a semicolon.
+   - Contacts columns are OPTIONAL — old 4-column files still import fine.
+
+2) PHASE 2 — client company + security contacts now live on the COMPANY records
+   - Settings → the old "Company" card (client company name + manager +
+     assistants) is REMOVED. It is now a "Platform" card with only Domain,
+     Country, Time zone (derived) and UTC offset. Branding stays on its own card.
+   - Add Site / View Site:
+       * Company block  = the global CLIENT company, shown READ-ONLY (inherited).
+       * Security company details = a DROPDOWN of registered security companies.
+         Pick one → its national Manager + one Assistant fill in READ-ONLY,
+         inherited from that company's record. The old regional tier
+         (field manager + assistant) is GONE.
+       * Monitoring company = a dropdown of registered monitoring companies.
+   - Edit the contacts once on the company (Admin → Companies) and every site
+     assigned to it picks up the change — no per-site editing.
+
+FILES
+-----
+  app/mainapp/admin/companies/components/CompaniesAdmin.jsx   (CSV template + import)
+  app/api/apiUtils/dataControl/companies.js                   (import contacts + directory)
+  app/mainapp/admin/settings/components/SystemSettings.jsx    (strip client company)
+  app/api/apiUtils/dataControl/siteContacts.js                (resolve from companies)
+  app/api/mainapp/site-contacts/route.js                      (securityCompany param)
+  app/api/mainapp/companies/directory/route.js                (NEW — signed-in directory)
+  app/mainapp/sites/components/AddSite.jsx                    (dropdown + inherited, no region tier)
+  app/mainapp/sites/[id]/components/ViewSite.jsx             (inherited contacts)
+
+NO DATABASE MIGRATION NEEDED
+----------------------------
+The companies.contacts column was added in Phase 1. If you have NOT yet applied
+Phase 1, run its migration first:
+  psql "postgresql://assetguard:admin001@localhost:5432/assetguard" -f db/company_contacts.sql
+
+DEPLOY
+------
+  cd /var/www/html/baseapps/assetguard
+  # extract this zip over the app (preserves paths)
+  python3 -c "import zipfile; zipfile.ZipFile('company-contacts-phase2.zip').extractall('.')"
+  npm run build
+  pm2 restart gps-3000 assetguard-3010
+
+SETUP / VERIFY
+--------------
+  1. Admin → Companies: make sure ONE company has the "Client" purpose and its
+     Manager/Assistant filled — that becomes the global client company shown
+     (read-only) on every site.
+  2. Give your security company (e.g. G4S) the Response purpose and fill its
+     Manager + Assistant manager 1. Fill your monitoring company (e.g. Symphony
+     Technologies) as NOC.
+  3. Add Site → Security company details: pick the security company; its Manager
+     + Assistant should appear read-only. Company block shows the client company
+     read-only.
+  4. Settings: the client company block is gone; only Platform (domain/country/
+     timezone/UTC) + Branding remain.
+  5. Bulk import: Companies → Template downloads the new 13-column CSV; importing
+     a filled one seeds each company's Manager + 2 Assistants.

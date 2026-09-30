@@ -4,10 +4,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import styles from "./access.module.css";
 
+// Access is by PAGE only now. One grant per page ("view" = can open it). The old
+// per-action columns (add/edit/delete/…) and the Button / Data Point modules are
+// gone — the buttons that stay restricted keep their own hard-coded checks.
 const PERMS = [
-  { k: "view", name: "View" }, { k: "add", name: "Add" }, { k: "edit", name: "Edit" },
-  { k: "delete", name: "Delete" }, { k: "approve", name: "Approve" }, { k: "export", name: "Export" },
-  { k: "reports", name: "Reports" }, { k: "dash", name: "Dashboard" },
+  { k: "view", name: "Can access" },
 ];
 const gkey = (m, p) => `${m}|${p}`;
 
@@ -27,7 +28,8 @@ export default function AccessControl() {
   }, []);
   const loadModules = useCallback(() => {
     fetch("/api/mainapp/modules").then((r) => r.ok ? r.json() : { modules: [] })
-      .then((d) => setModules(d.modules || [])).catch(() => {});
+      // PAGES only — Button and Data Point modules are no longer part of access control.
+      .then((d) => setModules((d.modules || []).filter((m) => m.type === "Page"))).catch(() => {});
   }, []);
   useEffect(() => { loadRoles(); loadModules(); }, [loadRoles, loadModules]);
 
@@ -251,8 +253,8 @@ function MatrixTab({ roles, modules, initialRole, onSaved }) {
         <div className={styles.cardHeadLeft}>
           <i className={`ti ti-table ${styles.cardHeadIcon}`} aria-hidden="true" />
           <div>
-            <div className={styles.cardTitle}>Role Permission Matrix</div>
-            <div className={styles.cardSub}>Toggle each permission per module for the selected role.</div>
+            <div className={styles.cardTitle}>Role Page Access</div>
+            <div className={styles.cardSub}>Choose which pages this role can open. Admins can open everything.</div>
           </div>
         </div>
         <button className={styles.btnPrimary} onClick={save} disabled={saving || loading}>

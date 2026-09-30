@@ -24,11 +24,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./settings.module.css";
 import {
   TZ_BY_COUNTRY, SEED_COUNTRIES, SEED_COUNTIES, SEED_DIST_REGIONS,
-  SEED_SEC_REGIONS, SEC_COMPANIES, SEED_CLUSTERS, SEED_ORG, SEED_CFG,
-  LOC_TABS, IMPORT_COLUMNS,
+  SEED_ORG, SEED_CFG, LOC_TABS, IMPORT_COLUMNS,
 } from "./settingsData.js";
-import { SEED_TEAMS } from "../../../response/components/teamsData.js";
-import { SEC_NOC } from "../../../noc/components/nocData.js";
 
 /* ---- contact helpers ---- */
 function splitContacts(v) { return String(v || "").split(",").map((x) => x.trim()).filter(Boolean); }
@@ -71,28 +68,96 @@ export default function SystemSettings() {
     try {
       const res = await fetch("/api/mainapp/org", {
         method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: org.name, domain: org.domain, country: org.country,
-          manager: org.manager, assistant1: org.assistant1, assistant2: org.assistant2,
-        }),
+        // Client company name + contacts moved to Companies; only platform-wide
+        // domain/country are saved here (timezone/UTC derive from country).
+        body: JSON.stringify({ domain: org.domain, country: org.country }),
       });
       return res.ok;
     } catch { return false; }
+  }
+
+  /* ---- Registered security companies (the TRUE companies, not a seed list) ---- */
+  const [secCompanies, setSecCompanies] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/mainapp/companies/directory", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return;
+        setSecCompanies(Array.isArray(d.security) ? d.security.map((c) => c.name).filter(Boolean) : []);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  /* ---- Site visibility (global default) ---- */
+  const [siteScopeMode, setSiteScopeMode] = useState("region");
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/mainapp/site-scope", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive && d?.mode) setSiteScopeMode(d.mode); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  async function saveSiteScope(mode) {
+    setSiteScopeMode(mode);
+    try {
+      await fetch("/api/mainapp/site-scope", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
+      });
+    } catch { /* non-blocking */ }
   }
 
   /* ---- Locations ---- */
   const [countries, setCountries] = useState(() => SEED_COUNTRIES.map((c) => ({ ...c })));
   const [counties, setCounties] = useState(() => SEED_COUNTIES.map((c) => ({ ...c })));
   const [distRegions, setDistRegions] = useState(() => SEED_DIST_REGIONS.slice());
-  const [secRegions, setSecRegions] = useState(() => SEED_SEC_REGIONS.slice());
-  const [clusters, setClusters] = useState(() => SEED_CLUSTERS.map((c) => ({ ...c })));
+  // Security regions + response clusters are DB-backed (response_regions /
+  // response_clusters). Loaded from the API, persisted on add/remove — no seed.
+  const [secRegions, setSecRegions] = useState([]);
+  const [clusters, setClusters] = useState([]);
+  // Registered NOC + response teams — used only to count "N NOC teams" / "N response
+  // teams" chips against real data (never the old prototype seed).
+  const [nocDir, setNocDir] = useState([]);
+  const [respDir, setRespDir] = useState([]);
+  const [respGrants, setRespGrants] = useState({});
+
+  // Load security regions + clusters from the DB; called on mount and after every
+  // add/remove so the lists (and every picker that reads these tables) stay live.
+  async function reloadGeo() {
+    try {
+      const r = await fetch("/api/mainapp/response/geo", { cache: "no-store" });
+      const d = r.ok ? await r.json() : null;
+      if (!d) return;
+      setSecRegions(Array.isArray(d.regions) ? d.regions : []);
+      setClusters(Array.isArray(d.clusters) ? d.clusters.map((c) => ({
+        name: c.name, region: c.region || "", company: c.company || "",
+        rm: c.rm || "", rmPhones: c.rmPhones || [], rmEmails: c.rmEmails || [],
+      })) : []);
+    } catch { /* keep what we have */ }
+  }
+  useEffect(() => { reloadGeo(); }, []);
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/mainapp/noc/teams", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive && d && Array.isArray(d.teams)) setNocDir(d.teams); })
+      .catch(() => {});
+    fetch("/api/mainapp/response/teams", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!alive || !d) return; if (Array.isArray(d.teams)) setRespDir(d.teams); if (d.grants) setRespGrants(d.grants); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   const [tab, setTab] = useState("country");
   const [locErr, setLocErr] = useState("");
   const [form, setForm] = useState({
     country: "", countyName: "", countyCountry: "Kenya",
     distName: "", secName: "",
-    clusterName: "", clusterCompany: SEC_COMPANIES[0], clusterRm: "", clusterPhones: "",
+    clusterName: "", clusterCompany: "", clusterRm: "", clusterPhones: "",
   });
   const setF = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -131,12 +196,13 @@ export default function SystemSettings() {
 
   /* ---- counts for the location list chips ---- */
   const countiesFor = (country) => counties.filter((c) => c.country === country).length;
-  const nocForRegion = (region) => {
-    let n = 0;
-    Object.keys(SEC_NOC).forEach((co) => SEC_NOC[co].forEach((t) => { if ((t.covers || []).indexOf(region) > -1) n++; }));
-    return n;
+  // Counts from REGISTERED teams (noc_teams / response_teams), not any seed.
+  const nocForRegion = (region) =>
+    nocDir.filter((t) => !(Array.isArray(t.covers) && t.covers.length) || t.covers.includes(region)).length;
+  const teamsForCluster = (name) => {
+    const granted = new Set(respGrants[name] || []);
+    return respDir.filter((t) => (Array.isArray(t.clusters) && t.clusters.includes(name)) || granted.has(t.code)).length;
   };
-  const teamsForCluster = (name) => SEED_TEAMS.filter((t) => (t.clusters || []).indexOf(name) > -1).length;
 
   /* ---- location rows for the active tab ---- */
   const rows = useMemo(() => {
@@ -144,12 +210,12 @@ export default function SystemSettings() {
     if (tab === "county") return counties.map((c) => ({ k: c.name, main: c.name, sub: "", chip: c.country }));
     if (tab === "dist") return distRegions.map((r) => ({ k: r, main: r, sub: "", chip: "distribution" }));
     if (tab === "sec") return secRegions.map((r) => ({ k: r, main: r, sub: "", chip: `${nocForRegion(r)} NOC teams` }));
-    return clusters.map((c) => ({ k: c.name, main: c.name, sub: `${c.rm} · ${joinContacts(c.rmPhones)}`, chip: `${teamsForCluster(c.name)} response teams` }));
+    return clusters.map((c) => ({ k: c.name, main: c.name, sub: [c.rm, joinContacts(c.rmPhones)].filter(Boolean).join(" · "), chip: `${teamsForCluster(c.name)} response teams` }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, countries, counties, distRegions, secRegions, clusters]);
 
   /* ---- add (per tab) ---- */
-  function onAdd() {
+  async function onAdd() {
     setLocErr("");
     if (tab === "country") {
       const name = (form.country || knownUnregistered[0] || "").trim();
@@ -173,16 +239,35 @@ export default function SystemSettings() {
       if (!name) return setLocErr("Region name is required.");
       if (list.indexOf(name) > -1) return setLocErr(`"${name}" is already registered.`);
       if (tab === "dist") { setDistRegions((a) => [...a, name]); setF("distName", ""); }
-      else { setSecRegions((a) => [...a, name]); setF("secName", ""); }
+      else {
+        // Security region → persisted to response_regions, then reloaded.
+        setF("secName", "");
+        try {
+          const r = await fetch("/api/mainapp/response/geo", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ kind: "region", name }),
+          });
+          if (!r.ok) { const e = await r.json().catch(() => ({})); return setLocErr(e.error || "Could not save the security region."); }
+          await reloadGeo(); flashToast(`Added ${name}`);
+        } catch { return setLocErr("Network error saving the security region."); }
+      }
     } else {
       const name = form.clusterName.trim();
       if (!name) return setLocErr("A cluster name is required.");
       if (clusters.some((c) => c.name === name)) return setLocErr(`A cluster named "${name}" already exists.`);
-      if (!form.clusterRm.trim()) return setLocErr("A regional manager is required for the cluster.");
+      // Regional manager is OPTIONAL — no longer required to register a cluster.
       const ph = checkPhones(form.clusterPhones);
       if (!ph.ok) return setLocErr("Check these phone numbers: " + ph.bad.join(", "));
-      setClusters((a) => [...a, { name, company: form.clusterCompany, rm: form.clusterRm.trim(), rmPhones: ph.list, rmEmails: [] }]);
-      setForm((f) => ({ ...f, clusterName: "", clusterRm: "", clusterPhones: "" }));
+      // Response cluster → persisted to response_clusters, then reloaded.
+      try {
+        const r = await fetch("/api/mainapp/response/geo", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ kind: "cluster", name, company: form.clusterCompany || null, rm: form.clusterRm.trim(), rmPhones: ph.list, rmEmails: [] }),
+        });
+        if (!r.ok) { const e = await r.json().catch(() => ({})); return setLocErr(e.error || "Could not save the cluster."); }
+        setForm((f) => ({ ...f, clusterName: "", clusterRm: "", clusterPhones: "" }));
+        await reloadGeo(); flashToast(`Added ${name}`);
+      } catch { return setLocErr("Network error saving the cluster."); }
     }
   }
 
@@ -206,7 +291,7 @@ export default function SystemSettings() {
     }
     setDelDialog({ name, deps, others, repl: others[0] });
   }
-  function doRemove(name, replaceWith) {
+  async function doRemove(name, replaceWith) {
     if (tab === "country") {
       if (replaceWith) setCounties((a) => a.map((c) => (c.country === name ? { ...c, country: replaceWith } : c)));
       setCountries((a) => a.filter((c) => c.name !== name));
@@ -214,10 +299,16 @@ export default function SystemSettings() {
       setCounties((a) => a.filter((c) => c.name !== name));
     } else if (tab === "dist") {
       setDistRegions((a) => a.filter((r) => r !== name));
-    } else if (tab === "sec") {
-      setSecRegions((a) => a.filter((r) => r !== name));
-    } else {
-      setClusters((a) => a.filter((c) => c.name !== name));
+    } else if (tab === "sec" || tab === "cluster") {
+      // Security region / response cluster → deleted from the DB, then reloaded.
+      try {
+        const r = await fetch("/api/mainapp/response/geo", {
+          method: "DELETE", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ kind: tab === "sec" ? "region" : "cluster", name }),
+        });
+        if (!r.ok) { const e = await r.json().catch(() => ({})); setLocErr(e.error || "Could not remove."); return; }
+        await reloadGeo();
+      } catch { setLocErr("Network error removing."); return; }
     }
     flashToast(`Removed ${name}`);
   }
@@ -267,7 +358,7 @@ export default function SystemSettings() {
         if (name) out.push({ name, country });
       } else {
         const name = get("Cluster name");
-        const company = get("Security company") || SEC_COMPANIES[0];
+        const company = get("Security company") || secCompanies[0] || "";
         const rm = get("Regional manager");
         const phones = splitContacts(get("Phone(s)"));
         if (name) out.push({ name, company, rm, phones });
@@ -315,15 +406,32 @@ export default function SystemSettings() {
     XLSX.writeFile(wb, `assetguard-${tab}-template.xlsx`);
   }
 
-  function confirmImport() {
+  async function confirmImport() {
     if (!imp) return;
     const news = imp.staged.filter((s) => s.verdict === "new").map((s) => s.entry);
     let added = 0;
     if (tab === "country") { setCountries((a) => { const next = a.slice(); news.forEach((e) => { const tz = TZ_BY_COUNTRY[e.name]; if (tz && !next.some((c) => c.name === e.name)) { next.push({ name: e.name, tz: tz.tz, off: tz.off, abbr: tz.abbr }); added++; } }); return next; }); }
     else if (tab === "county") { setCounties((a) => { const next = a.slice(); news.forEach((e) => { if (!next.some((c) => c.name === e.name && c.country === e.country)) { next.push({ name: e.name, country: e.country }); added++; } }); return next; }); }
     else if (tab === "dist") { setDistRegions((a) => { const next = a.slice(); news.forEach((e) => { if (next.indexOf(e.name) < 0) { next.push(e.name); added++; } }); return next; }); }
-    else if (tab === "sec") { setSecRegions((a) => { const next = a.slice(); news.forEach((e) => { if (next.indexOf(e.name) < 0) { next.push(e.name); added++; } }); return next; }); }
-    else { setClusters((a) => { const next = a.slice(); news.forEach((e) => { if (!next.some((c) => c.name === e.name)) { next.push({ name: e.name, company: e.company || SEC_COMPANIES[0], rm: e.rm || "Imported — set manager", rmPhones: e.phones || [], rmEmails: [] }); added++; } }); return next; }); }
+    else if (tab === "sec") {
+      // Persist each imported security region to the DB, then reload.
+      for (const e of news) {
+        try {
+          const r = await fetch("/api/mainapp/response/geo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "region", name: e.name }) });
+          if (r.ok) added++;
+        } catch { /* skip */ }
+      }
+      await reloadGeo();
+    } else {
+      // Persist each imported cluster to the DB, then reload.
+      for (const e of news) {
+        try {
+          const r = await fetch("/api/mainapp/response/geo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "cluster", name: e.name, company: e.company || null, rm: e.rm || "Imported — set manager", rmPhones: e.phones || [], rmEmails: [] }) });
+          if (r.ok) added++;
+        } catch { /* skip */ }
+      }
+      await reloadGeo();
+    }
     const skipped = imp.staged.length - news.length;
     setImp(null);
     flashToast(`${added} imported${skipped ? `, ${skipped} skipped` : ""}`);
@@ -339,30 +447,29 @@ export default function SystemSettings() {
         </div>
       </div>
 
-      {/* ---- Company ---- */}
+      {/* ---- Platform ---- */}
+      {/* The client company (name + manager + assistants) now lives in Companies
+          as the company holding the "Client" purpose; only the platform-wide
+          domain, country and derived timezone/UTC offset remain here. */}
       <div className={styles.card}>
         <div className={styles.cardH}>
-          <span className={styles.cardHIcon} style={{ background: "#ede9fe", color: "#7c3aed" }}><i className="ti ti-building" /></span>
-          Company
+          <span className={styles.cardHIcon} style={{ background: "#ede9fe", color: "#7c3aed" }}><i className="ti ti-settings" /></span>
+          Platform
         </div>
-        <div className={styles.cardSub}>The organisation this system belongs to — not one of the registered companies.</div>
+        <div className={styles.cardSub}>Domain, country and time zone for the whole system. The client company and its contacts are managed in Companies.</div>
         <div className={styles.g2}>
-          <div className={styles.field}>
-            <label className={styles.lab}>COMPANY NAME</label>
-            <input className={styles.in} value={org.name} onChange={(e) => setOrg((o) => ({ ...o, name: e.target.value }))} />
-          </div>
           <div className={styles.field}>
             <label className={styles.lab}>DOMAIN</label>
             <input className={styles.in} value={org.domain} onChange={(e) => setOrg((o) => ({ ...o, domain: e.target.value }))} />
           </div>
-        </div>
-        <div className={styles.g3}>
           <div className={styles.field}>
             <label className={styles.lab}>COUNTRY</label>
             <select className={styles.in} value={org.country} onChange={(e) => setOrg((o) => ({ ...o, country: e.target.value }))}>
               {countries.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
             </select>
           </div>
+        </div>
+        <div className={styles.g2}>
           <div className={styles.field}>
             <label className={styles.lab}>TIME ZONE <span className={styles.labHint}>(from country)</span></label>
             <input className={`${styles.in} ${styles.inReadonly}`} readOnly value={tzInfo ? `${tzInfo.tz} (${tzInfo.abbr})` : "—"} />
@@ -372,25 +479,23 @@ export default function SystemSettings() {
             <input className={`${styles.in} ${styles.inReadonly}`} readOnly value={tzInfo ? tzInfo.off : "—"} />
           </div>
         </div>
-        {[["manager", "Manager"], ["assistant1", "Assistant manager 1"], ["assistant2", "Assistant manager 2"]].map(([k, label]) => {
-          const p = org[k];
-          return (
-            <div className={styles.g3} key={k}>
-              <div className={styles.field}>
-                <label className={styles.lab}>{label.toUpperCase()}</label>
-                <input className={styles.in} value={p.name} onChange={(e) => setOrg((o) => ({ ...o, [k]: { ...o[k], name: e.target.value } }))} />
-              </div>
-              <div className={styles.field}>
-                <label className={styles.lab}>PHONE(S) <span className={styles.labHint}>comma separated</span></label>
-                <input className={styles.in} value={joinContacts(p.phones)} onChange={(e) => setOrg((o) => ({ ...o, [k]: { ...o[k], phones: splitContacts(e.target.value) } }))} />
-              </div>
-              <div className={styles.field}>
-                <label className={styles.lab}>EMAIL(S) <span className={styles.labHint}>comma separated</span></label>
-                <input className={styles.in} value={joinContacts(p.emails)} onChange={(e) => setOrg((o) => ({ ...o, [k]: { ...o[k], emails: splitContacts(e.target.value) } }))} />
-              </div>
+        <div className={styles.g2}>
+          <div className={styles.field}>
+            <label className={styles.lab}>FIELD TECHNICIAN SITE VISIBILITY <span className={styles.labHint}>(technicians only; override per user)</span></label>
+            <select className={styles.in} value={siteScopeMode} onChange={(e) => saveSiteScope(e.target.value)}>
+              <option value="region">Region-controlled</option>
+              <option value="list">Assigned sites (imported list)</option>
+            </select>
+          </div>
+          <div className={styles.field}>
+            <label className={styles.lab}>&nbsp;</label>
+            <div className={styles.inReadonly} style={{ border: "none", background: "transparent", fontSize: 12, color: "#64748b", padding: "6px 0" }}>
+              {siteScopeMode === "list"
+                ? "Field technicians see only the sites imported for them. All other roles stay region-controlled."
+                : "Field technicians see sites in their assigned regions (as everyone else does)."}
             </div>
-          );
-        })}
+          </div>
+        </div>
       </div>
 
       {/* ---- Locations ---- */}
@@ -474,7 +579,8 @@ export default function SystemSettings() {
               <div className={styles.field}>
                 <label className={styles.lab}>SECURITY COMPANY</label>
                 <select className={styles.in} value={form.clusterCompany} onChange={(e) => setF("clusterCompany", e.target.value)}>
-                  {SEC_COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  <option value="">{secCompanies.length ? "Select security company" : "No security companies registered"}</option>
+                  {secCompanies.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div className={styles.field} style={{ display: "flex", alignItems: "flex-end" }}>
@@ -483,8 +589,8 @@ export default function SystemSettings() {
             </div>
             <div className={styles.g2}>
               <div className={styles.field}>
-                <label className={styles.lab}>REGIONAL MANAGER</label>
-                <input className={styles.in} placeholder="Full name" value={form.clusterRm} onChange={(e) => setF("clusterRm", e.target.value)} />
+                <label className={styles.lab}>REGIONAL MANAGER <span className={styles.labHint}>optional</span></label>
+                <input className={styles.in} placeholder="Full name (optional)" value={form.clusterRm} onChange={(e) => setF("clusterRm", e.target.value)} />
               </div>
               <div className={styles.field}>
                 <label className={styles.lab}>PHONE(S) <span className={styles.labHint}>comma separated</span></label>

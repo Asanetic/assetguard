@@ -11,9 +11,15 @@
 // it starts the interval once per process and is safe to call from any route.
 // -----------------------------------------------------------------------------
 import { listStaleDevices, setDeviceStatus } from "../dataControl/devices.js";
-import { insertLiveAlarm } from "../dataControl/alarms.js";
-import { hasOpenCriticalAlarm } from "../dataControl/deviceCommands.js";
+import { insertLiveAlarm, clearOpenAlarm } from "../dataControl/alarms.js";
+import { hasOpenCriticalAlarm, reconcilePowerOffs } from "../dataControl/deviceCommands.js";
+import { deviceDataUsage } from "../dataControl/dataUsage.js";
+import { query } from "../s_env/db.js";
 import { DEFAULTS, ALARM_TYPES } from "./alarmEngine.js";
+
+// LOW_DATA fires when a device's remaining bundle drops to 10% (or less) of what
+// it was assigned; it clears again once the bundle is reset or auto-renews.
+const LOW_DATA_PCT = 0.10;
 
 const SWEEP_MS = 15 * 60 * 1000; // 15 min cadence
 
@@ -51,6 +57,11 @@ export async function runOfflineSweep() {
       } catch (e) { console.error("[offlineSweep] insert error:", e?.message || e); }
     }
     if (stale.length) console.log(`[offlineSweep] ${stale.length} past window → ${raised} offline alarm(s), ${inactivated} set inactive`);
+    // Power-off reconcile: a pwroff that got no ack but the device then went silent
+    // means it powered off → set it Inactive + "Powered off". (Devices that ack are
+    // already handled instantly in onReply.)
+    try { await reconcilePowerOffs({ graceMin: 15 }); }
+    catch (e) { console.error("[offlineSweep] poweroff reconcile error:", e?.message || e); }
     // Reconcile site status from devices (all offline → site Offline, etc.).
     try {
       const { recomputeAllSiteStatuses } = await import("../dataControl/sites.js");
@@ -62,6 +73,49 @@ export async function runOfflineSweep() {
       const n = await closeStaleTestAlarms(30);
       if (n) console.log(`[offlineSweep] auto-closed ${n} stale test alarm(s)`);
     } catch (e) { console.error("[offlineSweep] test-alarm close error:", e?.message || e); }
+    // Auto-end missions whose alarm was closed 3+ hours ago but the responder
+    // never pressed "End mission". Backend-only — the deployed response app is
+    // not touched. No photo is required for an administrative auto-close.
+    try {
+      const { autoEndStaleMissions } = await import("../dataControl/missions.js");
+      const n = await autoEndStaleMissions(3);
+      if (n) console.log(`[offlineSweep] auto-ended ${n} mission(s) on long-closed alarms`);
+    } catch (e) { console.error("[offlineSweep] mission auto-end error:", e?.message || e); }
+
+    // LOW DATA: every active device with a bundle — raise when ≤10% remains,
+    // clear when it has recovered (a reset or the monthly/annual auto-renew).
+    try {
+      const { rows: devs } = await query(
+        `SELECT d.id, d.device_id, d.imei, d.config, s.name AS site
+           FROM devices d
+           LEFT JOIN sites s ON s.id = d.site_id
+          WHERE lower(COALESCE(d.status,'')) NOT IN ('inactive','maintenance')`
+      );
+      let lowData = 0;
+      for (const d of devs) {
+        let u;
+        try { u = await deviceDataUsage(d); } catch { continue; }
+        const assigned = Number(u?.assigned_mb) || 0;
+        const remaining = u?.remaining_mb;
+        if (!assigned || remaining == null) continue;   // no bundle → nothing to warn on
+        const idText = d.device_id || d.imei;
+        if (remaining <= assigned * LOW_DATA_PCT) {
+          try {
+            const row = await insertLiveAlarm({
+              alarmType: ALARM_TYPES.LOW_DATA,
+              value: remaining,                 // "Low Data — N MB left"
+              deviceIdText: idText,
+              site: d.site || null, serial: d.imei || null,
+            });
+            if (row) lowData++;
+          } catch (e) { console.error("[offlineSweep] low-data insert:", e?.message || e); }
+        } else {
+          // Recovered above the threshold — resolve any open Low Data alarm.
+          try { await clearOpenAlarm(idText, ALARM_TYPES.LOW_DATA); } catch {}
+        }
+      }
+      if (lowData) console.log(`[offlineSweep] ${lowData} low-data alarm(s) raised`);
+    } catch (e) { console.error("[offlineSweep] low-data check:", e?.message || e); }
   } catch (e) {
     console.error("[offlineSweep] error:", e?.message || e);
   }
@@ -76,5 +130,19 @@ export function ensureOfflineSweep() {
   setTimeout(() => { runOfflineSweep(); }, 10 * 1000);
   const timer = setInterval(() => { runOfflineSweep(); }, SWEEP_MS);
   if (timer.unref) timer.unref(); // don't hold the event loop open
-  console.log("[offlineSweep] started (every 15 min)");
+
+  // Test-alarm auto-close on a TIGHT 1-min cadence, so a test alarm closes right at
+  // the 30-minute mark (not up to 15 min later, on the main sweep).
+  const closeTests = async () => {
+    try {
+      const { closeStaleTestAlarms } = await import("../dataControl/alarms.js");
+      const n = await closeStaleTestAlarms(30);
+      if (n) console.log(`[offlineSweep] auto-closed ${n} test alarm(s) at 30 min`);
+    } catch (e) { console.error("[offlineSweep] test-close error:", e?.message || e); }
+  };
+  setTimeout(closeTests, 15 * 1000);
+  const testTimer = setInterval(closeTests, 60 * 1000);
+  if (testTimer.unref) testTimer.unref();
+
+  console.log("[offlineSweep] started (offline every 15 min · test-close every 1 min)");
 }

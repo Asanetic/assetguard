@@ -12,6 +12,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./viewsite.module.css";
 import { fetchMapsConfig, loadGoogleMaps, sitePinIcon, createWaveOverlay } from "../../../lib/googleMaps.js";
+import SitePhotos from "./SitePhotos.jsx";
+import TechActivity from "../../../lib/TechActivity.jsx";
 
 // Status pill colours (prototype agStatusColour).
 const STATUS = {
@@ -70,7 +72,19 @@ export default function ViewSite({ id }) {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [mapState, setMapState] = useState({ status: "idle", msg: "" }); // idle|ok|nokey|noloc|error
+  const [dir, setDir] = useState(null); // client + security/monitoring companies (live contacts)
   const mapRef = useRef(null);
+
+  // Company directory — so the Company/Security contacts shown here reflect the
+  // CURRENT company records (inherited live), not just the saved site snapshot.
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/mainapp/companies/directory", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive) setDir(d); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -160,7 +174,18 @@ export default function ViewSite({ id }) {
   const region = site.region || site.security_region || d.securityRegion || "—";
   const location = site.location || site.county || d.county || "—";
   const company = d.company || {};
-  const manager = company.manager || {};
+  // Client + security-company contacts, preferring the LIVE company records
+  // (inherited) over the saved site snapshot. No regional tier any more.
+  const lc = (name) => (name ? String(name).toLowerCase() : "");
+  const secName = site.security_company || d.securityCompany?.company || "";
+  const secCo = (dir?.security || []).find((c) => lc(c.name) === lc(secName)) || null;
+  const client = dir?.client || null;
+  const firstPhone = (p) => (p && p.phones ? (Array.isArray(p.phones) ? p.phones[0] : p.phones) : null);
+  const clientName = client?.name || company.name || "Symphony Technologies Limited";
+  const manager = client?.contacts?.manager || company.manager || {};
+  const secMgr = secCo?.contacts?.manager || d.securityCompany?.country?.operationsManager || {};
+  const secAsst = secCo?.contacts?.assistant1 || d.securityCompany?.country?.assistant || {};
+  const secAsst2 = secCo?.contacts?.assistant2 || d.securityCompany?.country?.assistant2 || {};
 
   return (
     <div className={styles.page}>
@@ -226,12 +251,19 @@ export default function ViewSite({ id }) {
           <Detail label="SECURITY REGION" value={site.security_region || d.securityRegion} />
           <Detail label="COUNTY" value={site.county || d.county} />
           <Detail label="RESPONSE CLUSTER" value={site.response_cluster || d.responseCluster} />
-          <Detail label="COMPANY" value={company.name || "Symphony Technologies Limited"} />
-          <Detail label="MANAGER" value={manager.name} sub={manager.phones ? (Array.isArray(manager.phones) ? manager.phones[0] : manager.phones) : null} />
-          <Detail label="SECURITY COMPANY" value={site.security_company || d.securityCompany?.company} />
+          <Detail label="COMPANY" value={clientName} />
+          <Detail label="MANAGER" value={manager.name} sub={firstPhone(manager)} />
+          <Detail label="SECURITY COMPANY" value={secName} />
+          <Detail label="SECURITY MANAGER" value={secMgr.name} sub={firstPhone(secMgr)} />
+          <Detail label="SECURITY ASSISTANT 1" value={secAsst.name} sub={firstPhone(secAsst)} />
+          <Detail label="SECURITY ASSISTANT 2" value={secAsst2.name} sub={firstPhone(secAsst2)} />
           <Detail label="MONITORING COMPANY" value={site.monitoring_company || d.noc?.monitoringCompany} />
           <Detail label="SMPMS VENDOR" value={site.smpms_vendor} />
-          <Detail label="DEVICES" value={String(site.devices ?? 0)} />
+          {/* Live count of devices actually attached to this site (devices.site_id),
+              the same list rendered below — NOT the stale sites.devices form value,
+              which stays 0 through direct registration, mass import and batch
+              reassignment. */}
+          <Detail label="DEVICES" value={String(devices.length)} />
           <Detail label="STATUS" value={site.status || "Pending"} />
           <Detail label="REGISTERED" value={fmtDate(site.created_at)} />
         </div>
@@ -301,42 +333,23 @@ export default function ViewSite({ id }) {
         )}
       </div>
 
-      {/* photos — installation photos of the site's devices */}
-      {(() => {
-        const shots = [];
-        for (const d of devices) {
-          const p = d.config?.install_photo;
-          if (p) shots.push({ id: d.id, label: d.device_id || d.imei, src: /^data:|^https?:/.test(String(p)) ? p : null, name: String(p) });
-        }
-        const sitePhotos = Array.isArray(site.details?.photos) ? site.details.photos : [];
-        for (let i = 0; i < sitePhotos.length; i++) { const p = sitePhotos[i]; shots.push({ id: `s${i}`, label: "Site photo", src: /^data:|^https?:/.test(String(p)) ? p : null, name: String(p) }); }
-        return (
-          <div className={styles.sec}>
-            <div className={styles.sech}>
-              <span className={styles.chip} style={{ background: "#ede9fe", color: "#7c3aed" }}><i className="ti ti-photo" /></span>
-              Site photos <span className={styles.count}>{shots.length}</span>
-            </div>
-            {shots.length === 0 ? (
-              <div className={styles.empty}>No photos uploaded yet.</div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12 }}>
-                {shots.map((s) => (
-                  <div key={s.id} style={{ border: "1px solid #eef2f7", borderRadius: 12, overflow: "hidden", background: "#fff" }}>
-                    <div style={{ aspectRatio: "4/3", background: "#f1f5f9", display: "grid", placeItems: "center", overflow: "hidden" }}>
-                      {s.src ? <img src={s.src} alt={s.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                             : <i className="ti ti-camera" style={{ fontSize: 30, color: "#cbd5e1" }} />}
-                    </div>
-                    <div style={{ padding: "8px 10px", fontSize: 12 }}>
-                      <div style={{ fontWeight: 700, color: "#0f274a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.label}</div>
-                      <div style={{ color: "#94a3b8", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.src ? "" : s.name}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })()}
+      {/* site photos — real technician uploads (Before / Installation / After) */}
+      <div className={styles.sec}>
+        <div className={styles.sech}>
+          <span className={styles.chip} style={{ background: "#ede9fe", color: "#7c3aed" }}><i className="ti ti-photo" /></span>
+          Site photos
+        </div>
+        <SitePhotos siteId={site.id} />
+      </div>
+
+      {/* technician activity — what technicians did on this site (worklog) */}
+      <div className={styles.sec}>
+        <div className={styles.sech}>
+          <span className={styles.chip} style={{ background: "#dbe7fe", color: "#2e6cf5" }}><i className="ti ti-clipboard-check" /></span>
+          Technician activity
+        </div>
+        <TechActivity siteId={site.id} />
+      </div>
     </div>
   );
 }

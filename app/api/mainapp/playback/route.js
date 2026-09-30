@@ -19,12 +19,25 @@ export async function GET(request) {
     try { return NextResponse.json({ dates: await routeDatesForDevice(deviceId) }); }
     catch (e) { console.error("[playback dates] error", e?.message || e); return NextResponse.json({ dates: [] }); }
   }
-  // datetime RANGE mode: ?from=&to= (ISO with offset) — replay exactly that window.
+  // datetime RANGE mode: ?from=&to= — replay exactly that window.
+  //
+  // The web UI sends a NAIVE local datetime ("2026-09-25T00:00", no offset). A
+  // bare timestamp is read by Postgres in the SERVER's timezone (UTC on the VPS),
+  // which shifts the window three hours off what the user picked in EAT and drops
+  // the early-morning rows. Stamp EAT (+03:00) onto any value that has no offset
+  // so the window means exactly the local clock the user chose.
+  const eatIso = (s) => {
+    if (!s) return s;
+    if (/[zZ]$|[+-]\d{2}:?\d{2}$/.test(s)) return s;          // already has a timezone
+    const withSecs = /T\d{2}:\d{2}$/.test(s) ? `${s}:00` : s;  // ensure seconds
+    return `${withSecs}+03:00`;
+  };
   if (deviceId && from && to) {
+    const fromE = eatIso(from), toE = eatIso(to);
     try {
-      const route = await routeFromTelemetryRange(deviceId, from, to, sources);
+      const route = await routeFromTelemetryRange(deviceId, fromE, toE, sources);
       let incidents = [];
-      try { incidents = await getIncidentsRange(deviceId, from, to, route?.t0Ms ?? Date.parse(from)); }
+      try { incidents = await getIncidentsRange(deviceId, fromE, toE, route?.t0Ms ?? Date.parse(fromE)); }
       catch (e) { console.error("[playback range] incidents:", e?.message || e); }
       return NextResponse.json({ route, incidents });
     } catch (err) {

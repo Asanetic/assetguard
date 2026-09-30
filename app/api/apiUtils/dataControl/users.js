@@ -8,7 +8,7 @@ import { query } from "../s_env/db.js";
 // Columns safe to return to clients (never the password hash).
 const SAFE = `
   u.id, u.name, u.email, u.phone, u.company_id, c.name AS company,
-  u.role, r.name AS role_name, u.status, u.regions,
+  u.role, r.name AS role_name, u.status, u.regions, u.site_scope_mode,
   u.email_verified, u.phone_verified, u.approved_at, u.last_seen, u.created_at`;
 
 const FROM = `FROM users u
@@ -17,6 +17,11 @@ const FROM = `FROM users u
 
 export function normalizeIdentity(identity) {
   return String(identity || "").trim().toLowerCase();
+}
+
+/** Stamp a user's last_seen = now() (presence). Best-effort; callers ignore errors. */
+export async function touchUserSeen(id) {
+  await query(`UPDATE users SET last_seen = now() WHERE id = $1`, [id]);
 }
 
 /** Full row incl. password — for auth checks only. */
@@ -58,10 +63,24 @@ export async function listUsers({ status, q } = {}) {
   }
   const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
   const { rows } = await query(
-    `SELECT ${SAFE} ${FROM} ${clause} ORDER BY u.created_at DESC`,
+    `SELECT ${SAFE},
+            (SELECT COUNT(*)::int FROM user_sites us WHERE us.user_id = u.id) AS site_count,
+            (u.last_seen IS NOT NULL AND u.last_seen > now() - interval '3 minutes') AS online
+       ${FROM} ${clause} ORDER BY u.created_at DESC`,
     params
   );
   return rows;
+}
+
+/** Set a user's site-visibility override: 'region', 'list', or null (inherit). */
+export async function setSiteScopeMode(id, mode) {
+  const m = mode === "region" || mode === "list" ? mode : null;
+  const { rows } = await query(
+    `UPDATE users SET site_scope_mode = $2 WHERE id = $1
+     RETURNING id, site_scope_mode`,
+    [id, m]
+  );
+  return rows[0] || null;
 }
 
 /** Count users grouped by status (for the tab badges). */

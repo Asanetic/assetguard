@@ -1,0 +1,37 @@
+AssetGuard — Power-off handles BOTH cases (acks sometimes, sometimes not)
+=========================================================================
+
+REALITY: pwroff sometimes acks, sometimes the device powers down before it can.
+So we handle both, and never leave a powered-off device stuck as "failed":
+
+  1) Device ACKS pwroff  -> onReply sets it Inactive + "Powered off" immediately.
+  2) Device does NOT ack -> the device going SILENT is the proof it powered off.
+     Every 15 min, reconcilePowerOffs() checks each pwroff that was delivered but
+     not acked:
+        - device has sent nothing since we sent pwroff (grace 15 min)  -> it
+          powered off: confirm the command, set Inactive + "Powered off".
+        - device is STILL reporting after 15 min -> it ignored the command:
+          mark the job failed (device left as-is), so you can see it didn't take.
+  Also: the generic "no reply from device -> failed" sweep now EXCLUDES pwroff,
+  so a silently-powered-off device is never mislabelled failed.
+
+Either way the Device page shows the red "⏻ Powered off" badge, and the badge
+clears when you reinstate the device (set status back to Live/etc.).
+
+FILES
+  app/api/apiUtils/dataControl/deviceCommands.js  (reconcilePowerOffs + sweep excludes pwroff)
+  app/api/apiUtils/ingest/offlineSweep.js         (calls reconcilePowerOffs every 15 min)
+  app/api/apiUtils/ingest/commandRunner.js        (ack path: Inactive + powered_off)
+  app/api/mainapp/devices/[id]/route.js           (reinstating clears powered_off)
+  app/mainapp/devices/view/components/ViewDevice.jsx (badge + wording)
+
+DEPLOY
+  cd /var/www/html/baseapps/assetguard
+  python3 -c "import zipfile; zipfile.ZipFile('poweroff-hybrid.zip').extractall('.')"
+  npm run build && pm2 restart gps-3000 assetguard-3010 --update-env
+
+TEST
+  a) Deactivate a device that replies: it flips to Inactive + badge on the ack.
+  b) Deactivate one that powers down without replying: within ~15 min the sweep
+     sets it Inactive + badge. Watch:
+     pm2 logs assetguard-3010 --lines 50  # [reconcilePowerOffs] N powered off (silent) ...

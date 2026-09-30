@@ -37,7 +37,7 @@ export async function GET(request) {
 
     const [sites, devAgg, alarms, users, byCategory, today, byMonth, bySite, byRegion,
            telemetryToday, commandsToday, activityToday, usersByStatus, health,
-           byHour, byDay] = await Promise.all([
+           byHour, byDay, unackedCrit] = await Promise.all([
       one(`SELECT count(*)::int AS total,
                   count(*) FILTER (WHERE created_at >= date_trunc('month', now()))::int AS added_month
              FROM sites`),
@@ -143,6 +143,10 @@ export async function GET(request) {
                           WHERE ${aw} AND created_at >= now() - interval '7 days'
                           GROUP BY d) c ON c.d = gs::date
              ORDER BY gs`),
+      // System-health badge input: OPEN (i.e. UNACKNOWLEDGED) Critical alarms.
+      // 'Open' becomes 'Acknowledged' the moment someone acks it, so this counts
+      // only criticals nobody has taken yet.
+      one(`SELECT count(*)::int AS n FROM alarms WHERE priority = 'Critical' AND status = 'Open'`),
     ]);
 
     const dev = { total: 0, live: 0, offline: 0, testing: 0, maintenance: 0, inactive: 0 };
@@ -150,7 +154,25 @@ export async function GET(request) {
 
     const data_mb = Number(((Number(today.bytes) || 0) / 1e6).toFixed(2));
 
+    // System-health badge — ONE source of truth for web + app.
+    //   red   : any unacknowledged open Critical alarm.
+    //   amber : none of those, but devices offline OR commands failed today.
+    //   green : all clear.
+    const critUnacked = unackedCrit.n || 0;
+    const offlineNow = dev.offline || 0;
+    const failedToday = commandsToday.failed || 0;
+    const systemLevel = critUnacked > 0 ? "red" : (offlineNow > 0 || failedToday > 0) ? "amber" : "green";
+    const systemLabel = systemLevel === "red" ? "Attention needed"
+      : systemLevel === "amber" ? "Degraded" : "All systems operational";
+
     return NextResponse.json({
+      system: {
+        level: systemLevel,
+        label: systemLabel,
+        unackedCritical: critUnacked,
+        offline: offlineNow,
+        commandsFailed: failedToday,
+      },
       company,
       sites: { total: sites.total || 0, addedThisMonth: sites.added_month || 0 },
       devices: dev,

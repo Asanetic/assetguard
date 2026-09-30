@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { requireAdmin } from "../../../apiUtils/authUtils/session.js";
-import { enqueueJobs, listJobs, listQueue, listBatches, cancelJobs, cancelJobIds, pauseBatch, resumeBatch, nextRolloutCode } from "../../../apiUtils/dataControl/deviceCommands.js";
+import { enqueueJobs, listJobs, listQueue, listBatches, cancelJobs, cancelJobIds, pauseBatch, resumeBatch, nextRolloutCode, paramOpSpec, queueParamChange } from "../../../apiUtils/dataControl/deviceCommands.js";
 import { logAudit } from "../../../apiUtils/dataControl/audit.js";
 import { query } from "../../../apiUtils/s_env/db.js";
 
@@ -163,31 +163,29 @@ export async function POST(request) {
 
   try {
 
+    // Synced config parameters (motion sensitivity / upload interval / wake
+    // interval) all go through ONE helper so the device-detail edit and the batch
+    // op behave identically: queue the downlink AND record the pending target;
+    // the LIVE value flips only when the device confirms (commandRunner). This is
+    // the same path ViewDevice and Group Devices both post to.
+    const synced = paramOpSpec(op);
+    if (synced) {
+      const batchId = newBatchId();
+      const r = await queueParamChange({ ids, op, value: body?.value, batchId, createdBy: who });
+      if (r.invalid) return NextResponse.json({ error: `Invalid value for ${op}: ${r.reason}` }, { status: 422 });
+      logAudit(request, {
+        action: "Queued device command", category: "Devices",
+        detail: `${r.command} queued on ${r.queued} device${r.queued === 1 ? "" : "s"} (applies on the device's next wake; details update once it confirms)`,
+      });
+      return NextResponse.json({ queued: r.queued, batchId, kind: "command", command: r.command });
+    }
+
     const spec = resolveOp(op, body?.value);
     if (!spec) return NextResponse.json({ error: `Invalid operation or value: ${op}` }, { status: 400 });
 
     // Firmware gets a human rollout code (FWC-001); other commands a plain batch id.
     const batchId = spec.kind === "firmware" ? await nextRolloutCode() : newBatchId();
     const { queued } = await enqueueJobs({ ids, kind: spec.kind, command: spec.command, batchId, createdBy: who });
-
-    // UPT sets the device's SLEEP reporting cadence = the platform's wake interval.
-    // We do NOT flip the ACTIVE interval now — the device may be asleep and hasn't
-    // accepted it yet. Store it as PENDING; commandRunner promotes it to
-    // config.wake_interval_sec only when the device confirms (acks) the UPT command.
-    // So heartbeat / offline detection keep using the last interval the device
-    // actually accepted until this one succeeds.
-    if (op === "upt") {
-      const mins = Math.round(Number(body?.value));
-      if (Number.isFinite(mins)) {
-        try {
-          await query(
-            `UPDATE devices SET config = COALESCE(config,'{}'::jsonb) || jsonb_build_object('pending_wake_interval_sec', $2::int)
-              WHERE id = ANY($1)`,
-            [ids, mins * 60]
-          );
-        } catch (e) { console.error("[commands upt] pending set:", e?.message || e); }
-      }
-    }
 
     logAudit(request, {
       action: spec.kind === "firmware" ? "Queued firmware update" : "Queued device command",

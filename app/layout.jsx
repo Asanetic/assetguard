@@ -4,6 +4,7 @@
 // offline and don't depend on a CDN.
 
 import "@tabler/icons-webfont/dist/tabler-icons.min.css";
+import OfflineIndicator from "./OfflineIndicator.jsx";
 
 export const metadata = {
   title: "AssetGuard",
@@ -23,7 +24,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0 }}>{children}</body>
+      <body style={{ margin: 0 }}>
+        {children}
+        {/* Global "no internet" indicator (bottom-right), on every page. */}
+        <OfflineIndicator />
+      </body>
     </html>
   );
 }

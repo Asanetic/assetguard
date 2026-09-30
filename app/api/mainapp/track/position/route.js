@@ -25,9 +25,10 @@ export async function POST(request) {
     if (!alarmPerms({ role: me.role, purposes: org.purposes }).canRespond)
       return NextResponse.json({ error: "Not a responder" }, { status: 403 });
     const team = await teamForUser(me.sub); // {team_code, team_name} | null
+    const accuracy = Number.isFinite(Number(body.accuracy)) ? Number(body.accuracy) : null;
     await upsertResponderPosition({
       deviceId: device, userId: me.sub, name: me.name || me.email,
-      team: team?.team_name || null, lat, lng,
+      team: team?.team_name || null, lat, lng, accuracy,
     });
     return NextResponse.json({ ok: true });
   } catch (err) {

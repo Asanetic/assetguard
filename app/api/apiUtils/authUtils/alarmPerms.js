@@ -23,7 +23,8 @@ export function alarmPerms({ role, purposes } = {}) {
   const isSecurityCompany = hasResp;
   const isMonitoringCompany = hasNOC && !hasResp;
   const isNoc = r === "noc";
-  const isSecRole = r === "field_resp" || r.startsWith("sec_");
+  const isFieldResp = r === "field_resp";                        // the on-the-ground responder
+  const isSecRole = isFieldResp || r.startsWith("sec_");
 
   // Each user acknowledges for exactly ONE side, taken from their company — a
   // security-company user (incl. its NOC) always acks for Security, a monitoring-
@@ -59,6 +60,12 @@ export function alarmPerms({ role, purposes } = {}) {
     // Track & respond — field responders + admins; NOC personnel excluded.
     canRespond: isAdmin || (!isNoc && (hasResp || isSecRole)),
     canDirections: isAdmin,
+    // A hint for the RESPONSE APP only: field responders get a stripped alarm
+    // view (details + Track and respond). Additive and ignored by any client
+    // that does not read it — every ack/close value above is left at its
+    // original setting, so this cannot change behaviour for anyone. The app
+    // that wants it reads it; nothing else is affected.
+    responderOnly: isFieldResp,
   };
 }
 
