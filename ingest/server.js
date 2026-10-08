@@ -24,6 +24,7 @@ import http from "http";
 import { extractFrames, parseFrame } from "../app/api/apiUtils/ingest/parse.js";
 import { resolveAndStore } from "../app/api/apiUtils/ingest/store.js";
 import { ensureOfflineSweep } from "../app/api/apiUtils/ingest/offlineSweep.js";
+import { ensureDisturbanceSweep } from "../app/api/apiUtils/ingest/disturbanceEscalation.js";
 
 const PORT = Number(process.env.INGEST_PORT) || 9000;
 const CONTROL_PORT = Number(process.env.INGEST_CONTROL_PORT) || 9001;
@@ -149,6 +150,9 @@ server.listen(PORT, "0.0.0.0", () => console.log(`[ingest] listening on 0.0.0.0:
 // auto-close, Low-Data) here, on BOOT — not only when the first packet arrives —
 // so they run even on a quiet estate with no traffic. Idempotent per process.
 ensureOfflineSweep();
+// Timer-driven disturbance ladder: advances Warning 2 / the alarm on the clock even
+// when the device goes silent after Warning 1.
+ensureDisturbanceSweep();
 
 // ---- local control endpoint (127.0.0.1 only) ------------------------------
 const control = http.createServer((req, res) => {

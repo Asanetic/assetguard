@@ -76,9 +76,14 @@ export const DEFAULTS = {
   // Critical Motion still fire at full severity, so it is not blind — but the
   // disturbance signal itself is now deliberately slow, in exchange for not
   // crying wolf at every gust.
-  disturb_warn1_sec: Math.max(1, Number(process.env.DISTURB_WARN1_SEC) || 60),
-  disturb_warn2_sec: Math.max(1, Number(process.env.DISTURB_WARN2_SEC) || 120),
-  disturb_raise_sec: Math.max(1, Number(process.env.DISTURB_RAISE_SEC) || 180),
+  // Warning 1 fires IMMEDIATELY on the first disturbance of a shake, so warn1 is
+  // no longer a duration gate (kept only as the burst-gap floor). Warning 2 then
+  // fires after 30s of continued disturbance and the raise (disturbance / final
+  // alarm) after 60s. This is the authoritative default the engine actually uses
+  // (resolveConfig feeds it into the decision); env still overrides per deployment.
+  disturb_warn1_sec: Math.max(1, Number(process.env.DISTURB_WARN1_SEC) || 1),
+  disturb_warn2_sec: Math.max(1, Number(process.env.DISTURB_WARN2_SEC) || 30),
+  disturb_raise_sec: Math.max(1, Number(process.env.DISTURB_RAISE_SEC) || 60),
 
   // Retained for the config editor and for anything still reading it. The
   // decision no longer uses it.

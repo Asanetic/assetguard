@@ -15,6 +15,7 @@ import { insertLiveAlarm, clearOpenAlarm, disturbanceDecision } from "../dataCon
 import { toTelemetry } from "./parse.js";
 import { evaluate, resolveConfig, ALARM_TYPES } from "./alarmEngine.js";
 import { notifyAlarmRaised, notifyDisturbanceEarly } from "../notify/alarmNotify.js";
+import { onDisturbancePacket } from "./disturbanceEscalation.js";
 import { notifyTestAlarmPush } from "../notify/testAlarmPush.js";
 import { geolocate, reverseGeocodeRoad } from "./geolocate.js";
 import { isSiteUnderTest } from "./siteUnderTest.js";
@@ -383,49 +384,22 @@ export async function resolveAndStore(rec, ip, port, opts = {}) {
           continue;
         }
 
-        // Everything below this line is the real path, exactly as it was.
-        const dec = await disturbanceDecision(deviceIdText, a.type, at, disturbMarks, simCutIso, disturbMemsMg);
-        if (dec.action === "notify") {
-          // Fire-and-forget: the SMS/email early warning goes out immediately;
-          // ingestion does not wait for the send round-trips to finish.
-          notifyDisturbanceEarly({
-            deviceIdText, serial: device.imei || rec.imei,
-            site: device.site || null, siteId: device.site_id, at,
-            count: dec.count, threshold: dec.threshold, deviceStatus: device.status,
-            deviceArmed: device.armed, deviceMuteUntil: device.mute_until,
-          }).catch((e) => console.error("[disturbance] early-notify error:", e?.message || e));
-          console.log(
-            `[disturbance] ${deviceIdText} ${dec.bursts} burst(s), longest ${dec.longestSec}s (level ${dec.prevLevel}→${dec.level}) ` +
-            `→ EARLY WARNING ${dec.level}/2 (sms/email, no alarm)`
-          );
-        } else if (dec.action === "raise") {
-          const row = await insertLiveAlarm({
-            alarmType: a.type, value: a.value, deviceIdText,
-            site: device.site || null, serial: device.imei || rec.imei,
-            lat: site?.lat ?? a.lat, lng: site?.lng ?? a.lng, at,
-            incidentSince: dayStartIso, source: "device",
-          });
-          if (row) {
-            console.log(`[NOTIFY] firing for ${row.id} (${row.name}, ${row.priority}) site_id=${device.site_id}`);
-            try { await notifyAlarmRaised(row, { siteId: device.site_id, deviceStatus: device.status, deviceArmed: device.armed, deviceMuteUntil: device.mute_until }); }
-            catch (e) { console.error("[NOTIFY] hook error:", e?.message || e); }
-          }
-          console.log(
-            `[disturbance] ${deviceIdText} ${dec.bursts} burst(s), longest ${dec.longestSec}s (episode since ${dec.t0}) ` +
-            `→ RAISED ${row?.id || "(none)"}`
-          );
-        } else {
-          console.log(
-            `[disturbance] ${deviceIdText} ${dec.bursts ?? 0} burst(s), longest ${dec.longestSec ?? 0}s (level ${dec.level}) → ${dec.action}` +
-            (dec.action === "skip"
-              ? ` — nothing due yet; next mark at ${disturbMarks.disturb_warn1_sec}s/` +
-                `${disturbMarks.disturb_warn2_sec}s/${disturbMarks.disturb_raise_sec}s. ` +
-                `If you expected a TEST alarm, this device is not covered by an ` +
-                `open technician session or a Testing/Maintenance status`
-              : "")
-          );
-        }
+        // REAL disturbance is handled AFTER this loop by the timer-driven ladder.
       } catch (e) { console.error("[disturbance] gate error:", e?.message || e); }
+    }
+
+    // REAL disturbance → the TIMER-DRIVEN ladder owns Warning 1, Warning 2 and the
+    // raise (see ingest/disturbanceEscalation.js). Warning 1 fires on this first
+    // packet; a background sweep then carries the climb forward on the clock, so
+    // Warning 2 and the alarm still fire even if the device goes silent. One call
+    // per packet keeps the episode alive and nudges the clock.
+    if (alarmSource !== "test" && disturbAlarms.length) {
+      const a0 = disturbAlarms[0];
+      onDisturbancePacket({
+        deviceIdText, serial: device.imei || rec.imei, site: device.site || null,
+        siteId: device.site_id, deviceStatus: device.status, deviceArmed: device.armed,
+        deviceMuteUntil: device.mute_until, value: a0.value, lat: site?.lat, lng: site?.lng,
+      }).catch((e) => console.error("[disturbance] escalation error:", e?.message || e));
     }
 
     // ORDER, DON'T SUPPRESS. Each alarm fires on its OWN genuine condition (from the

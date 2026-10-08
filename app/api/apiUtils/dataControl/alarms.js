@@ -456,7 +456,7 @@ const notATestPacket = (alias, dalias) => `
  *                         counted as several; too large and two unrelated
  *                         bumps are welded into one long "sustained" event.
  *
- *   warn1/2/raise (60/120/180s)  how long a SINGLE shake must last to matter.
+ *   warn1/2/raise (30/60/90s)  how long a SINGLE shake must last to matter.
  *
  *   gapMin        (30 min) how long the device must stay quiet before the whole
  *                          escalation is forgotten. THE 30-MINUTE RULE.
@@ -544,9 +544,16 @@ export async function disturbanceDecision(
   // Accept either the config object or a bare number, so an old caller passing
   // `disturb_streak` still gets sane marks instead of NaN.
   const t = typeof thresholds === "object" && thresholds ? thresholds : {};
-  const warn1 = Math.max(1, Number(t.disturb_warn1_sec) || 60);
-  const warn2 = Math.max(warn1 + 1, Number(t.disturb_warn2_sec) || 120);
-  const raise = Math.max(warn2 + 1, Number(t.disturb_raise_sec) || 180);
+  // Escalation marks for ONE continuous shake, measured from its first
+  // disturbance packet:
+  //   Warning 1 -> IMMEDIATELY, on the first disturbance (0s, see sustainedLevel)
+  //   Warning 2 -> after warn2 seconds of continued disturbance (30s)
+  //   Raise     -> after raise seconds of continued disturbance (60s)
+  // warn1 is no longer a duration gate (warning 1 is immediate); it is kept only
+  // as the floor for the burst-gap below. Per-device config wins, then env.
+  const warn1 = Math.max(1, Number(t.disturb_warn1_sec) || Number(process.env.DISTURB_WARN1_SEC) || 1);
+  const warn2 = Math.max(1, Number(t.disturb_warn2_sec) || Number(process.env.DISTURB_WARN2_SEC) || 30);
+  const raise = Math.max(warn2 + 1, Number(t.disturb_raise_sec) || Number(process.env.DISTURB_RAISE_SEC) || 60);
 
   // A hole longer than this ends the current shake. Per-device config first,
   // then env, then 120s. Floored at warn1 so a burst can always reach level 1
@@ -557,11 +564,16 @@ export async function disturbanceDecision(
     Number(t.disturb_burst_gap_sec) || Number(process.env.DISTURB_BURST_GAP_SEC) || 120
   );
 
-  const sustainedLevel = (sec) =>
-    sec >= raise ? 3 : sec >= warn2 ? 2 : sec >= warn1 ? 1 : 0;
+  // Warning 1 is IMMEDIATE: any disturbance (n >= 1) is at least level 1. The
+  // episode then climbs to warning 2 once `sec` seconds have ELAPSED SINCE THE
+  // FIRST disturbance (sec = elapsedSec), and to the raise at `raise` seconds —
+  // so renewed disturbance after warning 2 escalates even as a separate shake.
+  // With no disturbance (n < 1) the level is 0.
+  const sustainedLevel = (sec, n) =>
+    (Number(n) || 0) < 1 ? 0 : (sec >= raise ? 3 : sec >= warn2 ? 2 : 1);
   // 1 burst is a bump. 2 is a coincidence. 4 is somebody at the mast.
   const repeatLevel = (n) => (n >= 4 ? 3 : n >= 3 ? 2 : n >= 2 ? 1 : 0);
-  const levelOf = (sec, n) => Math.max(sustainedLevel(sec), repeatLevel(n));
+  const levelOf = (sec, n) => Math.max(sustainedLevel(sec, n), repeatLevel(n));
 
   const idle = {
     action: "skip", level: 0, prevLevel: 0, elapsedSec: null, t0: null,
@@ -583,6 +595,7 @@ export async function disturbanceDecision(
   const gapMin = Number(process.env.DISTURB_STREAK_GAP_MIN) || 30;
 
   let t0 = null, bursts = 0, longestSec = 0, prevBursts = 0, prevLongestSec = 0, packets = 0;
+  let elapsedSec = 0, prevElapsedSec = 0;
   try {
     const { rows } = await query(
       `WITH d AS (
@@ -642,7 +655,15 @@ export async function disturbanceDecision(
               (SELECT count(*) FROM cur)                                    AS bursts,
               COALESCE((SELECT max(EXTRACT(epoch FROM e - s)) FROM cur), 0)  AS longest,
               (SELECT count(*) FROM prv)                                    AS prev_bursts,
-              COALESCE((SELECT max(EXTRACT(epoch FROM e - s)) FROM prv), 0)  AS prev_longest`,
+              COALESCE((SELECT max(EXTRACT(epoch FROM e - s)) FROM prv), 0)  AS prev_longest,
+              -- ELAPSED since the FIRST disturbance of the episode (span t0 -> now).
+              -- This is what the ladder escalates on: warn1 @0s, warn2 @30s, raise @60s.
+              COALESCE(EXTRACT(epoch FROM (
+                (SELECT max(received_at) FROM ep) - (SELECT min(received_at) FROM ep))), 0) AS elapsed,
+              -- Same span EXCLUDING the latest packet, so a crossing is detected once.
+              COALESCE(EXTRACT(epoch FROM (
+                (SELECT max(ep.received_at) FROM ep, last_pkt WHERE ep.received_at < last_pkt.m)
+                - (SELECT min(received_at) FROM ep))), 0) AS prev_elapsed`,
       [dev, DTYPES, sinceFloorIso || null, gapMin, mg, burstGapSec]);
     t0             = rows[0]?.t0 || null;
     packets        = Number(rows[0]?.packets || 0);
@@ -650,6 +671,8 @@ export async function disturbanceDecision(
     longestSec     = Math.round(Number(rows[0]?.longest || 0));
     prevBursts     = Number(rows[0]?.prev_bursts || 0);
     prevLongestSec = Math.round(Number(rows[0]?.prev_longest || 0));
+    elapsedSec     = Math.round(Number(rows[0]?.elapsed || 0));
+    prevElapsedSec = Math.round(Number(rows[0]?.prev_elapsed || 0));
   } catch (e) {
     console.error("[disturbanceDecision episode]", e?.message || e);
     return idle;
@@ -658,14 +681,17 @@ export async function disturbanceDecision(
   // No disturbance packets in the episode at all — nothing to decide.
   if (!t0 || packets === 0) return idle;
 
-  const level     = levelOf(longestSec, bursts);
-  const prevLevel = levelOf(prevLongestSec, prevBursts);
+  // The ladder escalates on ELAPSED TIME since the first disturbance of the episode
+  // (warn1 @0s, warn2 @warn2s, raise @raise s), so a SECOND shake after Warning 2 —
+  // even a fresh, separate one — still raises once the episode has run past 60s. The
+  // REPETITION ground (distinct bursts) stays as an additional fast path.
+  const level     = levelOf(elapsedSec, bursts);
+  const prevLevel = levelOf(prevElapsedSec, prevBursts);
 
   const base = {
     level, prevLevel, existing: false,
-    // `elapsedSec` now means the longest SINGLE shake, not the span of the
-    // episode. Callers only log it; nothing branches on it.
-    elapsedSec: longestSec,
+    // Seconds since the first disturbance of the episode (what the ladder uses).
+    elapsedSec,
     bursts, longestSec,
     t0: new Date(t0).toISOString(),
     // Old-convention numbers, for the unchanged warning wording.
