@@ -779,7 +779,25 @@ export async function acknowledgeSide(id, side, { by, finding, note } = {}) {
       RETURNING *`,
     [id, by || null, finding || null, note || null]
   );
-  return rows[0] || null;
+  const alarm = rows[0] || null;
+  // RULE: an acknowledged (not-yet-closed) CRITICAL alarm parks its device INACTIVE.
+  // That rolls up to the site — if every device at the site is Inactive, the site
+  // reads Inactive too (recomputeSitesForDevices). Won't clobber a manual Testing/
+  // Maintenance state. Reverted on close (closeAlarmFull). Scoped to Critical so
+  // acking a Low-Battery/Low-Data warning doesn't deactivate a device.
+  if (alarm && alarm.priority === "Critical" && String(alarm.status || "").toLowerCase() === "acknowledged") {
+    try {
+      const up = await query(
+        `UPDATE devices SET status = 'Inactive'
+          WHERE (device_id = $1 OR imei = $2)
+            AND lower(coalesce(status,'')) NOT IN ('inactive','testing','maintenance')
+          RETURNING id`,
+        [alarm.device_id, alarm.serial]
+      );
+      if (up.rows[0]) { try { const { recomputeSitesForDevices } = await import("./sites.js"); await recomputeSitesForDevices([up.rows[0].id]); } catch {} }
+    } catch (e) { console.error("[acknowledgeSide] set-inactive:", e?.message || e); }
+  }
+  return alarm;
 }
 
 export async function closeAlarmFull(id, { by, outcome, note, photos } = {}) {
@@ -791,7 +809,27 @@ export async function closeAlarmFull(id, { by, outcome, note, photos } = {}) {
       RETURNING *`,
     [id, by || null, out, note || null, JSON.stringify(Array.isArray(photos) ? photos : [])]
   );
-  return rows[0] || null;
+  const alarm = rows[0] || null;
+  // Closing revives a device parked Inactive by an acknowledged Critical alarm —
+  // but only if NO other acknowledged Critical alarm for it is still open. Back to
+  // Live; the offline sweep / next report corrects it to Offline if it's silent.
+  if (alarm) {
+    try {
+      const rev = await query(
+        `UPDATE devices d SET status = 'Live'
+          WHERE (d.device_id = $1 OR d.imei = $2)
+            AND lower(coalesce(d.status,'')) = 'inactive'
+            AND NOT EXISTS (
+              SELECT 1 FROM alarms a
+               WHERE (a.device_id = $1 OR a.serial = $2)
+                 AND a.status = 'Acknowledged' AND a.priority = 'Critical' AND a.source <> 'test')
+          RETURNING id`,
+        [alarm.device_id, alarm.serial]
+      );
+      if (rev.rows[0]) { try { const { recomputeSitesForDevices } = await import("./sites.js"); await recomputeSitesForDevices([rev.rows[0].id]); } catch {} }
+    } catch (e) { console.error("[closeAlarmFull] revive:", e?.message || e); }
+  }
+  return alarm;
 }
 
 // Device state at/around the trigger, for the "Device snapshot" card.

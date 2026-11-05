@@ -4,6 +4,7 @@
 // hit the real batch API; device/field actions are queued (no backend yet);
 // Export CSV downloads the selection.
 "use client";
+import { downloadBrandedXlsx } from "../../../lib/brandedExport.js";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./groupsites.module.css";
@@ -308,16 +309,15 @@ export default function GroupSites() {
     } catch { flash("Network error", true); setBusy(false); }
   }
 
-  function exportCsv() {
+  async function exportCsv() {
     const header = ["Site ID", "Name", "County", "Region", "Security Region", "Cluster", "Vendor", "Security Company", "Monitoring Company", "Status"];
     const lines = [header.join(",")].concat(selectedSites.map((s) =>
       [s.code, s.name, s.county, s.region, s.security_region, s.response_cluster, s.smpms_vendor, s.security_company, s.monitoring_company, s.status]
         .map(csvCell).join(",")));
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "assetguard-sites-selection.csv";
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    flash(`Exported ${selCount} site${selCount === 1 ? "" : "s"} to CSV`);
+    try {
+      await downloadBrandedXlsx("assetguard-sites-selection", lines.join("\n"), { title: "Sites selection", sheetName: "Sites" });
+      flash(`Exported ${selCount} site${selCount === 1 ? "" : "s"}`);
+    } catch (e) { flash(e.message || "Export failed", true); }
   }
 
   return (

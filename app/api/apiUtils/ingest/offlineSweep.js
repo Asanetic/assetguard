@@ -24,27 +24,39 @@ const LOW_DATA_PCT = 0.10;
 const SWEEP_MS = 15 * 60 * 1000; // 15 min cadence
 
 export async function runOfflineSweep() {
-  let raised = 0, inactivated = 0;
+  let raised = 0;
   try {
     const stale = await listStaleDevices(DEFAULTS.offline_hours);
     for (const d of stale) {
       const hrs = Math.floor(Number(d.hours_silent) || 0);
       const age = hrs >= 48 ? `${Math.floor(hrs / 24)} d` : `${hrs} h`;
       const idText = d.device_id || d.imei;
-      // A device that went dark WHILE a Critical alarm is open/acked was taken down
-      // by the incident — mark it INACTIVE (sticky, manual-exit), not Offline.
+      // A device that went dark WHILE a Critical alarm is open/acked still flips to
+      // OFFLINE (the owner wants a raised alarm to be able to trigger the offline
+      // status too), but we do NOT raise a SEPARATE Device Offline alarm on top of
+      // the open Critical — that incident is already the active alert.
       let inIncident = false;
       try { inIncident = await hasOpenCriticalAlarm(idText, d.imei); } catch { inIncident = false; }
       if (inIncident) {
         try {
-          if (String(d.status || "").toLowerCase() !== "inactive") {
-            await setDeviceStatus(d.id, "Inactive");
-            inactivated++;
-            console.log(`[offlineSweep] ${idText} silent during a Critical incident → set INACTIVE`);
+          if (String(d.status || "").toLowerCase() !== "offline") {
+            await setDeviceStatus(d.id, "Offline");
+            console.log(`[offlineSweep] ${idText} silent during an open alarm → status OFFLINE`);
           }
-        } catch (e) { console.error("[offlineSweep] set-inactive error:", e?.message || e); }
-        continue; // no Offline alarm for an incident-downed device
+        } catch (e) { console.error("[offlineSweep] set-offline (incident) error:", e?.message || e); }
+        continue; // status flipped; the open Critical is the alert, no extra offline alarm
       }
+      // Routine miss: flip the DEVICE STATUS to Offline so the maps, device list
+      // and everywhere that colours by status show it offline (not just an alarm).
+      // listStaleDevices already excludes Testing/Maintenance/Inactive, so only a
+      // Live device is flipped; it returns to Live the moment it reports again
+      // (store.js → markDeviceOnlineIfOffline). setDeviceStatus rolls up to the site.
+      try {
+        if (String(d.status || "").toLowerCase() !== "offline") {
+          await setDeviceStatus(d.id, "Offline");
+          console.log(`[offlineSweep] ${idText} silent ${age} → status OFFLINE`);
+        }
+      } catch (e) { console.error("[offlineSweep] set-offline error:", e?.message || e); }
       // Routine miss: raise Device Offline (auto-clears when a packet next arrives).
       try {
         const row = await insertLiveAlarm({
@@ -56,7 +68,7 @@ export async function runOfflineSweep() {
         if (row) raised++;
       } catch (e) { console.error("[offlineSweep] insert error:", e?.message || e); }
     }
-    if (stale.length) console.log(`[offlineSweep] ${stale.length} past window → ${raised} offline alarm(s), ${inactivated} set inactive`);
+    if (stale.length) console.log(`[offlineSweep] ${stale.length} past window → ${raised} offline alarm(s)`);
     // Power-off reconcile: a pwroff that got no ack but the device then went silent
     // means it powered off → set it Inactive + "Powered off". (Devices that ack are
     // already handled instantly in onReply.)

@@ -47,11 +47,9 @@ export async function GET(request) {
                 WHEN lower(coalesce(status,'')) = 'testing'     THEN 'testing'
                 WHEN lower(coalesce(status,'')) = 'maintenance' THEN 'maintenance'
                 WHEN last_seen IS NULL OR now() - last_seen >
-                     ((COALESCE(NULLIF(config->>'wake_interval_sec','')::numeric,
-                                NULLIF(config->>'offline_hours','')::numeric * 3600,
-                                86400)
-                       + COALESCE(NULLIF(config->>'hb_tolerance_sec','')::numeric, 300))
-                      * interval '1 second') THEN 'offline'
+                     ((COALESCE(NULLIF(config->>'offline_hours','')::numeric, 24) * 3600
+                       + 3600)
+                      * interval '1 second') THEN 'offline'  -- fixed 24h window + 1h grace, interval-independent
                 ELSE 'live' END AS bucket
               FROM devices) x GROUP BY bucket`),
       alarmCounts(me.role, restrict),

@@ -56,6 +56,7 @@ const MENU = [
       { key: "companies", label: "Companies", href: "/mainapp/admin/companies" },
       { key: "response", label: "Response teams", href: "/mainapp/response" },
       { key: "noc", label: "NOC teams", href: "/mainapp/noc" },
+      { key: "installation", label: "Installation", href: "/mainapp/admin/installation" },
       { key: "settings", label: "Settings", href: "/mainapp/admin/settings" },
       { key: "maps", label: "Google Maps", href: "/mainapp/admin/maps" },
       { key: "firmware", label: "Firmware", href: "/mainapp/admin/firmware" },

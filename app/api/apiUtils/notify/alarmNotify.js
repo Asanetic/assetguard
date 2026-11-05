@@ -14,6 +14,10 @@ import { sendEmail } from "./send-email.js";
 import { mosySendSMS, sendSmsWith } from "./send-sms.js";
 import { getSmsConfig } from "../dataControl/appConfig.js";
 import { getAppBaseUrl } from "./appUrl.js";
+import { disturbanceTeamContacts, disturbanceTeamTokens } from "./disturbanceTeam.js";
+
+// A disturbance warning/alarm, by type or name.
+const isDisturbance = (a) => /disturb/i.test(`${a?.alarm_type || ""} ${a?.name || ""}`);
 
 const cleanPhone = (p) => String(p || "").replace(/[^\d+]/g, "");
 const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e || "").trim());
@@ -301,8 +305,18 @@ export async function notifyDisturbanceEarly({ deviceIdText, serial, site, siteI
     // relabelled 1/3, 2/3 (the alarm is the final, 3rd step). No confusing "of 4".
     const total = Math.max(2, (Number(threshold) || 4) - 1);   // 3
     const step = Math.min(total, Math.max(1, (Number(count) || 2) - 1)); // #2→1, #3→2
-    const { site: siteRow, emails, phones } = await resolveSiteAlertRecipients(siteId ?? null);
+    let { site: siteRow, emails, phones } = await resolveSiteAlertRecipients(siteId ?? null);
     const siteName = siteRow?.name || site || null;
+
+    // A disturbance also reaches the monitoring NOC (all of them) and the
+    // response team tied to the site (assigned or in its region), by SMS + email.
+    try {
+      const team = await disturbanceTeamContacts(siteRow?.id ?? siteId ?? null, siteRow?.security_region || null);
+      const { emails: te, phones: tp } = flattenPeople(team);
+      emails = mergeRecipients(emails, te);
+      phones = mergeRecipients(phones, tp);
+    } catch (e) { console.error("[notify] disturbance team (warning):", e?.message || e); }
+
     if (!emails.length && !phones.length) {
       await insertNotification({
         alarmId: null, site: siteName, siteId: siteRow?.id ?? siteId ?? null, deviceId: deviceIdText || null,
@@ -369,7 +383,15 @@ export async function notifyDisturbanceEarly({ deviceIdText, serial, site, siteI
       const { isConfigured, sendToToken } = await import("./fcm.js");
       const { tokensForAlarm } = await import("../dataControl/alarmPushTokens.js");
       if (isConfigured()) {
-        const recips = await tokensForAlarm(emails.map((e) => e.value), "Critical", siteRow?.security_region || null);
+        const baseRecips = await tokensForAlarm(emails.map((e) => e.value), "Critical", siteRow?.security_region || null);
+        // Also push to the NOC (all) + the site's response team (assigned or in
+        // region), de-duped by token so no handset is pushed twice.
+        let recips = baseRecips;
+        try {
+          const teamTokens = await disturbanceTeamTokens(siteRow?.id ?? siteId ?? null, siteRow?.security_region || null);
+          const seen = new Set(baseRecips.map((r) => r.token));
+          recips = baseRecips.concat(teamTokens.filter((t) => t.token && !seen.has(t.token)));
+        } catch (e) { console.error("[notify] disturbance team push (warning):", e?.message || e); }
         const pushMsg = {
           notification: { title: `Disturbance warning ${step}/${total}: ${where}`, body: `${dev} · ${when}` },
           data: {
@@ -493,7 +515,12 @@ export async function notifyAlarmRaised(alarm, { siteId, deviceStatus, deviceArm
     // above, so isCritical is already false and this branch is skipped — the
     // response team is never blasted about a drill.
     if (isCritical && !testing) {
-      const teamPeople = await resolveCriticalTeamUserRecipients(site?.id ?? siteId ?? null);
+      // A DISTURBANCE reaches the full control room: EVERY NOC user plus the
+      // response team tied to the site (assigned OR in its region). Any other
+      // critical alarm keeps the narrower, strictly site-assigned audience.
+      const teamPeople = isDisturbance(alarm)
+        ? await disturbanceTeamContacts(site?.id ?? siteId ?? null, site?.security_region || null)
+        : await resolveCriticalTeamUserRecipients(site?.id ?? siteId ?? null);
       const { emails: te, phones: tp } = flattenPeople(teamPeople);
       emails = mergeRecipients(emails, te);
       phones = mergeRecipients(phones, tp);

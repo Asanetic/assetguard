@@ -266,11 +266,29 @@ export async function setPasswordByIdentity(channel, target, passwordHash) {
   return rowCount > 0;
 }
 
-/** Set a user's region scope (TEXT[]). */
+/** Set a user's region scope (TEXT[]).
+ *
+ * Assigning a NON-EMPTY region to a FIELD TECHNICIAN also switches them to
+ * Region-controlled mode (site_scope_mode = 'region'). Otherwise a technician
+ * given a region from the quick control would keep inheriting the global 'list'
+ * default, their region would be ignored, and — with no imported site list —
+ * they would see no sites at all. The two controls stay independent: picking a
+ * region is a region-control action, and the modal's later "Assigned sites"
+ * choice (setSiteScopeMode) still overrides it; a technician with no specific
+ * region (country-wide) is never flipped. */
 export async function setRegions(id, regions = []) {
+  const list = Array.isArray(regions) ? regions.filter((r) => r != null && String(r).trim() !== "") : [];
   const { rows } = await query(
-    `UPDATE users SET regions = $2 WHERE id = $1 RETURNING id, regions`,
-    [id, Array.isArray(regions) ? regions : []]
+    `UPDATE users
+        SET regions = $2,
+            site_scope_mode = CASE
+              WHEN role = 'field_tech' AND COALESCE(array_length($2::text[], 1), 0) >= 1
+                THEN 'region'
+              ELSE site_scope_mode
+            END
+      WHERE id = $1
+      RETURNING id, regions, site_scope_mode`,
+    [id, list]
   );
   return rows[0] || null;
 }

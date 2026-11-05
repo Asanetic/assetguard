@@ -262,9 +262,8 @@ export async function recomputeSiteStatus(siteId) {
            THEN lower(d.status)
          WHEN d.last_seen IS NULL THEN 'offline'
          WHEN now() - d.last_seen >
-              (COALESCE(NULLIF(d.config->>'wake_interval_sec','')::numeric, 86400)
-             + COALESCE(NULLIF(d.config->>'hb_tolerance_sec','')::numeric, 300)) * interval '1 second'
-           THEN 'offline'
+              (COALESCE(NULLIF(d.config->>'offline_hours','')::numeric, 24) * 3600 + 3600) * interval '1 second'
+           THEN 'offline'  -- fixed offline window (offline_hours + 1 h grace), NOT the wake interval; matches listStaleDevices
          ELSE 'live'
        END AS state
        FROM devices d

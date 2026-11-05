@@ -48,12 +48,19 @@ export async function POST(request, { params }) {
 
   try {
     await query(
-      // The same shallow JSONB merge the PATCH route uses, so the alarm
-      // thresholds and the geofence sitting in this blob are untouched.
+      // Write BOTH places that represent "muted":
+      //  • devices.mute_until — the column the LIVE notify path reads (store.js /
+      //    disturbance escalation pass device.mute_until into the notify gates) and
+      //    the one the device list/group UI shows as the "Muted" pill. This is the
+      //    one that actually suppresses alerts.
+      //  • config.muted_until — kept for muteGuard.isAlertMuted and the device-detail
+      //    display, via the same shallow JSONB merge the PATCH route uses so the
+      //    alarm thresholds and geofence in this blob are untouched.
       `UPDATE devices
-          SET config = COALESCE(config, '{}'::jsonb) || $1::jsonb
-        WHERE id = $2`,
-      [JSON.stringify({ muted_until: mutedUntil }), device.id]
+          SET mute_until = $1,
+              config = COALESCE(config, '{}'::jsonb) || $2::jsonb
+        WHERE id = $3`,
+      [mutedUntil, JSON.stringify({ muted_until: mutedUntil }), device.id]
     );
   } catch (err) {
     console.error("[device mute] error", err);

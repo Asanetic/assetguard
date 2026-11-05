@@ -65,37 +65,54 @@ export async function touchDeviceLastSeen(id) {
 }
 
 /**
+ * A device that just reported is back online: flip it from Offline → Live. ONLY
+ * touches a device whose status is currently 'Offline', so Testing / Maintenance /
+ * Inactive (sticky, manual) are never disturbed. Rolls the change up to the site.
+ * Returns true if it actually changed one.
+ */
+export async function markDeviceOnlineIfOffline(id) {
+  if (!id) return false;
+  const { rowCount } = await query(
+    `UPDATE devices SET status = 'Live'
+      WHERE id = $1 AND lower(COALESCE(status,'')) = 'offline'`,
+    [id]
+  );
+  if (rowCount) {
+    try { const { recomputeSitesForDevices } = await import("./sites.js"); await recomputeSitesForDevices([id]); } catch {}
+  }
+  return rowCount > 0;
+}
+
+/**
  * Devices that have reported before but have now gone silent past their offline
  * window (per-device config.offline_hours, default 24 h). Never-seen devices are
  * excluded so a freshly-registered tracker isn't flagged before its first packet.
  * Drives the Device Offline sweep.
  */
-// Devices that have missed their expected heartbeat window. The wake interval
-// (config.wake_interval_sec, legacy offline_hours*3600, else 24 h) drives it, plus
-// the ±tolerance (config.hb_tolerance_sec, default 300 s). A device is stale only
-// when now - last_seen > interval + tolerance — and ANY packet (heartbeat, critical,
-// tracking) refreshes last_seen, so an early critical never makes it stale.
-// Devices already Inactive / Testing / Maintenance are excluded: they are not
-// expected to heartbeat, so they never become "Offline".
+// Devices that have gone silent past their OFFLINE WINDOW. This is a FIXED
+// window, NOT the reporting/wake interval: a device is Offline only when it has
+// not been heard from for its offline_hours (per-device config.offline_hours,
+// default 24 h) PLUS a flat 1 h grace — i.e. 25 h by default — no matter how
+// often it is meant to report (2 h, 6 h, 12 h, 24 h all use the same window).
+// "Offline" therefore means "not heard from in over a day", not "missed one
+// short-interval report". ANY packet (heartbeat, critical, tracking) refreshes
+// last_seen, so a device that is reporting never trips it. Devices already
+// Inactive / Testing / Maintenance are excluded.
+const OFFLINE_GRACE_SEC = 3600; // flat 1 h grace on top of the offline window
 export async function listStaleDevices(defaultHours = 24) {
   const { rows } = await query(
     `SELECT d.id, d.device_id, d.imei, d.last_seen, d.status, s.name AS site,
             EXTRACT(EPOCH FROM (now() - d.last_seen)) / 3600.0 AS hours_silent,
-            COALESCE(NULLIF(d.config->>'wake_interval_sec','')::numeric,
-                     NULLIF(d.config->>'offline_hours','')::numeric * 3600,
-                     $1 * 3600) AS interval_sec,
-            COALESCE(NULLIF(d.config->>'hb_tolerance_sec','')::numeric, 300) AS tol_sec
+            (COALESCE(NULLIF(d.config->>'offline_hours','')::numeric, $1) * 3600
+             + $2) AS offline_window_sec
        FROM devices d
        LEFT JOIN sites s ON s.id = d.site_id
       WHERE d.last_seen IS NOT NULL
         AND lower(COALESCE(d.status,'')) NOT IN ('inactive','testing','maintenance')
         AND now() - d.last_seen >
-            ((COALESCE(NULLIF(d.config->>'wake_interval_sec','')::numeric,
-                       NULLIF(d.config->>'offline_hours','')::numeric * 3600,
-                       $1 * 3600)
-              + COALESCE(NULLIF(d.config->>'hb_tolerance_sec','')::numeric, 300))
-             * interval '1 second')`,
-    [defaultHours]
+            ((COALESCE(NULLIF(d.config->>'offline_hours','')::numeric, $1) * 3600
+              + $2) * interval '1 second')`,
+    [defaultHours, OFFLINE_GRACE_SEC]
   );
   return rows;
 }

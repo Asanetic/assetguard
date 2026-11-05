@@ -200,7 +200,7 @@ export default function TcpLogs() {
                 return (
                   <tr key={t.id} className={styles.rowClick} onClick={() => openDetail(t)}>
                     <td className={styles.mono}>{fmtTime(t.received_at)}</td>
-                    <td>{t.device_id ? `#${t.device_id}` : <span className={styles.unreg} title="This IMEI is not registered in devices">unregistered</span>}</td>
+                    <td>{t.device_id ? (t.device_code || t.imei || `#${t.device_id}`) : <span className={styles.unreg} title="This IMEI is not registered in devices">unregistered</span>}</td>
                     <td className={styles.mono}>{t.imei}</td>
                     <td>{t.fix === "A" && t.fix_valid ? <span className={styles.fixOk}>A</span> : <span className={styles.fixNo}>{t.fix || "V"}</span>}</td>
                     <td className={styles.mono}>
@@ -269,7 +269,7 @@ function LogDetail({ row, more, onSelect, onClose }) {
             <div className={styles.modalSub}>{t.imei} · {fmtTime(t.received_at)}</div>
           </div>
           <div className={styles.modalHeadRight}>
-            {t.device_id ? <a className={styles.devLink} href={`/mainapp/devices/view?device=${encodeURIComponent(t.device_id)}`}><i className="ti ti-external-link" aria-hidden="true" /> Device</a> : null}
+            {t.device_id ? <a className={styles.devLink} href={`/mainapp/devices/view?device=${encodeURIComponent(t.device_code || t.device_id)}`}><i className="ti ti-external-link" aria-hidden="true" /> {t.device_code || "Device"}</a> : null}
             <button className={styles.close2} onClick={onClose} aria-label="Close"><i className="ti ti-x" /></button>
           </div>
         </div>

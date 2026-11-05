@@ -5,6 +5,7 @@
 // monitoring / field actions are queued (toast); Export CSV downloads the
 // selection.
 "use client";
+import { downloadBrandedXlsx } from "../../../lib/brandedExport.js";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./groupdevices.module.css";
@@ -73,6 +74,7 @@ const OP_GROUPS = [
     { key: "arm", label: "Arm monitoring", icon: "ti-lock", tint: "#d1fae5", ink: "#047857", kind: "action" },
     { key: "dis", label: "Disarm monitoring", icon: "ti-lock-open", tint: "#fef3c7", ink: "#b45309", kind: "action" },
     { key: "mute", label: "Mute alerts", icon: "ti-bell-off", tint: "#f1f5f9", ink: "#475569", kind: "mute" },
+    { key: "geo", label: "Set geofence radius (m)", icon: "ti-map-pin", tint: "#e0f2fe", ink: "#0284c7", kind: "geofence" },
     { key: "ping", label: "Send test ping", icon: "ti-antenna-bars-5", tint: "#fee2e2", ink: "#dc2626", kind: "ping" },
   ] },
   { group: "REMOTE COMMANDS (HQ)", items: [
@@ -245,6 +247,7 @@ export default function GroupDevices() {
     }
     if (def.kind === "disabled") { flash(`${def.label} isn't available yet`); return; }          // UI kept, no logic
     if (def.kind === "mute") { setPanel({ op: def, mute: { amount: 2, unit: "hours" } }); return; }
+    if (def.kind === "geofence") { setPanel({ op: def, value: 100 }); return; }  // default 100 m
     if (def.kind === "databundle") { setPanel({ op: def, bundle: { amount: 50, unit: "MB", period: "annually" } }); return; }
     if (def.kind === "ping") { doPing(); return; }
     if (def.kind === "simulate") { flash(`${def.label} queued for ${selCount} device${selCount === 1 ? "" : "s"}`); return; }
@@ -490,6 +493,24 @@ export default function GroupDevices() {
       setBusy(false); if (ok) setPanel(null);
       return;
     }
+    // Geofence radius → config-only merge on the selected devices (batch-ops).
+    if (op.kind === "geofence") {
+      const r = Math.round(Number(value));
+      if (!Number.isFinite(r) || r < 15 || r > 500) { flash("Geofence radius must be 15–500 m", true); return; }
+      setBusy(true);
+      try {
+        const res = await fetch("/api/mainapp/devices/batch-ops", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: [...selected], op: "geofence", value: r }),
+        });
+        const d = await res.json();
+        if (!res.ok) { flash(d.error || "Operation failed", true); setBusy(false); return; }
+        setPanel(null); setBusy(false);
+        flash(d.note || `Geofence set to ${r} m on ${d.affected} device${d.affected === 1 ? "" : "s"}`);
+        await load();
+      } catch { flash("Network error", true); setBusy(false); }
+      return;
+    }
     // Assign data-bundle plan / SIM provider → persisted on the device.
     if (op.kind === "assign") {
       const ok = await runDeviceBatch(op.key, value, `${op.label} → ${value}`);
@@ -557,16 +578,15 @@ export default function GroupDevices() {
     } catch { flash("Network error", true); setBusy(false); }
   }
 
-  function exportCsv() {
+  async function exportCsv() {
     const header = ["Device ID", "Site", "Site ID", "IMEI", "SIM", "Orientation", "Battery", "Firmware", "Status"];
     const lines = [header.join(",")].concat(selectedDevices.map((d) =>
       [d.device_id, d.site, d.site_code, d.imei, d.sim, d.orientation, d.battery != null ? `${d.battery}%` : "", d.firmware, d.status]
         .map(csvCell).join(",")));
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "assetguard-devices-selection.csv";
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    flash(`Exported ${selCount} device${selCount === 1 ? "" : "s"} to CSV`);
+    try {
+      await downloadBrandedXlsx("assetguard-devices-selection", lines.join("\n"), { title: "Devices selection", sheetName: "Devices" });
+      flash(`Exported ${selCount} device${selCount === 1 ? "" : "s"}`);
+    } catch (e) { flash(e.message || "Export failed", true); }
   }
 
   // For reassign-to-site, the site list is filtered by the panel's search box
@@ -778,6 +798,16 @@ export default function GroupDevices() {
                 </select>
                 <div className={styles.panelSub} style={{ marginTop: 8 }}>
                   Range 1 MB – 10 GB. Assigning starts the usage counter fresh. Renewal is manual (use “Reset data bundle”).
+                </div>
+              </>
+            ) : panel.op.kind === "geofence" ? (
+              <>
+                <label className={styles.lab}>GEOFENCE RADIUS (METRES)</label>
+                <input type="number" min={15} max={500} step={5} className={styles.panelSelect}
+                  value={panel.value}
+                  onChange={(e) => setPanel((p) => ({ ...p, value: e.target.value }))} autoFocus />
+                <div className={styles.panelSub} style={{ marginTop: 8 }}>
+                  Distance from each device&apos;s site that counts as a geofence breach (15–500 m, centred on the site). Takes effect on each device&apos;s next report — no device command needed.
                 </div>
               </>
             ) : panel.mute ? (

@@ -119,7 +119,7 @@ export async function listTelemetry({ deviceId, imei, from, to, limit = 500, new
   if (q && q.trim()) {
     params.push(`%${q.trim().toLowerCase()}%`);
     const i = params.length;
-    where.push(`(lower(t.imei) LIKE $${i} OR cast(t.lat as text) LIKE $${i} OR cast(t.lng as text) LIKE $${i} OR lower(coalesce(t.motion_byte,'')) LIKE $${i})`);
+    where.push(`(lower(coalesce(d.device_id,'')) LIKE $${i} OR lower(t.imei) LIKE $${i} OR cast(t.lat as text) LIKE $${i} OR cast(t.lng as text) LIKE $${i} OR lower(coalesce(t.motion_byte,'')) LIKE $${i})`);
   }
   params.push(Math.min(5000, Number(limit) || 500));
   const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";

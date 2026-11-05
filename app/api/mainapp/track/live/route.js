@@ -18,7 +18,8 @@ export async function GET(request) {
     const { rows } = await query(
       `SELECT COALESCE(t.device_time, t.received_at) AS at, t.received_at AS received,
               EXTRACT(EPOCH FROM (now() - t.received_at))::bigint AS age_sec,
-              t.lat, t.lng, t.speed, t.loc_source, t.accuracy
+              t.lat, t.lng, t.speed, t.loc_source, t.accuracy,
+              t.fix, t.fix_valid, t.satellites
          FROM device_telemetry t JOIN devices d ON d.id = t.device_id
         WHERE d.device_id = $1 AND t.lat IS NOT NULL AND t.lng IS NOT NULL
         ORDER BY t.received_at DESC
@@ -36,6 +37,12 @@ export async function GET(request) {
       // Age computed on the SERVER (now() - received_at), so it is correct even if the
       // VPS wall-clock is skewed. The client rebuilds the fix time on its own clock.
       age_sec: r.age_sec != null ? Number(r.age_sec) : null,
+      // GPS health, for the installer's live device screen: a valid 'A' fix, and
+      // how many satellites the tracker is currently seeing.
+      fix: r.fix || null,
+      fix_valid: r.fix_valid === true,
+      has_fix: r.fix === "A" && r.fix_valid !== false,
+      satellites: r.satellites == null ? null : Number(r.satellites),
     } : null;
     return NextResponse.json({ pos });
   } catch (err) {

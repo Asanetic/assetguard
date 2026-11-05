@@ -14,6 +14,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import styles from "../../playbackmap/components/playback.module.css";
 import { fetchMapsConfig, loadGoogleMaps, playbackVehicleIcon, responderNavIcon, routeDotIcon } from "../../lib/googleMaps.js";
+import { brandedXlsxObjectUrl } from "../../lib/brandedExport.js";
 import { startScreenRecording } from "../../lib/routeRecorder.js";
 import { addExport } from "../../lib/exportsStore.js";
 
@@ -418,14 +419,23 @@ export default function ResponsePlaybackMap() {
       recCtl.stop();
       const { blob, name } = await recCtl.done;
       const videoUrl = URL.createObjectURL(blob);
-      const csvUrl = URL.createObjectURL(new Blob([buildResponseCsv()], { type: "text/csv;charset=utf-8;" }));
+      // Branded .xlsx (company logo on top) from the same response CSV. Never let
+      // a sheet failure lose the recorded video.
+      let csvFile = null;
+      try {
+        csvFile = await brandedXlsxObjectUrl(
+          `${deviceId}_${fileDate}_response`,
+          buildResponseCsv(),
+          { title: "Response playback", sheetName: "Response" }
+        );
+      } catch { /* keep the video; skip the sheet */ }
       addExport({
         device: deviceId, date: fileDate,
         durationMin: Math.max(1, Math.round(duration / 60)),
         distanceKm: target?.summary?.total_km ?? null,
         incidents: incidents.length,
         video: { url: videoUrl, name },
-        csv: { url: csvUrl, name: `${deviceId}_${fileDate}_response.csv` },
+        csv: csvFile ? { url: csvFile.url, name: csvFile.name } : null,
       });
       flash("Export ready — opening Exports…");
       setTimeout(() => router.push("/mainapp/playback/exports"), 800);

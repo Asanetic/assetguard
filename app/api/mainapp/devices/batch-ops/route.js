@@ -248,6 +248,27 @@ export async function POST(request) {
         });
       }
 
+      /* -------- geofence: config-only radius, centred on each site -------- */
+      case "geofence": {
+        // Radius in metres (same model + range as the single-device editor).
+        const r = Math.round(Number(value && typeof value === "object" ? value.radius_m : value));
+        if (!Number.isFinite(r) || r < 15 || r > 500) {
+          return NextResponse.json({ error: "Geofence radius must be 15–500 m" }, { status: 422 });
+        }
+        // SERVER-EVALUATED: the geofence breach check reads geofence_radius_m on
+        // the next telemetry packet, so this applies without any downlink to the
+        // device. The fence is centred on each device's own site.
+        const affected = await mergeConfig({ geofence_enabled: true, geofence_radius_m: r });
+        logAudit(request, {
+          action: "Geofence radius set", category: "Devices",
+          detail: `${r} m on ${affected} device(s)`,
+        });
+        return NextResponse.json({
+          affected,
+          note: `Geofence set to ${r} m on ${affected} device(s). It applies on each device's next report — no device command needed.`,
+        });
+      }
+
       default:
         return NextResponse.json({ error: `Unknown operation: ${op}` }, { status: 400 });
     }

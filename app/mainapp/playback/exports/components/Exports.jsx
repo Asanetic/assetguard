@@ -50,7 +50,7 @@ export default function Exports() {
                       ? <button type="button" className={styles.fileBtn} onClick={() => setPlay(r.video)}><i className="ti ti-player-play" /> Play</button>
                       : <span className={styles.preparing}>—</span>}
                     {r.video ? <a className={styles.fileBtn} href={r.video.url} download={r.video.name}><i className="ti ti-download" /> Video</a> : null}
-                    {r.csv ? <a className={styles.fileBtn} href={r.csv.url} download={r.csv.name}><i className="ti ti-file-spreadsheet" /> CSV</a> : null}
+                    {r.csv ? <a className={styles.fileBtn} href={r.csv.url} download={r.csv.name}><i className="ti ti-file-spreadsheet" /> Excel</a> : null}
                   </div>
                   {r.incidents ? <div className={styles.incTag}>{r.incidents} incident{r.incidents === 1 ? "" : "s"}</div> : null}
                 </td>

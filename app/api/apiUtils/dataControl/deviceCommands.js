@@ -446,24 +446,30 @@ export async function cancelJobs({ ids = [], kind = null } = {}) {
 
 /**
  * Fail jobs that have stalled:
- *  - 'sent' with no reply for a long time and out of attempts, or
- *  - 'acked' (firmware) but the device never resumed data within the deadline.
- * Called opportunistically by the listener. Windows are generous; the happy path
- * confirms in well under 5 minutes.
+ *  - FIRMWARE: devices sometimes update WITHOUT sending the UPGRADE ack, so we do
+ *    NOT depend on the ack. A firmware job (whether 'sent' or 'acked') is concluded
+ *    FAILED only after firmwareDeadlineMin (3 h) from when it was SENT, if the device
+ *    has not resumed data by then. Success is marked the instant data resumes (see
+ *    commandRunner.onWake), acked or not — so a device that comes back is confirmed,
+ *    not failed.
+ *  - OTHER commands: 'sent' with no reply and out of attempts → failed after the
+ *    deadline.
+ * Called opportunistically by the listener. Windows are generous on purpose.
  */
-export async function sweepStalled({ ackDataDeadlineMin = 15, sentDeadlineMin = 180 } = {}) {
+export async function sweepStalled({ firmwareDeadlineMin = 180, sentDeadlineMin = 180 } = {}) {
   const { rowCount: a } = await query(
     `UPDATE device_command_queue
-        SET status = 'failed', error = 'no data resumed after update', last_attempt_at = now()
-      WHERE status = 'acked' AND kind = 'firmware'
-        AND acked_at < now() - ($1 * interval '1 minute')`,
-    [ackDataDeadlineMin]
+        SET status = 'failed', error = 'no data resumed 3h after update', last_attempt_at = now()
+      WHERE kind = 'firmware' AND status IN ('sent','acked')
+        AND sent_at IS NOT NULL
+        AND sent_at < now() - ($1 * interval '1 minute')`,
+    [firmwareDeadlineMin]
   );
   const { rowCount: b } = await query(
     `UPDATE device_command_queue
         SET status = 'failed', error = 'no reply from device', last_attempt_at = now()
       WHERE status = 'sent'
-        AND kind <> 'poweroff'
+        AND kind NOT IN ('poweroff','firmware')
         AND attempts >= max_attempts
         AND sent_at < now() - ($1 * interval '1 minute')`,
     [sentDeadlineMin]

@@ -51,7 +51,7 @@ export default function BrandingSettings() {
       <div style={S.head}>
         <div>
           <div style={S.title}>Branding &amp; document watermark</div>
-          <div style={S.sub}>The logo below is stamped as a faint watermark on every generated report (PDF &amp; Word).</div>
+          <div style={S.sub}>The logo below is stamped on every generated document — report PDFs &amp; Word files, and the Excel exports across the app (playback, audit, device &amp; site selections). Use a PNG or JPG logo so it can be embedded in spreadsheets (SVG falls back to the company name).</div>
         </div>
       </div>
 

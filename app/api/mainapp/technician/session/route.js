@@ -19,6 +19,7 @@ import {
   openSession,
   closeSessionsFor,
   activeSessionFor,
+  updateSessionStep,
 } from "../../../apiUtils/dataControl/technician.js";
 import { logAudit } from "../../../apiUtils/dataControl/audit.js";
 
@@ -58,9 +59,22 @@ export async function POST(request) {
     }
   }
 
+  // A live stage update: the app posts the wizard step it has reached so the
+  // admin Installation page can show "Settle" / "Test" rather than just "open".
+  // Cheap and frequent — no audit line, and a no-op when the session has closed.
+  if (action === "step") {
+    try {
+      const session = await updateSessionStep(me.sub, body.step);
+      return NextResponse.json({ ok: true, session });
+    } catch (err) {
+      console.error("[technician/session step] error", err);
+      return NextResponse.json({ error: "Failed to update step" }, { status: 500 });
+    }
+  }
+
   if (action !== "open") {
     return NextResponse.json(
-      { error: 'action must be "open" or "close"' },
+      { error: 'action must be "open", "close" or "step"' },
       { status: 400 }
     );
   }

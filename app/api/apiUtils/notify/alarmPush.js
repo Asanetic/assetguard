@@ -223,7 +223,21 @@ export async function pushAlarmRaised(alarm, { siteId } = {}) {
     // See tokensForAlarm.
     // Region scope: the response team is only pushed alarms in THEIR security region
     // (country-wide users cover every region). Site contacts + admins are unchanged.
-    const recipients = await tokensForAlarm(emails.map((e) => e.value), alarm.priority, site?.security_region || null);
+    let recipients = await tokensForAlarm(emails.map((e) => e.value), alarm.priority, site?.security_region || null);
+
+    // A DISTURBANCE also pushes to the full control room: EVERY NOC user plus
+    // the response team tied to the site (assigned OR in its region) — the same
+    // audience the SMS/email path uses. De-duped by token so no handset buzzes
+    // twice. Other alarm types keep the existing site-contact + region audience.
+    if (/disturb/i.test(`${alarm.alarm_type || ""} ${alarm.name || ""}`)) {
+      try {
+        const { disturbanceTeamTokens } = await import("./disturbanceTeam.js");
+        const team = await disturbanceTeamTokens(site?.id ?? resolvedSiteId ?? null, site?.security_region || null);
+        const seen = new Set(recipients.map((r) => r.token));
+        recipients = recipients.concat(team.filter((t) => t.token && !seen.has(t.token)));
+      } catch (e) { console.error("[push] disturbance team:", e?.message || e); }
+    }
+
     if (!recipients.length) {
       // NOT logged, and NOT raised as a NOTIFICATION_FAILED alarm.
       //

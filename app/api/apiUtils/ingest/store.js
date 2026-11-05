@@ -5,7 +5,7 @@
 //         -> insert device_telemetry -> alarm engine -> (registered) update state + alarms
 // Unregistered IMEIs are still stored (device_id NULL) and also quarantined in
 // unknown_logs, so you can see exactly what's arriving before you register them.
-import { findDeviceByImei, touchDeviceLastSeen, recordHeartbeat } from "../dataControl/devices.js";
+import { findDeviceByImei, touchDeviceLastSeen, recordHeartbeat, markDeviceOnlineIfOffline } from "../dataControl/devices.js";
 import { hasOpenCriticalAlarm } from "../dataControl/deviceCommands.js";
 import { isHeartbeatStatus } from "./heartbeat.js";
 import { insertDeviceLog, insertUnknownLog } from "../dataControl/deviceLogs.js";
@@ -99,7 +99,11 @@ export async function resolveAndStore(rec, ip, port, opts = {}) {
 
   // Heartbeats carry no telemetry; just bump last_seen for known devices.
   if (!(rec.cmd === "UD" || rec.cmd === "UD2" || rec.cmd === "AL")) {
-    if (known) { try { await touchDeviceLastSeen(device.id); } catch {} }
+    if (known) {
+      try { await touchDeviceLastSeen(device.id); } catch {}
+      // A heartbeat means it's alive — bring it back online if it was Offline.
+      try { await markDeviceOnlineIfOffline(device.id); } catch {}
+    }
     return { unknown: !known, view };
   }
 
@@ -234,8 +238,10 @@ export async function resolveAndStore(rec, ip, port, opts = {}) {
   // 4) registered devices: keep live state fresh + persist alarms to All Alarms/speaker
   if (known) {
     try { await updateDeviceState(device.id, t); } catch { try { await touchDeviceLastSeen(device.id); } catch {} }
-    // The device just reported, so it isn't offline — clear any open offline alarm.
+    // The device just reported, so it isn't offline — clear any open offline alarm
+    // AND flip its status back to Live if the sweep had marked it Offline.
     try { await clearOpenAlarm(device.device_id || device.imei, ALARM_TYPES.DEVICE_OFFLINE); } catch {}
+    try { await markDeviceOnlineIfOffline(device.id); } catch {}
 
     const deviceIdText = device.device_id || device.imei;
     const at = t.deviceTime || rec.deviceTime || null;

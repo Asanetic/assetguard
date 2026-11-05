@@ -33,6 +33,10 @@ export async function GET(request) {
   try {
     const photos = await listPhotos({
       site_id: searchParams.get("site_id") || undefined,
+      // Per-DEVICE photos: each tracker's own installation shots. Without this
+      // the route ignored the filter and every device at a site showed the same
+      // gallery — the whole site's photos, not that one device's.
+      device_id: searchParams.get("device_id") || undefined,
       // A non-admin sees their OWN captures. Unscoped, any signed-in user could
       // page through every site's photos with their GPS fixes and the name of
       // whoever was standing there — which is what this data is.

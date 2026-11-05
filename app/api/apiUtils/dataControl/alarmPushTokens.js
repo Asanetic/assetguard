@@ -136,14 +136,20 @@ export async function tokensForAlarm(emails = [], priority = "", securityRegion 
                 -- authUtils/appAccess.js — Field Response, the security managers /
                 -- assistants (sec_*), AND the company managers / assistant managers
                 -- (company_mgr / asst_mgr) — plus anyone at a Response-purpose company.
-                -- (a user with no regions set is country-wide, covering every region.)
+                --
+                -- REGION IS MANDATORY FOR EVERYONE (amended 2026-11-01): the site's
+                -- security_region must be EXPLICITLY one of the user's regions. An
+                -- empty regions list is NO LONGER country-wide for alarms — a user
+                -- with no region set receives nothing here, so a device's alarm never
+                -- buzzes a phone in another region. (Set the user's region to page
+                -- them.) A null site region matches nobody in this branch; the site's
+                -- own typed contacts in branch 1 still receive it.
                 OR (
                   $2::boolean
                   -- Case-insensitive region match: "WESTERN"/"Western"/"western"
                   -- all count as the user's region (see dataControl/sites.js).
-                  AND (u.regions = '{}'::text[]
-                       OR EXISTS (SELECT 1 FROM unnest(u.regions) AS ur
-                                   WHERE lower(ur) = lower($3::text)))
+                  AND EXISTS (SELECT 1 FROM unnest(u.regions) AS ur
+                               WHERE lower(ur) = lower($3::text))
                   AND (
                     u.role IN ('field_resp', 'company_mgr', 'asst_mgr')
                     OR u.role LIKE 'sec\\_%'

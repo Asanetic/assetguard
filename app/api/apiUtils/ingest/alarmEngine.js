@@ -101,7 +101,7 @@ export const THRESHOLD_FIELDS = [
   { key: "high_temp_c",          label: "High Temperature", unit: "°C",   min: 0,   max: 150,   tier: "High",     help: "Alarm when enclosure temp is above this." },
   { key: "low_battery_pct",      label: "Low Battery",      unit: "%",    min: 1,   max: 100,   tier: "Medium",   help: "Alarm at or below this charge." },
   { key: "critical_battery_pct", label: "Critical Battery", unit: "%",    min: 1,   max: 100,   tier: "High",     help: "Escalates to High at or below this charge." },
-  { key: "offline_hours",        label: "Device Offline",   unit: "h",    min: 1,   max: 720,   tier: "High",     help: "Alarm when not seen for longer than this." },
+  { key: "offline_hours",        label: "Device Offline",   unit: "h",    min: 1,   max: 720,   tier: "High",     help: "Alarm when not seen for longer than this (a flat 1 h grace is added, so the default 24 h fires at 25 h). Independent of the reporting interval." },
   { key: "low_data_mb",          label: "Low Data",         unit: "MB",   min: 0,   max: 100000,tier: "Medium",   help: "Alarm when SIM bundle is at or below this." },
   { key: "geofence_radius_m",    label: "Geofence Radius",  unit: "m",    min: 5,   max: 100000,tier: "Critical", help: "Distance from site that counts as a violation." },
   { key: "speed_alert_kph",      label: "Critical Speed",   unit: "km/h", min: 1,   max: 300,   tier: "Critical", help: "Off-site speed that raises Critical Motion." },
@@ -168,17 +168,20 @@ export function evaluate(t, device, site, state = {}) {
     // than the fix's ± blur: breach only when dist > geofence_radius + accuracy. That
     // respects the set radius AND the accuracy, so a coarse fix near a small site (or a
     // mid-range fix inside a large site) never false-fires. Unknown accuracy ⇒ radius.
-    const netThreshold = c.geofence_radius_m + (t.accuracy && t.accuracy > 0 ? t.accuracy : 0);
-    if (t.fixValid) {
-      state.breached = dist > c.geofence_radius_m;
-    } else {
-      state.breached = dist > netThreshold;
-    }
+    // Accuracy cushion applies to EVERY fix type now, GPS included: breach only
+    // when the device is beyond the zone by MORE than the fix's ± blur, i.e.
+    // dist > geofence_radius + accuracy. A GPS fix carries accuracy ≈ 10 m, a
+    // network fix (Wi-Fi / LBS / Wi-Fi+LBS) carries its own (coarser) value, so
+    // this respects both the set radius AND the fix's uncertainty and never
+    // false-fires on the edge of the zone. Unknown accuracy ⇒ radius only.
+    const acc = (t.accuracy && t.accuracy > 0) ? t.accuracy : 0;
+    const threshold = c.geofence_radius_m + acc;
+    state.breached = dist > threshold;
     if (c.geofence_enabled && state.breached) {
       alarms.push({ type: ALARM_TYPES.GEOFENCE_EXIT, severity: "warning",
         message: t.fixValid
-          ? `Geofence exit — ${name} is ${Math.round(dist)} m from site (radius ${c.geofence_radius_m} m)`
-          : `Geofence exit — ${name} is ${Math.round(dist)} m from site (network-located; beyond ${c.geofence_radius_m} m radius + ±${Math.round(t.accuracy || 0)} m accuracy)`,
+          ? `Geofence exit — ${name} is ${Math.round(dist)} m from site (radius ${c.geofence_radius_m} m + ±${Math.round(acc)} m GPS accuracy)`
+          : `Geofence exit — ${name} is ${Math.round(dist)} m from site (network-located; beyond ${c.geofence_radius_m} m radius + ±${Math.round(acc)} m accuracy)`,
         ...at, value: Math.round(dist) });
     }
   }

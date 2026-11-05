@@ -27,6 +27,10 @@ import { query } from "../s_env/db.js";
 
 const REFRESH_MS = 20_000;          // how often to re-read the active-IMEI set
 const RESEND_COOLDOWN_MS = 120_000; // don't resend on every data frame; heartbeats always may
+// A never-acked firmware job is confirmed when the device resumes DATA, but only
+// once the send is at least this old — so a stray data frame right after we put
+// UPGRADE on the wire (before the device reboots into the OTA) can't falsely confirm.
+const FW_CONFIRM_MIN_SEC = 120;
 
 function C() {
   if (!globalThis.__agCmdRunner) globalThis.__agCmdRunner = { imeis: new Set(), at: 0, refreshing: false };
@@ -98,23 +102,29 @@ export async function onWake({ imei, cmd, send }) {
   // Firmware confirmation: the device came back with DATA after acking → success.
   // On confirm, LABEL the device to the latest firmware version (firmware lives on the
   // OEM servers today, so we record the version once the device is reporting again).
-  if (job.status === "acked") {
-    if (job.kind === "firmware" && isData(cmd)) {
+  // Firmware CONFIRMATION on data resume = SUCCESS, whether or not the device sent
+  // the UPGRADE ack (some devices update without acking — we must not depend on it).
+  // On confirm, LABEL the device to the latest firmware version. For a never-acked
+  // ('sent') job the send must be at least FW_CONFIRM_MIN_SEC old (guard above).
+  if (job.kind === "firmware" && isData(cmd)) {
+    const sentMs = job.sent_at ? Date.parse(job.sent_at) : 0;
+    const ageSec = sentMs ? (Date.now() - sentMs) / 1000 : 0;
+    if (job.status === "acked" || (job.status === "sent" && ageSec >= FW_CONFIRM_MIN_SEC)) {
       try { await markConfirmed(job.id); } catch {}
       try {
         const fw = await getFirmwareConfig();
         if (fw?.latest && job.device_id) {
           await query(`UPDATE devices SET firmware = $2 WHERE id = $1`, [job.device_id, fw.latest]);
-          console.log(`[firmware] ${imei} confirmed → labelled ${fw.latest}`);
+          console.log(`[firmware] ${imei} confirmed (${job.status === "acked" ? "acked" : "no ack"}) → labelled ${fw.latest}`);
         }
       } catch (e) { console.error("[firmware] label error:", e?.message || e); }
-      // The device is awake and healthy again after the upgrade (this data frame
-      // IS the post-upgrade confirmation telemetry) — send the next queued command
-      // right now so it is applied too, instead of waiting for the next wake.
+      // The device is awake and healthy again after the upgrade (this data frame IS
+      // the post-upgrade confirmation telemetry) — drain the next queued command now.
       try { await dispatchNext(imei, send); } catch {}
+      return;
     }
-    return; // acked jobs are otherwise just waiting for data
   }
+  if (job.status === "acked") return; // acked, still just waiting for its data frame
 
   // (Re)send while pending or sent-without-reply.
   if (job.status === "pending" || job.status === "sent") {
@@ -125,6 +135,10 @@ export async function onWake({ imei, cmd, send }) {
     // No reply → retry on each wake up to max_attempts (default 3: initial send + 2
     // retries). Once all attempts are spent with no reply, mark the command failed.
     if ((job.attempts || 0) >= (job.max_attempts || 3)) {
+      // Firmware is NEVER early-failed for a missing ack — the device may be mid-OTA,
+      // or may update without acking at all. Stop resending and let the 3h sweep
+      // (sweepStalled) conclude it from the send time, acked or not.
+      if (job.kind === "firmware") return;
       try { await markFailed(job.id, "no reply after max attempts"); } catch {}
       // A failed synced-config command never took effect on the device — drop the
       // pending target so the ACTIVE value (the last one the device accepted)

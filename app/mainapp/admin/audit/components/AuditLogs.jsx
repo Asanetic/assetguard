@@ -7,6 +7,7 @@
 // only real backend data — the category filter options are derived from the logs
 // themselves, and there is no prototype fallback.
 "use client";
+import { downloadBrandedXlsx } from "../../../lib/brandedExport.js";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./audit.module.css";
@@ -81,21 +82,15 @@ export default function AuditLogs() {
       (a.user + a.action + a.detail).toLowerCase().indexOf(term) > -1);
   }, [logs, q, cat]);
 
-  function exportCsv() {
+  async function exportCsv() {
     const header = ["Timestamp", "User", "Role", "Action", "Category", "Detail", "IP"];
     const lines = [header.join(",")].concat(
       filtered.map((a) => [a.ts, a.user, a.role, a.action, a.cat, a.detail, a.ip].map(csvCell).join(","))
     );
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "assetguard-audit-log.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    flashToast("Audit log exported to CSV");
+    try {
+      await downloadBrandedXlsx("assetguard-audit-log", lines.join("\n"), { title: "Audit log", sheetName: "Audit log" });
+      flashToast("Audit log exported");
+    } catch (e) { flashToast(e.message || "Export failed"); }
   }
 
   return (

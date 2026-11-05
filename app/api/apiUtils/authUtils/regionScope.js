@@ -37,9 +37,12 @@ export async function getEffectiveSiteScope(me) {
     const row = rows[0] || {};
     const role = row.role || me.role;
 
-    // List mode is available ONLY to field technicians. For every other role the
-    // mode is forced to 'region', so a leftover override or a 'list' global
-    // default never changes what a non-technician sees.
+    // The EXPLICIT per-user mode is authoritative — it is the "Region-controlled"
+    // vs "Assigned sites (imported list)" control. List mode is a field-technician
+    // feature; for every other role the mode is forced to 'region' so a stray
+    // 'list' override or default can never change what a non-technician sees.
+    // (Assigning a region now also sets this to 'region' — see setRegions — so a
+    // region-controlled technician is never left inheriting a 'list' default.)
     let mode = "region";
     if (role === LIST_SCOPE_ROLE) {
       const override = row.site_scope_mode;

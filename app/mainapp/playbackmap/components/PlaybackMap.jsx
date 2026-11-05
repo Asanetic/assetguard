@@ -12,6 +12,7 @@ import styles from "./playback.module.css";
 import { fetchMapsConfig, loadGoogleMaps, playbackVehicleIcon, routeDotIcon } from "../../lib/googleMaps.js";
 import { startScreenRecording, buildRouteCsv } from "../../lib/routeRecorder.js";
 import { addExport } from "../../lib/exportsStore.js";
+import { brandedXlsxObjectUrl } from "../../lib/brandedExport.js";
 import { useRouter } from "next/navigation";
 
 const WP_COLOR = { start: "#10B981", stop: "#F59E0B", end: "#EF4444" };
@@ -306,14 +307,23 @@ export default function PlaybackMap() {
       recCtl.stop();
       const { blob, name } = await recCtl.done;
       const videoUrl = URL.createObjectURL(blob);
-      const csvUrl = URL.createObjectURL(new Blob([buildRouteCsv(route, incidents, deviceId, fileDate)], { type: "text/csv;charset=utf-8;" }));
+      // The spreadsheet is a branded .xlsx (company logo on top), built from the
+      // same route CSV. A failure here must not lose the recorded video.
+      let csvFile = null;
+      try {
+        csvFile = await brandedXlsxObjectUrl(
+          `${deviceId}_${fileDate}_route`,
+          buildRouteCsv(route, incidents, deviceId, fileDate),
+          { title: "Route playback", sheetName: "Route" }
+        );
+      } catch { /* keep the video; skip the sheet */ }
       addExport({
         device: deviceId, date: fileDate,
         durationMin: route.summary?.duration_min ?? Math.round(totalT / 60),
         distanceKm: route.summary?.total_km ?? null,
         incidents: incidents.length,
         video: { url: videoUrl, name },
-        csv: { url: csvUrl, name: `${deviceId}_${fileDate}_route.csv` },
+        csv: csvFile ? { url: csvFile.url, name: csvFile.name } : null,
       });
       flash("Export ready — opening Exports…");
       setTimeout(() => router.push("/mainapp/playback/exports"), 800);

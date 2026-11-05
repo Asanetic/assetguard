@@ -571,3 +571,114 @@ export async function getWorklog(id) {
   );
   return rows[0] || null;
 }
+
+/* ------------------------------------------------------------------ */
+/* Live position + the stage a session is at                           */
+/* (see db/technician_tracking.sql)                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Record the technician's current handset position. One row per technician — we
+ * keep only the latest fix (the map draws the current spot; the worklog already
+ * holds the per-job history). Posted on a timer while the app is signed in, so
+ * a stale `updated_at` is how the page knows a technician has gone quiet.
+ */
+export async function upsertTechnicianPosition({
+  technicianId, technicianName,
+  lat, lng, accuracyM, speed, heading, battery,
+}) {
+  if (!technicianId) return null;
+  const { rows } = await query(
+    `INSERT INTO technician_positions
+       (technician_id, technician_name, lat, lng, accuracy_m, speed, heading, battery, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8, now())
+     ON CONFLICT (technician_id) DO UPDATE SET
+       technician_name = COALESCE(EXCLUDED.technician_name, technician_positions.technician_name),
+       lat        = EXCLUDED.lat,
+       lng        = EXCLUDED.lng,
+       accuracy_m = EXCLUDED.accuracy_m,
+       speed      = EXCLUDED.speed,
+       heading    = EXCLUDED.heading,
+       battery    = EXCLUDED.battery,
+       updated_at = now()
+     RETURNING *`,
+    [
+      String(technicianId),
+      technicianName || null,
+      lat == null ? null : Number(lat),
+      lng == null ? null : Number(lng),
+      accuracyM == null ? null : Number(accuracyM),
+      speed == null ? null : Number(speed),
+      heading == null ? null : Number(heading),
+      battery == null ? null : Number(battery),
+    ]
+  );
+  return rows[0] || null;
+}
+
+/**
+ * Record (or refresh) what this technician is working on RIGHT NOW, for the
+ * admin Installation page's "in progress" list. One row per technician, upserted
+ * as they move through the wizard. Independent of the on-site alarm session —
+ * this gates nothing and downgrades nothing; see db/technician_active_jobs.sql.
+ */
+export async function upsertActiveJob({
+  technicianId, technicianName, jobType, siteId, deviceIds, step, startedAt,
+}) {
+  if (!technicianId) return null;
+  const ids = (Array.isArray(deviceIds) ? deviceIds : [])
+    .map((d) => String(d).trim()).filter(Boolean);
+  const { rows } = await query(
+    `INSERT INTO technician_active_jobs
+       (technician_id, technician_name, job_type, site_id, device_ids, step, started_at, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7, now())
+     ON CONFLICT (technician_id) DO UPDATE SET
+       technician_name = COALESCE(EXCLUDED.technician_name, technician_active_jobs.technician_name),
+       job_type   = EXCLUDED.job_type,
+       site_id    = EXCLUDED.site_id,
+       device_ids = EXCLUDED.device_ids,
+       step       = EXCLUDED.step,
+       started_at = COALESCE(EXCLUDED.started_at, technician_active_jobs.started_at),
+       updated_at = now()
+     RETURNING *`,
+    [
+      String(technicianId),
+      technicianName || null,
+      jobType === "maintain" ? "maintain" : "install",
+      siteId == null || siteId === "" ? null : Number(siteId),
+      ids,
+      step ? String(step) : null,
+      startedAt || null,
+    ]
+  );
+  return rows[0] || null;
+}
+
+/** The technician finished or walked away — drop their active-job row. */
+export async function clearActiveJob(technicianId) {
+  if (!technicianId) return 0;
+  const { rowCount } = await query(
+    `DELETE FROM technician_active_jobs WHERE technician_id = $1`,
+    [String(technicianId)]
+  );
+  return rowCount;
+}
+
+/**
+ * Stamp the wizard step this technician's open session is on (Location, Device,
+ * Settle, Test, …). No-op when they have no open session — a step with nowhere
+ * to land is not an error, just a late post from an app that has already closed.
+ */
+export async function updateSessionStep(technicianId, step) {
+  if (!technicianId) return null;
+  const { rows } = await query(
+    `UPDATE technician_work_sessions
+        SET step = $2, step_at = now()
+      WHERE technician_id = $1
+        AND closed_at IS NULL
+        AND expires_at > now()
+      RETURNING *`,
+    [String(technicianId), step ? String(step) : null]
+  );
+  return rows[0] || null;
+}

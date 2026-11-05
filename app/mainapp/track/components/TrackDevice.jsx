@@ -98,6 +98,8 @@ export default function TrackDevice() {
   const [mapReady, setMapReady] = useState(false);
   const [mapType, setMapType] = useState("roadmap");
   const [guidMuted, setGuidMuted] = useState(false);
+  const [devMuted, setDevMuted] = useState(false);   // alerts muted for THIS device (track-popup toggle)
+  const [muting, setMuting] = useState(false);
   const [toast, setToast] = useState("");
   const [notFound, setNotFound] = useState(false);
   const [fix, setFix] = useState({ source: null, accuracy: null }); // latest fix source + ± metres
@@ -130,6 +132,26 @@ export default function TrackDevice() {
   const speed = useRef(6);
 
   function flash(msg) { setToast(msg); setTimeout(() => setToast(""), 2200); }
+
+  // Mute / unmute alert NOTIFICATIONS for this device (the alarm is still recorded).
+  // hours > 0 mutes; hours = 0 unmutes. Hits the per-device mute route, which the
+  // live notify path honours via devices.mute_until.
+  async function toggleMuteAlerts() {
+    if (muting || !device?.device_id) return;
+    const hours = devMuted ? 0 : 2;
+    setMuting(true);
+    try {
+      const r = await fetch(`/api/mainapp/devices/${encodeURIComponent(device.device_id)}/mute`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hours }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { flash(d?.error || (r.status === 403 ? "Not permitted to mute" : "Couldn't mute")); return; }
+      setDevMuted(hours > 0);
+      flash(hours > 0 ? "Alerts muted for 2 hours" : "Alerts unmuted");
+    } catch { flash("Couldn't reach the server"); }
+    finally { setMuting(false); }
+  }
 
   // ---- map control overlay handlers (HTML overlay, not Google controls) ----
   function ctrlZoom(d) { const m = gmap.current; if (m) m.setZoom((m.getZoom() || 13) + d); }
@@ -592,8 +614,10 @@ export default function TrackDevice() {
               <div className={styles.popBtns}>
                 {alarmId
                   ? <button className={`${styles.popBtn} ${styles.popBtnPrimary}`} onClick={() => router.push(`/mainapp/alarms/${encodeURIComponent(alarmId)}`)}><i className="ti ti-clipboard-list" style={{ fontSize: 15 }} /> View alarm details</button>
-                  : <button className={styles.popBtn} onClick={() => flash("Device detail — coming soon")}>View device</button>}
-                <button className={styles.popBtn} onClick={() => flash("Alerts muted for this device")}>Mute alerts</button>
+                  : <button className={styles.popBtn} onClick={() => router.push(`/mainapp/devices/view?device=${encodeURIComponent(device.device_id)}`)}><i className="ti ti-device-analytics" style={{ fontSize: 15 }} /> View device</button>}
+                <button className={styles.popBtn} onClick={toggleMuteAlerts} disabled={muting}>
+                  <i className={`ti ${devMuted ? "ti-bell" : "ti-bell-off"}`} style={{ fontSize: 15 }} /> {muting ? "Saving…" : devMuted ? "Unmute alerts" : "Mute alerts"}
+                </button>
               </div>
             </div>
             <div className={styles.popTail} />
